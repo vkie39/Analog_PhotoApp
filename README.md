@@ -1,3 +1,3 @@
-# Forth_Joljack
+# Analog_PhotoApp
 ##사진 동네## 
 - 사진을 등록하여 구매 및 판매 가능한 어플, 유저들의 커뮤니티 제공
