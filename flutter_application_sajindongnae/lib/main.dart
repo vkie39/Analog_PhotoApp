@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 void main() {
   runApp(MaterialApp(
-    home: MainPage(), // 이걸 반드시 넣어줘야 화면이 보임
+    home: MainPage(), 
   ));
 }
 
