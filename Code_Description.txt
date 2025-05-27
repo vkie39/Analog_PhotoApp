@@ -1,0 +1,10 @@
+## 코드 개발 관련해서 궁금한 부분 있거나 문제 생길 때를 대비해서 임시로 정리 해놓겠습니다.
+## 함경민
+
+1. 스플래시 화면 개발 참고 블로그
+ 블로그 : https://daco2020.tistory.com/876 
+ 공식 문서 : https://pub.dev/packages/flutter_launcher_icons
+
+
+ 
+
