@@ -27,7 +27,7 @@ class _ListScreenState extends State<ListScreen> {
                 )
               ),
               onTap: (){
-                Navigator.pushNamed(context, '/board/read');
+                Navigator.pushNamed(context, '/post/read');
               },
             );
           }
