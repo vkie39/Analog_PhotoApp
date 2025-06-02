@@ -18,9 +18,15 @@ class SearchBarWidget extends StatelessWidget {
       child: TextField(
         controller: controller,
         onChanged: onChanged,
+        textAlign: TextAlign.center,
         decoration: InputDecoration(
-          prefixIcon: const Icon(Icons.search),
           hintText: '검색어를 입력하세요',
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              print('검색 버튼 클릭');
+            },
+          ),
           contentPadding: const EdgeInsets.symmetric(vertical: 0),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(30),

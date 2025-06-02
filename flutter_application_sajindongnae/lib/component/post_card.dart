@@ -8,45 +8,81 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ListTile(
-          leading: CircleAvatar(
-            backgroundImage: NetworkImage(post.profileImageUrl),
-          ),
-          title: Text(post.title, style: TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text(post.nickname),
-          trailing: Text(
-            _getTimeAgo(post.timestamp),
-            style: TextStyle(fontSize: 12, color: Colors.grey),
-          ),
-        ),
-        if (post.imageUrl != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(post.imageUrl!),
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, '/post/read');
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  backgroundImage: NetworkImage(post.profileImageUrl),
+                  radius: 20,
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        post.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(
+                            post.nickname,
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '좋아요 ${post.likeCount}',
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '댓글 ${post.commentCount}',
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _getTimeAgo(post.timestamp),
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                )
+              ],
             ),
-          ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Row(
-            children: [
-              Text('좋아요 ${post.likeCount}'),
-              SizedBox(width: 10),
-              Text('댓글 ${post.commentCount}'),
+            if (post.imageUrl != null) ...[
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(post.imageUrl!),
+              ),
             ],
-          ),
+            const Divider(thickness: 0.5),
+          ],
         ),
-        Divider(thickness: 1),
-      ],
+      ),
     );
   }
 
-  String _getTimeAgo(DateTime time) {
+  static String _getTimeAgo(DateTime time) {
     final now = DateTime.now();
     final difference = now.difference(time);
+
     if (difference.inMinutes < 1) return '방금 전';
     if (difference.inMinutes < 60) return '${difference.inMinutes}분 전';
     if (difference.inHours < 24) return '${difference.inHours}시간 전';
