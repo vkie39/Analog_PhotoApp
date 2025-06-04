@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_sajindongnae/component/search.dart';
 import 'package:flutter_application_sajindongnae/component/post_card.dart';
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
+import 'package:http/http.dart';
 
 class ListScreen extends StatefulWidget {
   const ListScreen({super.key});
@@ -10,18 +12,24 @@ class ListScreen extends StatefulWidget {
   State<ListScreen> createState() => _ListScreenState();
 }
 
-class _ListScreenState extends State<ListScreen> {
-  final searchController = TextEditingController();
+class _ListScreenState extends State<ListScreen>{ 
+  final searchController = TextEditingController(); // 검색창 내용을 컨트롤하기 위함
 
-  // Firestore 연결 전 임시 데이터 (결과 확인용용)
+  final List<String> tabs = ['자유', '카메라추천', '피드백']; // 탭 이름 정의
+
+  // Firestore 연결 전 임시 데이터 (결과 확인용)
   final List<PostModel> postList = List.generate(
-    10,
+    30,
     (index) => PostModel(
       postId: 'post_$index',
       userId: 'user_$index',
       nickname: '사용자$index',
-      profileImageUrl: 'https://via.placeholder.com/150',
-      category: '소니',
+      profileImageUrl: 'https://', // 아무 주소 없어서 오류 뜰거지만 괜찮음. 임시임
+      category: index % 3 == 0 //원래 카테고리는 게시판 구분 용도가 아니라, 새로운 필드가 필요할듯
+          ? '자유'
+          : index % 3 == 1
+              ? '카메라추천'
+              : '피드백',
       likeCount: 10 + index,
       commentCount: 5 + index,
       timestamp: DateTime.now().subtract(Duration(minutes: index * 15)),
@@ -53,13 +61,74 @@ class _ListScreenState extends State<ListScreen> {
 
   */
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('게시글 목록')),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0, //그림자
+        title: SearchBarWidget( //search.dart에서 정의한 검색창
+          controller: searchController,
+          onChanged: (value){
+            print('검색어 : $value');
+            // 이후에 Firestore 쿼리 또는 리스트 필터링 로직 추가 필요함
+          },
+        ),
+      ),
+
+      body: Container( 
+        color: Colors.white,
+        child: DefaultTabController(
+          length: tabs.length, 
+          child: Column(
+            children: [
+              TabBar(
+                labelColor: Colors.black,
+                unselectedLabelColor: Colors.grey,
+                /*indicator: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.black,
+                      width: 2.5,
+                    ),
+                  ),
+                ),
+                indicatorSize: TabBarIndicatorSize.tab, */
+                indicatorColor: Colors.black,
+                tabs: tabs.map((label) => Tab(text: label)).toList() // map의 결과는 Iterable임. 위젯은 List를 보통 써서 toList로 형변환이 필요요
+                ),
+
+                Expanded(
+                  child: TabBarView(
+                    children: tabs.map((category) {
+                      final filteredList = postList
+                          .where((post) => post.category == category) // postList를 하나씩 post로 받아와서 필터링링
+                          .toList();
+                      return ListView.builder(
+                        padding: EdgeInsets.symmetric(vertical: 15),
+                        itemCount: filteredList.length, // filteredList에 몇개의 요소가 있는지 확인하고, 이 수를 기준으로 itemBuilder호출출
+                        itemBuilder: (context, index){ // index는 ListView.builder내부에서 자동으로 0부터 itemCount-1까지 넣어줌
+                          return PostCard(post: filteredList[index]);
+                        },
+                      );
+                    }).toList(),                  
+                  ),
+                ),
+            ],
+          ),
+        ),
+      )
+    );  
+  } 
+}
+
+
+
+/* Tab navigation구현 전
       body: Column(
         children: [
-          SearchBarWidget(
+          SearchBarWidget( //search.dart에서 정의한 검색창창
             controller: searchController,
             onChanged: (value) {
               print('검색어: $value');
@@ -76,6 +145,4 @@ class _ListScreenState extends State<ListScreen> {
           ),
         ],
       ),
-    );
-  }
-}
+      */

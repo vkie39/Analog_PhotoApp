@@ -30,10 +30,10 @@ class SearchBarWidget extends StatelessWidget {
           contentPadding: const EdgeInsets.symmetric(vertical: 0),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderSide: BorderSide.none, // 테두리 없애기
           ),
           filled: true,
-          fillColor: Colors.grey[100],
+          fillColor: const Color.fromARGB(255, 245, 245, 244),
         ),
       ),
     );

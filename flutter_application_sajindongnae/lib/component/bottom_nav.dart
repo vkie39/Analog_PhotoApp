@@ -19,6 +19,7 @@ class BottomNav extends StatelessWidget {
         ),
       ),
       child: BottomNavigationBar(
+        backgroundColor: Colors.white,
         currentIndex: currentIndex,
         onTap: onTap,
         type: BottomNavigationBarType.fixed,
