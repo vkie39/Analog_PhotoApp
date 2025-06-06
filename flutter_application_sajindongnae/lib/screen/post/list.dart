@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
 import 'package:flutter_application_sajindongnae/component/search.dart';
 import 'package:flutter_application_sajindongnae/component/post_card.dart';
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
-import 'package:http/http.dart';
+
 
 class ListScreen extends StatefulWidget {
   const ListScreen({super.key});
@@ -25,7 +26,7 @@ class _ListScreenState extends State<ListScreen>{
       userId: 'user_$index',
       nickname: '사용자$index',
       profileImageUrl: 'https://', // 아무 주소 없어서 오류 뜰거지만 괜찮음. 임시임
-      category: index % 3 == 0 //원래 카테고리는 게시판 구분 용도가 아니라, 새로운 필드가 필요할듯
+      category: index % 3 == 0 
           ? '자유'
           : index % 3 == 1
               ? '카메라추천'

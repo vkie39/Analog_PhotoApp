@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/post_model.dart';
+import 'package:flutter_application_sajindongnae/screen/post/post_detail.dart';
 
 class PostCard extends StatelessWidget {
   final PostModel post;
@@ -10,7 +11,9 @@ class PostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(context, '/post/post_detail.dart');
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => PostDetailScreen(post: post)));
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 5),
