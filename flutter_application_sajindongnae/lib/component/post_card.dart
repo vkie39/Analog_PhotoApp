@@ -10,7 +10,7 @@ class PostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(context, '/post/read');
+        Navigator.pushNamed(context, '/post/post_detail.dart');
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 5),
