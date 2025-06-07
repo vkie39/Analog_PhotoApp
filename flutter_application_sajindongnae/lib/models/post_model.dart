@@ -27,8 +27,8 @@ class PostModel {
     this.imageUrl,
   });
 
-  factory PostModel.fromMap(Map<String, dynamic> map) {
-    return PostModel(
+  factory PostModel.fromMap(Map<String, dynamic> map) { // json 스트링을 Dart에서 사용 가능한 객체로 받아오기 위한 함수
+    return PostModel(                                   // 실제 사용할 땐 post = PostModel.fromMap(doc.data() as Map<String,dynamic>); 처럼 쓰면 됨 
       postId: map['postId'],
       userId: map['userId'],
       nickname: map['nickname'],
