@@ -9,6 +9,8 @@ import 'package:http/http.dart';
 import 'package:flutter_application_sajindongnae/component/search.dart';
 import 'package:flutter_application_sajindongnae/component/post_card.dart';
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
+import 'package:flutter_application_sajindongnae/screen/post/write.dart';
+import 'package:flutter/gestures.dart';
 
 
 class ListScreen extends StatefulWidget {
@@ -18,10 +20,25 @@ class ListScreen extends StatefulWidget {
   State<ListScreen> createState() => _ListScreenState();
 }
 
-class _ListScreenState extends State<ListScreen>{ 
+class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateMixin{ 
   final searchController = TextEditingController(); // 검색창 내용을 컨트롤하기 위함
 
   final List<String> tabs = ['자유', '카메라추천', '피드백']; // 탭 이름 정의
+  late TabController _tabController; // late는 당장 초기화 안해도  nullable되는 것을 방지(나중에 값 넣을거라고 알려주는 타입)
+
+  @override
+  void initState(){ // 탭바 초기화
+    super.initState();
+    _tabController = TabController(length: tabs.length, vsync: this); // SingleTickerProviderStateMixin 로 this를 받아올 수 있음. 애니메이션을 위해 사용용
+
+  }
+
+  @override
+  void dispose() { // 위젯 제거될 때 메모리 정리를 위해 호출출
+    _tabController.dispose();
+    super.dispose();
+  }
+
 
   // Firestore 연결 전 임시 데이터 (결과 확인용)
   final List<PostModel> postList = List.generate(
@@ -83,15 +100,25 @@ class _ListScreenState extends State<ListScreen>{
         ),
       ),
 
-      body: Container( 
-        color: Colors.white,
-        child: DefaultTabController(
-          length: tabs.length, 
+      body: Listener(
+        behavior: HitTestBehavior.translucent, // 클릭 이벤트가 있는(탭바 등)을 눌러도 키보드 내림
+        onPointerDown: (_) {
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
+        /*onTap: () {
+          FocusScope.of(context).unfocus(); // 키보드 내리기
+        },
+        behavior: HitTestBehavior.opaque, */
+        child: Container( 
+          color: Colors.white,
           child: Column(
             children: [
               TabBar(
+                controller: _tabController,
                 labelColor: Colors.black,
                 unselectedLabelColor: Colors.grey,
+                indicatorColor: Colors.black,
+                tabs: tabs.map((label) => Tab(text: label)).toList() // map의 결과는 Iterable임. 위젯은 List를 보통 써서 toList로 형변환이 필요요
                 /*indicator: const BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
@@ -101,30 +128,45 @@ class _ListScreenState extends State<ListScreen>{
                   ),
                 ),
                 indicatorSize: TabBarIndicatorSize.tab, */
-                indicatorColor: Colors.black,
-                tabs: tabs.map((label) => Tab(text: label)).toList() // map의 결과는 Iterable임. 위젯은 List를 보통 써서 toList로 형변환이 필요요
-                ),
-
-                Expanded(
-                  child: TabBarView(
-                    children: tabs.map((category) {
-                      final filteredList = postList
-                          .where((post) => post.category == category) // postList를 하나씩 post로 받아와서 필터링링
-                          .toList();
-                      return ListView.builder(
-                        padding: EdgeInsets.symmetric(vertical: 15),
-                        itemCount: filteredList.length, // filteredList에 몇개의 요소가 있는지 확인하고, 이 수를 기준으로 itemBuilder호출출
-                        itemBuilder: (context, index){ // index는 ListView.builder내부에서 자동으로 0부터 itemCount-1까지 넣어줌
-                          return PostCard(post: filteredList[index]);
-                        },
-                      );
-                    }).toList(),                  
-                  ),
-                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: tabs.map((category) {
+                    final filteredList = postList
+                        .where((post) => post.category == category) // postList를 하나씩 post로 받아와서 필터링링
+                        .toList();
+                    return ListView.builder(
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                      itemCount: filteredList.length, // filteredList에 몇개의 요소가 있는지 확인하고, 이 수를 기준으로 itemBuilder호출출
+                      itemBuilder: (context, index){ // index는 ListView.builder내부에서 자동으로 0부터 itemCount-1까지 넣어줌
+                        return PostCard(post: filteredList[index]);
+                      },
+                    );
+                  }).toList(),                  
+                ),  
+              ),
             ],
           ),
         ),
-      )
+      ),
+
+      /// 글쓰기 버튼
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          final selectedCategory = tabs[_tabController.index];
+          // 글쓰기 화면으로 이동
+          Navigator.push(
+            context, 
+            MaterialPageRoute(
+              builder: (context) => WriteScreen(category: selectedCategory),
+            ),
+          ); 
+        },
+        backgroundColor: Color(0xFFDDECC7), // 
+        icon: Icon(Icons.edit, color: Colors.black),
+        label: Text('글 쓰기', style: TextStyle(color: Colors.black)),
+      ),
     );  
   } 
 }
