@@ -46,11 +46,11 @@ dependencies:
 
 flutter_native_splash:
   color: "#DFF0C1" # 스플래시 화면의 배경색
-  image: "assets/icons/app_icon.png" # 스플래시 화면에 표시될 이미지 (어플 로고)
+  image: "assets/icons/app_icon_splash.png" # 스플래시 화면에 표시될 이미지 (어플 로고)
   android: true
   android_12: 
    color: "#DFF0C1"
-   image: "assets/icons/app_icon.png"
+   image: "assets/icons/app_icon_splash.png"
    icon_background_color: "#DFF0C1"
 
 
@@ -69,7 +69,7 @@ dev_dependencies:
 
 flutter_launcher_icons:
   android: true 
-  image_path: "assets/icons/app_icon.png" # 런처 아이콘으로 사용할 이미지 경로
+  image_path: "assets/icons/app_icon_splash.png" # 런처 아이콘으로 사용할 이미지 경로
   adaptive_icon_background: "#DFF0C1" # 아이콘의 배경색. 설정 안하면 흰색 나옴
 
 
