@@ -163,9 +163,11 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
             ),
           ); 
         },
-        backgroundColor: Color(0xFFDDECC7), // 
-        icon: Icon(Icons.edit, color: Colors.black),
-        label: Text('글 쓰기', style: TextStyle(color: Colors.black)),
+        shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(100)), // 버튼 모양
+        backgroundColor: Color(0xFFDDECC7),
+        elevation: 5, // 그림자
+        icon: Icon(Icons.edit, size:20, color: Colors.black),
+        label: Text('글 쓰기', style: TextStyle(fontSize:12, color: Colors.black)),
       ),
     );  
   } 
