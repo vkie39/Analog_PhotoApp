@@ -43,3 +43,25 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase config files
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# Flutter build outputs
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# macOS and iOS
+.DS_Store
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+
+# 기타 캐시/환경
+*.log
+*.lock
+.pub-cache/
+
+lib/screen/test_*
+

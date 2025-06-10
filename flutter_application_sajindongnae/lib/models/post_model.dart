@@ -27,21 +27,24 @@ class PostModel {
     this.imageUrl,
   });
 
-  factory PostModel.fromMap(Map<String, dynamic> map) { // json 스트링을 Dart에서 사용 가능한 객체로 받아오기 위한 함수
-    return PostModel(                                   // 실제 사용할 땐 post = PostModel.fromMap(doc.data() as Map<String,dynamic>); 처럼 쓰면 됨 
-      postId: map['postId'],
-      userId: map['userId'],
-      nickname: map['nickname'],
-      profileImageUrl: map['profileImageUrl'],
-      category: map['category'],
+
+  factory PostModel.fromDocument(DocumentSnapshot doc) {
+    final map = doc.data() as Map<String, dynamic>;
+    return PostModel(
+      postId: doc.id, // Firestore 문서의 고유 ID (자동 생성된 값)
+      userId: map['userId'] ?? '', //null 대비
+      nickname: map['nickname'] ?? '',
+      profileImageUrl: map['profileImageUrl'] ?? '',
+      category: map['category'] ?? '',
       likeCount: map['likeCount'] ?? 0,
       commentCount: map['commentCount'] ?? 0,
-      timestamp: (map['timestamp'] as Timestamp).toDate(),
-      title: map['title'],
-      content: map['content'],
-      imageUrl: map['imageUrl'],
+      timestamp: (map['createdAt'] as Timestamp).toDate(), //Firestore에서 저장한 시간 필드
+      title: map['title'] ?? '',
+      content: map['content'] ?? '',
+      imageUrl: map['imageUrl'], //선택 필드라 null 허용
     );
   }
+
 }
 
 
