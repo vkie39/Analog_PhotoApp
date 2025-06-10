@@ -20,7 +20,7 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-"""
+/*
   @override
   Widget build(BuildContext context) {
     return MaterialApp( //MaterialApp: Flutter앱의 최상우 ㅣ위젯 트리, home 속성에 보여줄 첫 화면
@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-"""
+*/
 
   @override
   Widget build(BuildContext context) {

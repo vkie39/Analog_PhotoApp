@@ -21,7 +21,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
   }
 }
 
-"""
+/*
 class _MyPageScreenState extends State<MyPageScreen> {
   
   @override
@@ -41,4 +41,4 @@ class _MyPageScreenState extends State<MyPageScreen> {
     );
   }
 }
-"""
+*/
