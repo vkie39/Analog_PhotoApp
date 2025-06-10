@@ -1,3 +1,8 @@
+
+
+// 게시글 리스트를 카드 형태로 디자인. 클릭하면 post_detail로 페이지 이동 및 postId 전달달 (실시간으로 firestore에서 정보 받아오는 코드는 list.dart에서 처리 예정)
+
+
 import 'package:flutter/material.dart';
 import '../models/post_model.dart';
 import 'package:flutter_application_sajindongnae/screen/post/post_detail.dart';

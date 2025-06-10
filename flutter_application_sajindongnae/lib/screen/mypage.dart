@@ -11,7 +11,19 @@ class MyPageScreen extends StatefulWidget {
   State<MyPageScreen> createState() => _MyPageScreenState();
 } 
 
+
 class _MyPageScreenState extends State<MyPageScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('마이페이지지'),),
+    );
+  }
+}
+
+/*
+class _MyPageScreenState extends State<MyPageScreen> {
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,3 +41,4 @@ class _MyPageScreenState extends State<MyPageScreen> {
     );
   }
 }
+*/

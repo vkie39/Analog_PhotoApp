@@ -8,10 +8,11 @@ import 'package:flutter_application_sajindongnae/screen/mypage.dart';
 import 'package:flutter_application_sajindongnae/screen/auth/login_screen.dart';
 import 'component/bottom_nav.dart'; // bottom_nav.dart에서 UI 분리한 하단바
 
-Future<void> main() async {
+//Future<void> main() async {
+void main() {
   // 앱 실행 전 firebase 초기화, 앱 루트 위젝으로 MyApp 실행
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+ // WidgetsFlutterBinding.ensureInitialized();
+  //await Firebase.initializeApp();
   runApp(const MyApp()); // MyApp 클래스부터 어플 시작
 }
 
@@ -19,6 +20,7 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+/*
   @override
   Widget build(BuildContext context) {
     return MaterialApp( //MaterialApp: Flutter앱의 최상우 ㅣ위젯 트리, home 속성에 보여줄 첫 화면
@@ -41,6 +43,15 @@ class MyApp extends StatelessWidget {
           }
         },
       ),
+    );
+  }
+}
+*/
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      home: MainPage(), // 시작 시 보여줄 화면
     );
   }
 }
