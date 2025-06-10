@@ -9,6 +9,7 @@ import 'package:http/http.dart';
 import 'package:flutter_application_sajindongnae/component/search.dart';
 import 'package:flutter_application_sajindongnae/component/post_card.dart';
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
+import 'package:flutter_application_sajindongnae/services/post_service.dart';
 import 'package:flutter_application_sajindongnae/screen/post/write.dart';
 import 'package:flutter/gestures.dart';
 
@@ -41,6 +42,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
 
 
   // Firestore 연결 전 임시 데이터 (결과 확인용)
+  /*
   final List<PostModel> postList = List.generate(
     30,
     (index) => PostModel(
@@ -60,29 +62,9 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
       content: '$index번째 테스트 게시글',
     ),
   );
-
-  /*
-  // 지금은 임시 데이터 사용 중
-  final List<PostModel> postList = [..]; 위처럼럼 
-
-  // 나중에 이렇게 수정해야 됨
-  StreamBuilder<QuerySnapshot>(
-    stream: FirebaseFirestore.instance.collection('posts').orderBy('timestamp', descending: true).snapshots(),
-    builder: (context, snapshot) {
-      if (!snapshot.hasData) return CircularProgressIndicator();
-
-      final postList = snapshot.data!.docs
-          .map((doc) => PostModel.fromMap(doc.data() as Map<String, dynamic>))
-          .toList();
-
-      return ListView.builder(
-        itemCount: postList.length,
-        itemBuilder: (context, index) => PostCard(post: postList[index]),
-      );
-    },
-  );
-
   */
+
+
 
 
   @override
@@ -129,9 +111,11 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
                 ),
                 indicatorSize: TabBarIndicatorSize.tab, */
               ),
+              
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
+                  /*
                   children: tabs.map((category) {
                     final filteredList = postList
                         .where((post) => post.category == category) // postList를 하나씩 post로 받아와서 필터링링
@@ -143,7 +127,29 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
                         return PostCard(post: filteredList[index]);
                       },
                     );
-                  }).toList(),                  
+                  }).toList(),   */
+                  children: tabs.map((category) {
+                    return StreamBuilder<List<PostModel>>(
+                      stream: PostService.getPostsByCategory(category), // ← Firestore에서 데이터 스트림 가져오기
+                      builder: (context, snapshot) { // 데이터가 변경될 때 자동 호출, UI업데이트, snapshot엔 현재 데이터 상태, 로딩여부 등이 있음
+                        if (snapshot.connectionState == ConnectionState.waiting) { // 데이터 받아오는 중이면 로딩표시시
+                          return Center(child: CircularProgressIndicator());
+                        }
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) { // 게시글이 없을 경우 안내문구구 출력
+                          return Center(child: Text('게시글이 없습니다.'));
+                        }
+
+                        final filteredList = snapshot.data!; // 게시글이이 있으면
+                        return ListView.builder(
+                          padding: EdgeInsets.symmetric(vertical: 15),
+                          itemCount: filteredList.length,
+                          itemBuilder: (context, index) {
+                            return PostCard(post: filteredList[index]);
+                          },
+                        );
+                      },
+                    );
+                  }).toList(),                
                 ),  
               ),
             ],

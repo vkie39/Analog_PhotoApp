@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
+import '../../services/post_service.dart';
+import '../../models/post_model.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
 class WriteScreen extends StatefulWidget {
@@ -57,10 +60,47 @@ class _WriteScreenState extends State<WriteScreen> {
           centerTitle: true,
           actions: [
             TextButton(
-              onPressed: () { // firestore에 저장해야 함
+              onPressed: () async { // firestore에 저장
                 final title = titleController.text.trim();     // 제목
                 final content = contentController.text.trim(); // 내용
                 final category = selectedCategory;             // 카테고리
+
+                if(title.isEmpty){
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('제목을 입력해주세요')),
+                    );
+                }
+                else if(content.isEmpty){
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('내용을 입력해주세요')),
+                    );
+                }
+
+                final newPost = PostModel(
+                  postId: const Uuid().v4(), 
+                  userId: '임시유저ID', // 로그인된 사용자 ID로 수정 필요요
+                  nickname: '용용선생', 
+                  profileImageUrl: '',  // 프로필 이미지 URL
+                  category: category,
+                  likeCount: 0, // 기본 0
+                  commentCount: 0,
+                  timestamp: DateTime.now(),
+                  title: title,
+                  content: content,
+                  imageUrl: null, // 이미지 업로드 기능이 추가되면 수정
+                );
+
+                try {
+                  await PostService.createPost(newPost);
+                  Navigator.pop(context); // 업로드 완료 후 뒤로가기
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('게시글 등록에 실패했어요. 다시 시도해주세요.')),
+                  );
+                }
+
+
+
               },
               child: const Text(
                 '등록',
