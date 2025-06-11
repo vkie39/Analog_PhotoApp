@@ -156,38 +156,34 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         ),
 
         // 댓글 입력용 입력필드
-        bottomNavigationBar: Container(
-          color: Colors.white, // 하단 전체 배경색
+        bottomNavigationBar: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 10,
+            left:16,
+            right: 16,
+            top:2,
+          ),
           child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 2, 16, 15),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 232, 232, 232),
-                        borderRadius:  BorderRadius.circular(100),
-                      ),
-                      child: TextField(
-                        controller: _commentController,
-                        decoration: const InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                          border: InputBorder.none,
-                          //filled: true,
-                          //fillColor: const Color.fromARGB(255, 195, 195, 195),
-                        ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 232, 232, 232),
+                      borderRadius:  BorderRadius.circular(100),
+                    ),
+                    child: TextField(
+                      controller: _commentController,
+                      decoration: const InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                        border: InputBorder.none,
+                        //filled: true,
+                        //fillColor: const Color.fromARGB(255, 195, 195, 195),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.send),
-                    color: Colors.black,
-                    onPressed: _submitComment,
-                  ),
-                ],
-              ),
+                ), 
+              ],
             ),
           ),
         ),
