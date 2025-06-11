@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_sajindongnae/main.dart';
 import 'package:uuid/uuid.dart';
 import '../../services/post_service.dart';
 import '../../models/post_model.dart';
@@ -36,6 +37,7 @@ class _WriteScreenState extends State<WriteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final globalContext = Globals.navigatorKey.currentContext;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => FocusScope.of(context).unfocus(),
@@ -75,32 +77,40 @@ class _WriteScreenState extends State<WriteScreen> {
                     SnackBar(content: Text('내용을 입력해주세요')),
                     );
                 }
-
-                final newPost = PostModel(
-                  postId: const Uuid().v4(), 
-                  userId: '임시유저ID', // 로그인된 사용자 ID로 수정 필요요
-                  nickname: '용용선생', 
-                  profileImageUrl: '',  // 프로필 이미지 URL
-                  category: category,
-                  likeCount: 0, // 기본 0
-                  commentCount: 0,
-                  timestamp: DateTime.now(),
-                  title: title,
-                  content: content,
-                  imageUrl: null, // 이미지 업로드 기능이 추가되면 수정
-                );
-
-                try {
-                  await PostService.createPost(newPost);
-                  Navigator.pop(context); // 업로드 완료 후 뒤로가기
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('게시글 등록에 실패했어요. 다시 시도해주세요.')),
+                else{ // 제목, 내용 다 있으면 저장장
+                  final newPost = PostModel(
+                    postId: const Uuid().v4(), 
+                    userId: '임시유저ID', // 로그인된 사용자 ID로 수정 필요
+                    nickname: '용용선생', 
+                    profileImageUrl: '',  // 프로필 이미지 URL
+                    category: category,
+                    likeCount: 0, // 기본 0
+                    commentCount: 0,
+                    timestamp: DateTime.now(),
+                    title: title,
+                    content: content,
+                    imageUrl: null, // 이미지 업로드 기능이 추가되면 수정
                   );
+
+                  try {
+                    print('업로드 시도');
+                    await PostService.createPost(newPost);
+                    print('Post created!');
+                    if (mounted) {
+                      Navigator.pop(context); // 이게 실행되지 않는다면 mounted가 false일 가능성
+                    } else {
+                      print('위젯이 죽음');
+                    }
+
+                    //Globals.navigatorKey.currentState?.pop(); // 업로드 완료 후 뒤로가기
+                    // Navigator.pop(context);  이게 안돼서 윗줄로 수정
+                  } catch (e) {
+                    print('예외!!!!!!!!!    $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('게시글 등록에 실패했어요. 다시 시도해주세요.')),
+                    );
+                  }
                 }
-
-
-
               },
               child: const Text(
                 '등록',

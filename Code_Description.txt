@@ -34,6 +34,12 @@
 4. firestore에서 post를 받아오는 방법
  블로그 : https://dawonny.tistory.com/261 
 
+
+5. global 변수로 네비게이션 하기
+ 블로그 : https://velog.io/@adbr/context-%EC%97%86%EB%8A%94-%ED%99%98%EA%B2%BD%EC%97%90%EC%84%9C-%ED%99%94%EB%A9%B4-%ED%98%B8%EC%B6%9C
+
+
+
 [출처 임시]
  홈 아이콘 : https://www.flaticon.com/kr/free-icon/home_1946488?term=%ED%99%88&page=1&position=8&origin=search&related_id=1946488
  커뮤니티 아이콘 : https://www.flaticon.com/kr/free-icon/public_5450236?term=%EC%BB%A4%EB%AE%A4%EB%8B%88%ED%8B%B0&page=1&position=9&origin=search&related_id=5450236

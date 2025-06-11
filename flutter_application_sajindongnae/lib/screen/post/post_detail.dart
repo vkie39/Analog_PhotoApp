@@ -14,13 +14,15 @@ class PostDetailScreen extends StatefulWidget {
 }
 
 class _PostDetailScreenState extends State<PostDetailScreen> {
-  final TextEditingController _commentController = TextEditingController();
+  final TextEditingController _commentController = TextEditingController(); // 댓글 컨트롤러
+  bool isLiked = false; // 좋아요 상태 (색 채울지 말지)
+  int likeCount = 0; // 좋아요 수 상태태
 
   void _submitComment() async {
     final commentText = _commentController.text.trim();
     if (commentText.isEmpty) return;
 
-    await FirebaseFirestore.instance.collection('comments').add({
+    await FirebaseFirestore.instance.collection('comments').add({  // post_service로 옮길 내용용
       'postId': widget.post.postId,
       'nickname': '익명', 
       'profileImageUrl': '', 
@@ -32,9 +34,28 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   }
 
   @override
+  void initState(){
+    super.initState();
+    likeCount = widget.post.likeCount; // DB에서 좋아요 수 가져오기
+  }
+
+
+  @override
   void dispose() {
     _commentController.dispose();
     super.dispose();
+  }
+
+  void _toggleLike() async{
+    setState(() {
+      isLiked = !isLiked;
+      likeCount += isLiked ? 1 : -1;
+    });
+
+    await FirebaseFirestore.instance  // post_service로 옮길 내용
+    .collection('posts')
+    .doc(widget.post.postId)
+    .update({'likeCount': likeCount});
   }
 
 
@@ -100,12 +121,25 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
               const SizedBox(height: 16),
               const Divider(height: 32, thickness: 0.5, color: Color.fromARGB(255, 180, 180, 180),),
+              
               // 좋아요, 댓글 수 표시
               Row( 
                 children: [
-                  const Icon(Icons.favorite_border, size: 30, color: Color.fromARGB(255, 161, 161, 161)),
-                  const SizedBox(width: 6),
-                  Text('${widget.post.likeCount}', style: const TextStyle(color: Color.fromARGB(255, 161, 161, 161)),),
+                  InkWell(
+                    onTap: _toggleLike,
+                    child: Row(
+                      children: [
+                        Icon(
+                          isLiked ? Icons.favorite : Icons.favorite_border,
+                          size: 30, 
+                          color: isLiked
+                                 ? Colors.green
+                                 : const Color.fromARGB(255, 161, 161, 161),
+                        ),
+                        const SizedBox(width: 6),
+                        Text('$likeCount', style: const TextStyle(color: Color.fromARGB(255, 161, 161, 161)),),
+                      ],)
+                  ),
                   const SizedBox(width: 80),
                   const Icon(Icons.comment, size: 30, color: Color.fromARGB(255, 161, 161, 161)),
                   const SizedBox(width: 6),
@@ -115,14 +149,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
               // const Text('댓글', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 18),
-
               /// 댓글 리스트 위젯 (게시글 ID를 넘겨줘야 함!!)
               CommentList(postId: widget.post.postId), 
             ],
           ),
         ),
 
-        
         // 댓글 입력용 입력필드
         bottomNavigationBar: Container(
           color: Colors.white, // 하단 전체 배경색
@@ -170,6 +202,6 @@ String _getFormattedTime(DateTime time) {
          '${_twoDigits(time.hour)}:${_twoDigits(time.minute)}';
 }
 
-String _twoDigits(int n) => n.toString().padLeft(2, '0'); // 두 자리 채워주는 함수수
+String _twoDigits(int n) => n.toString().padLeft(2, '0'); // 두 자리 채워주는 함수
 
 }

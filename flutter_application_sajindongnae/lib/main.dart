@@ -8,12 +8,17 @@ import 'package:flutter_application_sajindongnae/screen/mypage.dart';
 import 'package:flutter_application_sajindongnae/screen/auth/login_screen.dart';
 import 'component/bottom_nav.dart'; // bottom_nav.dart에서 UI 분리한 하단바
 
+
 //Future<void> main() async {
-void main() {
+void main() async {
   // 앱 실행 전 firebase 초기화, 앱 루트 위젝으로 MyApp 실행
- // WidgetsFlutterBinding.ensureInitialized();
-  //await Firebase.initializeApp();
+  WidgetsFlutterBinding.ensureInitialized();
+    await Firebase.initializeApp();
   runApp(const MyApp()); // MyApp 클래스부터 어플 시작
+}
+
+class Globals{ // 아직 쓸 지 안 쓸 지 모름
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 }
 
 //Firebase 인증(Firebase Auth) 사용해서 사용자의 로그인 상태 실시간으로 감지
@@ -50,7 +55,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
+      navigatorKey: Globals.navigatorKey, 
       home: MainPage(), // 시작 시 보여줄 화면
     );
   }

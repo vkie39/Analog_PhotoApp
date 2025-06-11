@@ -13,6 +13,7 @@ class PostService {
 
   /// 게시글 업로드
   static Future<void> createPost(PostModel post) async {
+    print('!!파이어 스토어에 업로드 시작!!');
     await _postCollection.doc(post.postId).set({
       'userId': post.userId,
       'nickname': post.nickname,
@@ -25,6 +26,8 @@ class PostService {
       'content': post.content,
       'imageUrl': post.imageUrl,
     });
+    print('!!파이어 스토어에 업로드 완료!!');
+
   }
 
   /// 전체 게시글 조회 (최신순 정렬)

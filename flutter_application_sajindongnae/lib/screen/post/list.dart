@@ -139,7 +139,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
                           return Center(child: Text('게시글이 없습니다.'));
                         }
 
-                        final filteredList = snapshot.data!; // 게시글이이 있으면
+                        final filteredList = snapshot.data!; 
                         return ListView.builder(
                           padding: EdgeInsets.symmetric(vertical: 15),
                           itemCount: filteredList.length,
