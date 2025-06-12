@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_application_sajindongnae/component/search.dart';
 
 
 class MyPageScreen extends StatefulWidget {

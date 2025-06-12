@@ -140,7 +140,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       child: TextField(
                         controller: _commentController,
                         decoration: const InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16),
                           border: InputBorder.none,
                           //filled: true,
                           //fillColor: const Color.fromARGB(255, 195, 195, 195),
