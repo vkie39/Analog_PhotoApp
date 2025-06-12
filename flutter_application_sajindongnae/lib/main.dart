@@ -8,11 +8,10 @@ import 'package:flutter_application_sajindongnae/screen/mypage.dart';
 import 'package:flutter_application_sajindongnae/screen/auth/login_screen.dart';
 import 'component/bottom_nav.dart'; // bottom_nav.dart에서 UI 분리한 하단바
 
-//Future<void> main() async {
-void main() {
-  // 앱 실행 전 firebase 초기화, 앱 루트 위젝으로 MyApp 실행
- // WidgetsFlutterBinding.ensureInitialized();
-  //await Firebase.initializeApp();
+Future<void> main() async {
+  // 앱 실행 전 firebase 초기화, 앱 루트 위젯으로 MyApp 실행
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const MyApp()); // MyApp 클래스부터 어플 시작
 }
 
@@ -20,38 +19,27 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-/*
   @override
   Widget build(BuildContext context) {
-    return MaterialApp( //MaterialApp: Flutter앱의 최상우 ㅣ위젯 트리, home 속성에 보여줄 첫 화면
+    return MaterialApp( //MaterialApp: Flutter앱의 최상위 위젯 트리, home 속성에 보여줄 첫 화면
       debugShowCheckedModeBanner: false,
-      home: StreamBuilder<User?>( 
-        //authStateChanges()를 사용하여 Firebase 인증 상태의 변화를 감지
-        stream: FirebaseAuth.instance.authStateChanges(), //사용자가 로그인/로그아웃할 때마다 user또는 null 반환
-        builder: (context, snapshot) { //snapshot: StreamBuilder의 현재 상태를 나타내는 객체
-          
-          //로그인 상태 확인 중인 경우 로딩 중을 나타내는 circular progress indicator 표시
+      home: StreamBuilder<User?>(
+        // authStateChanges()를 사용하여 Firebase 인증 상태의 변화를 감지
+        stream: FirebaseAuth.instance.authStateChanges(), // 사용자가 로그인/로그아웃할 때마다 user 또는 null 반환
+        builder: (context, snapshot) {
+          // 로그인 상태 확인 중인 경우 로딩 중을 나타내는 circular progress indicator 표시
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          //snapshot.hasData: 사용자가 로그인한 상태, MainPage로 이동
+          // snapshot.hasData: 사용자가 로그인한 상태, MainPage로 이동
           if (snapshot.hasData) {
             return const MainPage();
-          } else { //로그인 안 되어 있으면 로그인 화면으로 이동
+          } else { // 로그인 안 되어 있으면 로그인 화면으로 이동
             return const LoginScreen();
           }
         },
       ),
-    );
-  }
-}
-*/
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: MainPage(), // 시작 시 보여줄 화면
     );
   }
 }
