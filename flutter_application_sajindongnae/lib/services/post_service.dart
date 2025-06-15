@@ -2,10 +2,13 @@
 /// - 게시글 생성 (create)
 /// - 전체 게시글 조회
 /// - 카테고리별 게시글 조회
-/// 작성자 : 민채영
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/post_model.dart';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:developer';
+
 
 class PostService {
   static final _firestore = FirebaseFirestore.instance;
@@ -13,7 +16,7 @@ class PostService {
 
   /// 게시글 업로드
   static Future<void> createPost(PostModel post) async {
-    print('!!파이어 스토어에 업로드 시작!!');
+    log('!!파이어 스토어에 업로드 시작!!');
     await _postCollection.doc(post.postId).set({
       'userId': post.userId,
       'nickname': post.nickname,
@@ -26,7 +29,7 @@ class PostService {
       'content': post.content,
       'imageUrl': post.imageUrl,
     });
-    print('!!파이어 스토어에 업로드 완료!!');
+    log('!!파이어 스토어에 업로드 완료!!');
 
   }
 
@@ -50,4 +53,58 @@ class PostService {
             .map((doc) => PostModel.fromDocument(doc))
             .toList());
   }
+
+  /// 이미지 업로드 (Storage)
+  static Future<String?> uploadImage(File imageFile, String postId) async {
+    try {
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('post_images')
+          .child('$postId.jpg');
+
+      await ref.putFile(imageFile);
+      final downloadUrl = await ref.getDownloadURL();
+      log('이미지 업로드 완료: $downloadUrl');
+      return downloadUrl;
+    } catch (e) {
+      log('이미지 업로드 실패: $e');
+      return null;
+    }
+  }
+
+  //게시글 수정
+  static Future<void> updatePost(String postId, Map<String, dynamic> updatedData) async {
+  try {
+    await _postCollection.doc(postId).update(updatedData);
+    log('게시글 수정 완료');
+    
+  } catch (e) {
+    log('게시글 수정 실패: $e');
+    rethrow;
+  }
+}
+
+
+  
+  // 게시글 삭제 기능
+  static Future<void> deletePostWithImage(PostModel post) async {
+  try {
+    // 1. 이미지가 있다면 Storage에서 삭제
+    if (post.imageUrl != null && post.imageUrl!.isNotEmpty) {
+      final ref = FirebaseStorage.instance.refFromURL(post.imageUrl!);
+      await ref.delete();
+      log('✅ 이미지 삭제 완료');
+    }
+
+    // 2. Firestore 문서 삭제
+    await _postCollection.doc(post.postId).delete();
+    log('✅ 게시글 삭제 완료');
+
+  } catch (e) {
+    log('게시글/이미지 삭제 실패: $e');
+    rethrow;
+  }
+}
+
+
 }

@@ -29,21 +29,34 @@ class PostModel {
 
 
   factory PostModel.fromDocument(DocumentSnapshot doc) {
-    final map = doc.data() as Map<String, dynamic>;
+    final map = doc.data() as Map<String, dynamic>; // Firestore 문서 데이터를 Map으로 캐스팅
+
     return PostModel(
-      postId: doc.id, // Firestore 문서의 고유 ID (자동 생성된 값)
-      userId: map['userId'] ?? '', //null 대비
+      postId: doc.id, // Firestore의 문서 ID (문서 고유 식별자)
+
+      // ↓ 필드가 null일 수 있으므로 기본값 처리 (null 대비)
+      userId: map['userId'] ?? '',
       nickname: map['nickname'] ?? '',
       profileImageUrl: map['profileImageUrl'] ?? '',
       category: map['category'] ?? '',
       likeCount: map['likeCount'] ?? 0,
       commentCount: map['commentCount'] ?? 0,
-      timestamp: (map['createdAt'] as Timestamp).toDate(), //Firestore에서 저장한 시간 필드
+
+      // createdAt이 null이거나 Timestamp가 아닐 경우 예외 발생 방지
+      //    → 안전하게 타입 체크 후 변환, 없으면 현재 시각으로 대체
+      timestamp: map['createdAt'] != null && map['createdAt'] is Timestamp
+          ? (map['createdAt'] as Timestamp).toDate()
+          : DateTime.now(), // ← createdAt이 없거나 잘못된 경우 기본값 설정
+
+      // ↓ 기본값 처리
       title: map['title'] ?? '',
       content: map['content'] ?? '',
-      imageUrl: map['imageUrl'], //선택 필드라 null 허용
+
+      // ↓ 선택 필드: null 허용
+      imageUrl: map['imageUrl'] as String?,
     );
   }
+
 
 }
 
