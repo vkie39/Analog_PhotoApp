@@ -30,7 +30,7 @@ class HomeScreen extends StatelessWidget {
                 'assets/icons/alarm_icon.png',
                 width: 34,
               ),
-            )
+            ),
           ],
         ),
         body: SingleChildScrollView(
@@ -91,7 +91,7 @@ class HomeScreen extends StatelessWidget {
 
               // 게시글 베스트 3개 표시
               StreamBuilder<List<PostModel>>(
-                stream: PostService.getAllPosts(), // 임시로 전체 포스트 사용 중
+                stream: PostService.getBestPostsStream(), // TODO: getBestPostsStream()으로 교체 가능
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Padding(
@@ -116,7 +116,7 @@ class HomeScreen extends StatelessWidget {
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: latestPosts.length,
                       itemBuilder: (context, index) {
-                        return PostCard(post: latestPosts[index]); // 내부에서 padding 처리됨
+                        return PostCard(post: latestPosts[index]);
                       },
                     );
                   }

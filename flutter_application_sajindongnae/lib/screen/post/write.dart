@@ -150,7 +150,7 @@ void submitPost() async {
         throw Exception('파일이 존재하지 않음: $path');
       }
 
-      imageUrl = await _imageService.uploadImageToFirebase(file);
+      imageUrl = await ImageService.uploadImage(file, 'post_images/${Uuid().v4()}.jpg');
       print('✅ [DEBUG] 업로드 성공: $imageUrl');
     } catch (e) {
       print('❌ 이미지 업로드 실패: $e');
