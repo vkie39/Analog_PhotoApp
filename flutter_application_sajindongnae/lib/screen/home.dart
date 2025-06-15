@@ -30,7 +30,7 @@ class HomeScreen extends StatelessWidget {
                 'assets/icons/alarm_icon.png',
                 width: 34,
               ),
-            )
+            ),
           ],
         ),
         body: SingleChildScrollView(
@@ -88,35 +88,35 @@ class HomeScreen extends StatelessWidget {
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                 ),
               ),
-            ),
-            // 게시글 베스트 3개 표시
-            StreamBuilder<List<PostModel>>(
-              stream: PostService.getBestPostsStream(), // ✅ 기존 best_post 대신 사용
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.all(20.0),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                } else if (snapshot.hasError) {
-                  return Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Text('오류 발생: ${snapshot.error}'),
-                  );
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.all(20.0),
-                    child: Text('게시글이 없습니다.'),
-                  );
-                } else {
-                  final latestPosts = snapshot.data!.take(3).toList(); // ✅ 상위 3개만 사용
+
+              // 게시글 베스트 3개 표시
+              StreamBuilder<List<PostModel>>(
+                stream: PostService.getBestPostsStream(), // TODO: getBestPostsStream()으로 교체 가능
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  } else if (snapshot.hasError) {
+                    return Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Text('오류 발생: ${snapshot.error}'),
+                    );
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: Text('게시글이 없습니다.'),
+                    );
+                  } else {
+                    final latestPosts = snapshot.data!.take(3).toList();
 
                     return ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: latestPosts.length,
                       itemBuilder: (context, index) {
-                        return PostCard(post: latestPosts[index]); // 내부에서 padding 처리됨
+                        return PostCard(post: latestPosts[index]);
                       },
                     );
                   }
