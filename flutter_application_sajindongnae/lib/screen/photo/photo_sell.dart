@@ -47,12 +47,14 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width; // 화면 너비 가져오기
-    final tagHeight = screenWidth * 0.085; // 태그 높이
     final horizontalPadding = screenWidth * 0.06; // 좌우 패딩
     final verticalPadding = screenWidth * 0.02; // 상하 패딩
-    final tagFontSize = screenWidth * 0.035; // 태그 텍스트 크기
-    final tagBorderRadius = screenWidth * 0.02; // 태그 모서리 둥글기
     final tagSpacing = screenWidth * 0.02; // 태그 간 간격
+    final tagHeight = screenWidth * 0.10; // 높이 약간 키움
+    final tagFontSize = screenWidth * 0.020; // 글자 약간 키움
+    final tagBorderRadius = screenWidth * 0.025; // 둥글기 살짝 키움
+    final tagPaddingH = screenWidth * 0.04;
+    final tagPaddingV = screenWidth * 0.015;
 
     return Scaffold(
       appBar: AppBar(
@@ -88,27 +90,35 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
                 child: SizedBox(
-                  height: tagHeight,
+                  height: screenWidth * 0.10, // 태그 영역 높이 ↑ 살짝 높임
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    itemCount: tags.isEmpty ? 1 : tags.length + 1, // '+ 태크 추가' 버튼 때문에 +1
-                    separatorBuilder: (context, index) => SizedBox(width: tagSpacing), // 각 테그 사이에 간격
+                    itemCount: tags.isEmpty ? 1 : tags.length + 1, // '+ 태그 추가' 포함
+                    separatorBuilder: (context, index) => SizedBox(width: tagSpacing),
                     itemBuilder: (context, index) {
-                      // 태그가 없을 때나 태그 맨 끝에
-                      if (tags.isEmpty || index == tags.length){
+                      final tagPaddingH = screenWidth * 0.04;
+                      final tagPaddingV = screenWidth * 0.015;
+                      final tagFontSize = screenWidth * 0.037;
+                      final tagBorderRadius = screenWidth * 0.025;
+
+                      if (tags.isEmpty || index == tags.length) {
                         return GestureDetector(
-                          onTap: (){
+                          onTap: () {
                             print('태그 추가 버튼 클릭');
                           },
                           child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: horizontalPadding * 0.6, vertical: verticalPadding * 0.6),
+                            padding: EdgeInsets.symmetric(horizontal: tagPaddingH, vertical: tagPaddingV),
                             decoration: BoxDecoration(
                               color: Colors.white,
                             ),
                             child: Center(
                               child: Text(
                                 '+ 태그 추가',
-                                style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w500, fontSize: tagFontSize),
+                                style: TextStyle(
+                                  color: Colors.black54,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: tagFontSize,
+                                ),
                               ),
                             ),
                           ),
@@ -116,7 +126,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                       }
 
                       final tag = tags[index];
-                      final isSelected = _selectedTags.contains(tag); // boolean
+                      final isSelected = _selectedTags.contains(tag);
 
                       return GestureDetector(
                         onTap: () {
@@ -129,10 +139,13 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                           });
                         },
                         child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: horizontalPadding * 0.6, vertical: verticalPadding * 0.6),
+                          padding: EdgeInsets.symmetric(horizontal: tagPaddingH, vertical: tagPaddingV),
                           decoration: BoxDecoration(
                             color: isSelected ? const Color(0xFFDDECC7) : Colors.white,
-                            border: Border.all(color: Colors.grey.shade300),
+                            border: Border.all(
+                              color: isSelected ? const Color(0xFFBBD18B) : Colors.grey.shade300,
+                              width: 1,
+                            ),
                             borderRadius: BorderRadius.circular(tagBorderRadius),
                           ),
                           child: Center(
@@ -151,6 +164,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                   ),
                 ),
               ),
+
 
               // 탭 바 영역(판매,구매)
               TabBar(
