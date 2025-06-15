@@ -13,6 +13,7 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         toolbarHeight: 50,
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent, 
         leading: Padding(
           padding: const EdgeInsets.only(left: 16.0),
           child: Image.asset(

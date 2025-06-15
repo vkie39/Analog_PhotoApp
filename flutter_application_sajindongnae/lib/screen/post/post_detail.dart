@@ -24,9 +24,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
     // 수정된 부분: 댓글 저장 방식 변경
   void _submitComment() async {
+    FocusScope.of(context).unfocus();
+
     final commentText = _commentController.text.trim();
     if (commentText.isEmpty) return;
-
+    
     final commentId = const Uuid().v4();  // UUID로 고유 ID 생성
 
     final newComment = CommentModel(     // CommentModel 객체 생성
@@ -132,13 +134,33 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     // 본문
                     Text(widget.post.content, style: const TextStyle(fontSize: 15)), 
                     // 본문 속 사진
-                    if (widget.post.imageUrl != null) ...[ 
+                    if (widget.post.imageUrl != null) ...[
                       const SizedBox(height: 12),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: Image.network(widget.post.imageUrl!),
-                      )
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxWidth: double.infinity, // 부모의 최대 너비까지
+                          ),
+                          child: Image.network(
+                            widget.post.imageUrl!,
+                            fit: BoxFit.fitWidth, // 너비에 맞추고, 세로는 비율대로 조정
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(child: CircularProgressIndicator());
+                            },
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              height: 200,
+                              color: Colors.grey[200],
+                              child: const Center(
+                                child: Icon(Icons.broken_image, color: Colors.grey, size: 40),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
+
                   ],
                 ),
               ),

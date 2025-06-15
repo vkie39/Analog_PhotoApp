@@ -188,11 +188,14 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                                             ),
                                           ),
                                           const SizedBox(height: 2), // 이미지와 텍스트 사이 간격
-                                          Text(
-                                            price,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w300,
-                                              fontSize: 10,
+                                          Align(
+                                            alignment: Alignment.centerRight,
+                                            child: Text(
+                                              price,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w300,
+                                                fontSize: 8,
+                                              ),
                                             ),
                                           ),
                                         ]
