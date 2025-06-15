@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -30,6 +31,30 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _googleLogin() async {
+    setState(() => isLoading = true);
+    try {
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        setState(() => isLoading = false);
+        return;
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      await FirebaseAuth.instance.signInWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? '구글 로그인 실패')),
+      );
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -53,6 +78,11 @@ class _LoginScreenState extends State<LoginScreen> {
               child: isLoading
                   ? const CircularProgressIndicator()
                   : const Text('로그인'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: isLoading ? null : _googleLogin,
+              child: const Text('Google로 로그인'),
             ),
             TextButton(
               onPressed: () {
