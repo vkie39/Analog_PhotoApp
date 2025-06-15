@@ -3,6 +3,7 @@
 /// - 전체 게시글 조회
 /// - 카테고리별 게시글 조회
 /// 작성자 : 민채영
+library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/post_model.dart';

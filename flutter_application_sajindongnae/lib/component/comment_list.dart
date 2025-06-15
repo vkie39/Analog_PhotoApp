@@ -4,7 +4,6 @@
 // 댓글DB의 Model설계를 추가해서 수정할 예정. lib/models에 comment_model? 같은 게 필요함
 // 지금은 임시데이터
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_sajindongnae/models/comment_model.dart';
 
