@@ -32,6 +32,11 @@ class PostService {
     log('!!파이어 스토어에 업로드 완료!!');
 
   }
+  /// 좋아요 기능
+  static Future<void> updateLikeCount(String postId, int likeCount) async {
+    await _postCollection.doc(postId).update({'likeCount': likeCount});
+  }
+
 
   /// 전체 게시글 조회 (최신순 정렬)
   static Stream<List<PostModel>> getAllPosts() {

@@ -1,7 +1,4 @@
-
-
 // 게시판 페이지
-
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +9,12 @@ import 'package:flutter_application_sajindongnae/models/post_model.dart';
 import 'package:flutter_application_sajindongnae/services/post_service.dart';
 import 'package:flutter_application_sajindongnae/screen/post/write.dart';
 import 'package:flutter/gestures.dart';
+
+
+// 검색 기능을 위한 필드
+String searchKeyword = '';
+List<PostModel> searchResults = [];
+List<PostModel> allPosts = []; // 전체 게시글 저장용
 
 
 class ListScreen extends StatefulWidget {
@@ -76,8 +79,11 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
         title: SearchBarWidget( //search.dart에서 정의한 검색창
           controller: searchController,
           onChanged: (value){
-            print('검색어 : $value');
             // 이후에 Firestore 쿼리 또는 리스트 필터링 로직 추가 필요함
+            // 검색어 업데이트
+            setState(() {
+              searchKeyword = value.trim().toLowerCase();
+            });
           },
         ),
       ),
@@ -111,12 +117,11 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
                 ),
                 indicatorSize: TabBarIndicatorSize.tab, */
               ),
-              
+            
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
                   /*
-                  
                   children: tabs.map((category) {
                     final filteredList = postList
                         .where((post) => post.category == category) // postList를 하나씩 post로 받아와서 필터링링
@@ -140,8 +145,16 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
                         if (!snapshot.hasData || snapshot.data!.isEmpty) { // 게시글이 없을 경우 안내문구구 출력
                           return Center(child: Text('게시글이 없습니다.'));
                         }
+                        // 검색기능을 위해 추가된 부분
+                        final List<PostModel> rawList = snapshot.data!;
 
-                        final filteredList = snapshot.data!; 
+                        final filteredList = rawList.where((post){
+                          if(searchKeyword.isEmpty) return true;
+                          return post.title.toLowerCase().contains(searchKeyword) ||
+                                 post.content.toLowerCase().contains(searchKeyword);
+                        }).toList();
+                
+                
                         return ListView.builder(
                           padding: EdgeInsets.symmetric(vertical: 15),
                           itemCount: filteredList.length,
