@@ -16,6 +16,10 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
+import 'package:firebase_storage/firebase_storage.dart';
+
+
+
 class WriteScreen extends StatefulWidget {
   final String category;
 
@@ -53,75 +57,140 @@ class _WriteScreenState extends State<WriteScreen> {
     _imageService = ImageService(); // ImageService의 메소드를 사용하기 위해 인스턴스 생성
     _requestPermission();
   }
+/*
+void submitPost() async {
+  // firestore에 저장
+  final title = titleController.text.trim(); // 제목
+  final content = contentController.text.trim(); // 내용
+  final category = selectedCategory; // 카테고리
 
-  void submitPost() async {
-    // firestore에 저장
-    final title = titleController.text.trim(); // 제목
-    final content = contentController.text.trim(); // 내용
-    final category = selectedCategory; // 카테고리
+  if (title.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('제목을 입력해주세요')));
+    return;
+  } 
+  if (content.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('내용을 입력해주세요')));
+    return;
+  } 
 
-    if (title.isEmpty) {
-      ScaffoldMessenger.of(context,).showSnackBar(SnackBar(content: Text('제목을 입력해주세요')));
-      return;
-    } 
-    if (content.isEmpty) {
-      ScaffoldMessenger.of(context,).showSnackBar(SnackBar(content: Text('내용을 입력해주세요')));
-      return;
-    } 
+  String? imageUrl;
   
-    String? imageUrl;
-      
-    if(_cropedImage != null){
-      try{
-        final file = File(_cropedImage!.path);
-        final fileName = 'post_images/${const Uuid().v4()}.jpg';
-
-        // Firebase Storage 참조 얻기
-        final storageRef = FirebaseStorage.instance.ref().child(fileName);
-
-        // 업로드
-        final uploadTask = await storageRef.putFile(file);
-
-        // URL 가져오기
-        imageUrl = await storageRef.getDownloadURL();
-      } 
-      catch (e) {
-        print('이미지 업로드 실패: $e');
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('이미지 업로드에 실패했어요.')));
-        return;
-      }
-    }
-
-    // 제목, 내용 다 있으면 저장장
-    final newPost = PostModel(
-      postId: const Uuid().v4(),
-      userId: '임시유저ID', // 로그인된 사용자 ID로 수정 필요
-      nickname: '용용선생',
-      profileImageUrl: '', // 프로필 이미지 URL
-      category: category,
-      likeCount: 0, // 기본 0
-      commentCount: 0,
-      timestamp: DateTime.now(),
-      title: title,
-      content: content,
-      imageUrl: imageUrl, // 이미지 업로드 기능이 추가되면 수정
-    );
-
+  // 이미지가 있을 경우, ImageService를 통해 Firebase Storage에 업로드하고 URL 받기
+  if (_cropedImage != null) {
     try {
-      print('업로드 시도');
-      await PostService.createPost(newPost);
-      print('Post created!');
-      if (mounted) {
-        Navigator.pop(context); 
-      } else {
-        print('위젯이 죽음');
-      }
-    } 
-    catch (e) {
-      print('예외!!!!!!!!!    $e');
-      ScaffoldMessenger.of(context,).showSnackBar(SnackBar(content: Text('게시글 등록에 실패했어요. 다시 시도해주세요.')));
+      final file = File(_cropedImage!.path);
+      imageUrl = await _imageService.uploadImageToFirebase(file); // ✅ uploadImageToFirebase 호출
+    } catch (e) {
+      print('이미지 업로드 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('이미지 업로드에 실패했어요.')));
+      return;
     }
   }
+
+  // 제목, 내용 다 있으면 저장장
+  final newPost = PostModel(
+    postId: const Uuid().v4(),
+    userId: '임시유저ID', // 로그인된 사용자 ID로 수정 필요
+    nickname: '용용선생',
+    profileImageUrl: '', // 프로필 이미지 URL
+    category: category,
+    likeCount: 0, // 기본 0
+    commentCount: 0,
+    timestamp: DateTime.now(),
+    title: title,
+    content: content,
+    imageUrl: imageUrl, // 이미지 업로드 기능이 추가되면 수정
+  );
+
+  try {
+    print('업로드 시도');
+    await PostService.createPost(newPost);
+    print('Post created!');
+    if (mounted) {
+      Navigator.pop(context, true); // ✅ 정상 업로드 시 작성 페이지 닫기
+    } else {
+      print('위젯이 죽음');
+    }
+  } 
+  catch (e) {
+    print('예외!!!!!!!!!    $e');
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('게시글 등록에 실패했어요. 다시 시도해주세요.')));
+  }
+}
+
+*/
+void submitPost() async {
+  // firestore에 저장
+  final title = titleController.text.trim(); // 제목
+  final content = contentController.text.trim(); // 내용
+  final category = selectedCategory; // 카테고리
+
+  if (title.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('제목을 입력해주세요')));
+    return;
+  }
+  if (content.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('내용을 입력해주세요')));
+    return;
+  }
+
+  String? imageUrl;
+
+  // ✅ 이미지 업로드 전 경로 및 파일 존재 여부 확인
+  if (_cropedImage != null) {
+    try {
+      final path = _cropedImage!.path;
+      print('🧪 [DEBUG] _cropedImage.path: $path');
+
+      final file = File(path);
+      final fileExists = file.existsSync();
+      print('🧪 [DEBUG] File exists: $fileExists');
+
+      if (!fileExists) {
+        throw Exception('파일이 존재하지 않음: $path');
+      }
+
+      imageUrl = await _imageService.uploadImageToFirebase(file);
+      print('✅ [DEBUG] 업로드 성공: $imageUrl');
+    } catch (e) {
+      print('❌ 이미지 업로드 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('이미지 업로드에 실패했어요.')),
+      );
+      return; // 이미지 업로드 실패 시 종료
+    }
+  }
+
+  final newPost = PostModel(
+    postId: const Uuid().v4(),
+    userId: '임시유저ID', // 로그인된 사용자 ID로 수정 필요
+    nickname: '용용선생',
+    profileImageUrl: '',
+    category: category,
+    likeCount: 0,
+    commentCount: 0,
+    timestamp: DateTime.now(),
+    title: title,
+    content: content,
+    imageUrl: imageUrl,
+  );
+
+  try {
+    print('🔥 업로드 시도');
+    await PostService.createPost(newPost);
+    print('✅ Post created!');
+    if (mounted) {
+      Navigator.pop(context, true); // 작성 완료 후 페이지 닫기
+    } else {
+      print('❗ 위젯이 이미 dispose됨');
+    }
+  } catch (e) {
+    print('❌ 예외 발생: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('게시글 등록에 실패했어요. 다시 시도해주세요.')),
+    );
+  }
+}
 
 
   Future<void> _requestPermission() async {

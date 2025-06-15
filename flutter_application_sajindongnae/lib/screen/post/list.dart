@@ -42,7 +42,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
 
 
   // Firestore 연결 전 임시 데이터 (결과 확인용)
-  
+  /*
   final List<PostModel> postList = List.generate(
     30,
     (index) => PostModel(
@@ -63,7 +63,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
     ),
   );
   
-
+*/
 
 
 
@@ -115,6 +115,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
+                  /*
                   
                   children: tabs.map((category) {
                     final filteredList = postList
@@ -127,7 +128,8 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
                         return PostCard(post: filteredList[index]);
                       },
                     );
-                  }).toList(),   /*
+                  }).toList(),  
+                  */ 
                   children: tabs.map((category) {
                     return StreamBuilder<List<PostModel>>(
                       stream: PostService.getPostsByCategory(category), // ← Firestore에서 데이터 스트림 가져오기
@@ -149,7 +151,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
                         );
                       },
                     );
-                  }).toList(),    */            
+                  }).toList(),            
                 ),  
               ),
             ],
@@ -159,16 +161,23 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
 
       /// 글쓰기 버튼
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
+        onPressed: () async { // ← 수정: async 추가
           final selectedCategory = tabs[_tabController.index];
           // 글쓰기 화면으로 이동
-          Navigator.push(
+          final result = await Navigator.push( // ← 수정: await + result로 결과 받음
             context, 
             MaterialPageRoute(
               builder: (context) => WriteScreen(category: selectedCategory),
             ),
           ); 
+
+          // ← 추가: 글쓰기 완료 후 새로고침 트리거
+          if (result == true) {
+            setState(() {}); 
+          }
         },
+
+
         shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(100)), // 버튼 모양
         backgroundColor: Color(0xFFDDECC7),
         elevation: 5, // 그림자

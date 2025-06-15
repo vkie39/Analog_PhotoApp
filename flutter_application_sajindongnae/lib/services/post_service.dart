@@ -36,6 +36,8 @@ class PostService {
   /// 전체 게시글 조회 (최신순 정렬)
   static Stream<List<PostModel>> getAllPosts() {
     return _postCollection
+        //createdAt이 null인 문서 필터링
+        .where('createdAt', isNotEqualTo: null)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
