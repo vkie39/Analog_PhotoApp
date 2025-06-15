@@ -42,7 +42,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
 
 
   // Firestore 연결 전 임시 데이터 (결과 확인용)
-  /*
+  
   final List<PostModel> postList = List.generate(
     30,
     (index) => PostModel(
@@ -62,7 +62,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
       content: '$index번째 테스트 게시글',
     ),
   );
-  */
+  
 
 
 
@@ -115,7 +115,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
-                  /*
+                  
                   children: tabs.map((category) {
                     final filteredList = postList
                         .where((post) => post.category == category) // postList를 하나씩 post로 받아와서 필터링링
@@ -127,7 +127,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
                         return PostCard(post: filteredList[index]);
                       },
                     );
-                  }).toList(),   */
+                  }).toList(),   /*
                   children: tabs.map((category) {
                     return StreamBuilder<List<PostModel>>(
                       stream: PostService.getPostsByCategory(category), // ← Firestore에서 데이터 스트림 가져오기
@@ -149,7 +149,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
                         );
                       },
                     );
-                  }).toList(),                
+                  }).toList(),    */            
                 ),  
               ),
             ],

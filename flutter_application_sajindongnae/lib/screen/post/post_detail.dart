@@ -119,21 +119,31 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               const Divider(height: 32, thickness: 0.5, color: Color.fromARGB(255, 180, 180, 180),),
               const SizedBox(height: 10),
               
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16), //좌우 패딩
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 제목
+                    Text(
+                      widget.post.title, 
+                      style:const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    // 본문
+                    Text(widget.post.content, style: const TextStyle(fontSize: 15)), 
+                    // 본문 속 사진
+                    if (widget.post.imageUrl != null) ...[ 
+                      const SizedBox(height: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(widget.post.imageUrl!),
+                      )
+                    ],
+                  ],
+                ),
+              ),
               // 제목
-              Text(widget.post.title, 
-                  style:
-                      const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              // 본문
-              Text(widget.post.content, style: const TextStyle(fontSize: 15)), 
-              // 본문 속 사진
-              if (widget.post.imageUrl != null) ...[ 
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.network(widget.post.imageUrl!),
-                )
-              ],
+              
 
               const SizedBox(height: 16),
               const Divider(height: 32, thickness: 0.5, color: Color.fromARGB(255, 180, 180, 180),),
@@ -149,7 +159,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           isLiked ? Icons.favorite : Icons.favorite_border,
                           size: 30, 
                           color: isLiked
-                                 ? Colors.green
+                                 ? const Color.fromARGB(255, 102, 204, 105)
                                  : const Color.fromARGB(255, 161, 161, 161),
                         ),
                         const SizedBox(width: 6),
@@ -157,7 +167,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       ],)
                   ),
                   const SizedBox(width: 80),
-                  const Icon(Icons.comment, size: 30, color: Color.fromARGB(255, 161, 161, 161)),
+                  const Icon(Icons.comment, size: 30, color: Color.fromARGB(255, 191, 191, 191)),
                   const SizedBox(width: 6),
                   Text('${widget.post.commentCount}', style: const TextStyle(color: Color.fromARGB(255, 161, 161, 161))),
                 ],
@@ -173,37 +183,39 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
         // 댓글 입력용 입력필드
         bottomNavigationBar: Container(
-          color: Colors.white, // 하단 전체 배경색
+          color: Colors.white,
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 5,
+            left:16,
+            right: 16,
+            top:5,
+          ),
           child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 2, 16, 15),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 232, 232, 232),
-                        borderRadius:  BorderRadius.circular(100),
-                      ),
-                      child: TextField(
-                        controller: _commentController,
-                        decoration: const InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                          border: InputBorder.none,
-                          //filled: true,
-                          //fillColor: const Color.fromARGB(255, 195, 195, 195),
-                        ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8E8E8),
+                      borderRadius:  BorderRadius.circular(100),
+                    ),
+                    child: TextField(
+                      controller: _commentController,
+                      decoration: const InputDecoration(
+                        hintText: '댓글을 입력해주세요',
+                        hintStyle: TextStyle(color: Color.fromARGB(255, 189, 189, 189), fontSize: 14),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                        border: InputBorder.none,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.send),
-                    color: Colors.black,
+                ), 
+                const SizedBox(width: 8),
+                IconButton(
+                    icon: const Icon(Icons.send, color:const Color.fromARGB(255, 102, 204, 105)),
                     onPressed: _submitComment,
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
