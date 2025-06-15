@@ -9,14 +9,6 @@ import 'package:flutter_application_sajindongnae/screen/auth/login_screen.dart';
 import 'package:flutter_application_sajindongnae/screen/home.dart';
 import 'component/bottom_nav.dart'; // bottom_nav.dart에서 UI 분리한 하단바
 
-/*
-Future<void> main() async {
-  // 앱 실행 전 firebase 초기화, 앱 루트 위젯으로 MyApp 실행
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  runApp(const MyApp()); // MyApp 클래스부터 어플 시작
-}*/
-
 void main() async {
   // 앱 실행 전 firebase 초기화, 앱 루트 위젯으로 MyApp 실행
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,14 +51,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: Globals.navigatorKey, 
-      home: MainPage(), // 시작 시 보여줄 화면
-    );
-  }
-
 
 //MainPage: 하단 탭을 클릭할 때 바뀌는 UI. 
 // 화면 상태를 바꾸려면 StatelessWidget이 아니라 StatefulWidget을 사용해야 함
@@ -105,13 +89,3 @@ class _MainPageState extends State<MainPage> {
     );
   }
 }
-
-// 홈 화면
-/* 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('홈 화면입니다'));
-  }
-}*/

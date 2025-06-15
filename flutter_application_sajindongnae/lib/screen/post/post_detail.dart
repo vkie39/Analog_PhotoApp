@@ -5,7 +5,8 @@ import 'package:flutter_application_sajindongnae/models/post_model.dart';
 import 'package:flutter_application_sajindongnae/component/comment_list.dart'; // 댓글 컴포넌트 분리한 위젯
 import 'package:flutter_application_sajindongnae/models/comment_model.dart';     // ✅ 추가됨
 import 'package:flutter_application_sajindongnae/services/comment_service.dart'; // ✅ 추가됨
-
+import 'package:flutter_application_sajindongnae/services/post_service.dart';
+import 'dart:developer';
 
 class PostDetailScreen extends StatefulWidget {
 
@@ -13,14 +14,14 @@ class PostDetailScreen extends StatefulWidget {
   final PostModel post; 
   const PostDetailScreen({super.key, required this.post});
 
-  @override // 댓글 실시간 갱신신
+  @override // 댓글 실시간 갱신
   State<PostDetailScreen> createState() => _PostDetailScreenState();
 }
 
 class _PostDetailScreenState extends State<PostDetailScreen> {
   final TextEditingController _commentController = TextEditingController(); // 댓글 컨트롤러
   bool isLiked = false; // 좋아요 상태 (색 채울지 말지)
-  int likeCount = 0; // 좋아요 수 상태태
+  int likeCount = 0; // 좋아요 수 상태
 
     // 수정된 부분: 댓글 저장 방식 변경
   void _submitComment() async {
@@ -70,10 +71,16 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       likeCount += isLiked ? 1 : -1;
     });
 
-    await FirebaseFirestore.instance  // post_service로 옮길 내용
-    .collection('posts')
-    .doc(widget.post.postId)
-    .update({'likeCount': likeCount});
+    //await FirebaseFirestore.instance  // post_service로 옮길 내용
+    //.collection('posts')
+    //.doc(widget.post.postId)
+    //.update({'likeCount': likeCount});
+    try {
+      await PostService.updateLikeCount(widget.post.postId, likeCount);
+    } catch (e) {
+      log('좋아요 업데이트 실패: $e');
+    }
+    
   }
 
 
