@@ -5,7 +5,7 @@ class PhotoTradeModel {
   final String imageUrl;               // Storage 이미지 URL
   final int price;                     // 가격
   final String userId;                 // 작성자 UID (통일된 이름)
-  final String userNickname;          // 작성자 닉네임 (UI 캐싱용)
+  final String nickname;          // 작성자 닉네임 (UI 캐싱용)
   final List<String> tags;            // 태그
   final bool isSold;                  // 판매 완료 여부
   final DateTime? createdAt;          // 생성일
@@ -15,7 +15,7 @@ class PhotoTradeModel {
     required this.imageUrl,
     required this.price,
     required this.userId,
-    required this.userNickname,
+    required this.nickname,
     required this.tags,
     required this.isSold,
     required this.createdAt,
@@ -34,7 +34,7 @@ class PhotoTradeModel {
       imageUrl: doc['imageUrl'] ?? '',
       price: doc['price'] ?? 0,
       userId: doc['userId'] ?? '',
-      userNickname: doc['userNickname'] ?? '',
+      nickname: doc['nickname'] ?? '',
       tags: List<String>.from(doc['tags'] ?? []),
       isSold: doc['isSold'] ?? false,
       createdAt: (doc['createdAt'] as Timestamp?)?.toDate(),
@@ -47,7 +47,7 @@ class PhotoTradeModel {
       'imageUrl': imageUrl,
       'price': price,
       'userId': userId,
-      'userNickname': userNickname,
+      'nickname': nickname,
       'tags': tags,
       'isSold': isSold,
       'createdAt': createdAt,
@@ -70,7 +70,7 @@ class PhotoTradeModel {
       imageUrl: imageUrl ?? this.imageUrl,
       price: price ?? this.price,
       userId: userId ?? this.userId,
-      userNickname: userNickname ?? this.userNickname,
+      nickname: userNickname ?? this.nickname,
       tags: tags ?? this.tags,
       isSold: isSold ?? this.isSold,
       createdAt: createdAt ?? this.createdAt,
