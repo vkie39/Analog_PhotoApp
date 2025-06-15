@@ -113,5 +113,16 @@ class PostService {
   }
 }
 
+  /// 좋아요 수 기준 상위 3개 게시글 스트림
+  static Stream<List<PostModel>> getBestPostsStream() {
+  return _postCollection
+      .orderBy('likeCount', descending: true)
+      .limit(3)
+      .snapshots()
+      .map((snapshot) =>
+          snapshot.docs.map((doc) => PostModel.fromDocument(doc)).toList());
+  }
+
+
 
 }

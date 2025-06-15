@@ -78,7 +78,7 @@ class HomeScreen extends StatelessWidget {
             ),
             // 게시글 베스트 3개 표시
             StreamBuilder<List<PostModel>>(
-              stream: PostService.getAllPosts(), // ✅ 기존 best_post 대신 사용
+              stream: PostService.getBestPostsStream(), // ✅ 기존 best_post 대신 사용
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Padding(
