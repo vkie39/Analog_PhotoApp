@@ -163,8 +163,8 @@ void submitPost() async {
 
   final newPost = PostModel(
     postId: const Uuid().v4(),
-    uId: '임시유저ID', // 로그인된 사용자 ID로 수정 필요
-    nickname: '용용선생',
+    uId: '임시지밥ID', // 로그인된 사용자 ID로 수정 필요
+    nickname: '스폰지밥',
     profileImageUrl: '',
     category: category,
     likeCount: 0,

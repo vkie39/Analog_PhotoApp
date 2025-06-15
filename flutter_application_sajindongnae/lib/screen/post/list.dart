@@ -121,20 +121,6 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
-                  /*
-                  children: tabs.map((category) {
-                    final filteredList = postList
-                        .where((post) => post.category == category) // postList를 하나씩 post로 받아와서 필터링링
-                        .toList();
-                    return ListView.builder(
-                      padding: EdgeInsets.symmetric(vertical: 15),
-                      itemCount: filteredList.length, // filteredList에 몇개의 요소가 있는지 확인하고, 이 수를 기준으로 itemBuilder호출출
-                      itemBuilder: (context, index){ // index는 ListView.builder내부에서 자동으로 0부터 itemCount-1까지 넣어줌
-                        return PostCard(post: filteredList[index]);
-                      },
-                    );
-                  }).toList(),  
-                  */ 
                   children: tabs.map((category) {
                     return StreamBuilder<List<PostModel>>(
                       stream: PostService.getPostsByCategory(category), // ← Firestore에서 데이터 스트림 가져오기

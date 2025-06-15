@@ -157,7 +157,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                               actions: [
                                 TextButton(
                                   onPressed: () {
-                                    Navigator.of(context).pop(); // 다이얼로그 닫기
+                                    Navigator.pop(context); // 다이얼로그 닫기
                                   },
                                   child: const Text(
                                     '취소',
