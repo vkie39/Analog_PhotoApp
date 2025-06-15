@@ -1,4 +1,3 @@
-// 게시글 리스트를 카드 형태로 디자인. 클릭하면 post_detail로 페이지 이동 및 postId 전달달 (실시간으로 firestore에서 정보 받아오는 코드는 list.dart에서 처리 예정)
 import 'package:flutter/material.dart';
 import '../models/post_model.dart';
 import 'package:flutter_application_sajindongnae/screen/post/post_detail.dart';
@@ -8,88 +7,113 @@ class PostCard extends StatelessWidget {
 
   const PostCard({super.key, required this.post});
 
+  
   @override
   Widget build(BuildContext context) {
+    print(MediaQuery.of(context).size.width);
+
     final screenWidth = MediaQuery.of(context).size.width;
-    final imageSize = screenWidth * 0.18;
-    final profileRadius = screenWidth * 0.04;
+    final isSmallScreen = screenWidth <= 360;
+
+    // 비율 기반 설정값 (작은 화면이면 더 작게 조정)
+    final imageSize = screenWidth * (isSmallScreen ? 0.15 : 0.18);
+    final profileRadius = screenWidth * (isSmallScreen ? 0.035 : 0.04);
+    final horizontalPadding = screenWidth * (isSmallScreen ? 0.04 : 0.06);
+    final verticalPadding = screenWidth * (isSmallScreen ? 0.01 : 0.013);
+    final spacingBetweenProfileAndText = screenWidth * (isSmallScreen ? 0.03 : 0.04);
+    final topPaddingForAvatar = screenWidth * 0.011;
+    final contentSpacingSmall = screenWidth * 0.009;
+    final contentSpacingMedium = screenWidth * 0.013;
+    final spacingBetweenMeta = screenWidth * 0.018;
+    final dividerSpacing = screenWidth * 0.012;
+
+    final titleFontSize = screenWidth * (isSmallScreen ? 0.035 : 0.038);
+    final contentFontSize = screenWidth * (isSmallScreen ? 0.030 : 0.033);
+    final metaFontSize = screenWidth * (isSmallScreen ? 0.02 : 0.027);
+    final imageBorderRadius = screenWidth * 0.015;
+    final iconSize = screenWidth * 0.055;
 
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => PostDetailScreen(post: post)));
+          MaterialPageRoute(builder: (context) => PostDetailScreen(post: post)),
+        );
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 5),
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: verticalPadding,
+        ),
         child: Column(
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(top:4),
+                  padding: EdgeInsets.only(top: topPaddingForAvatar),
                   child: CircleAvatar(
                     backgroundImage: NetworkImage(post.profileImageUrl),
                     radius: profileRadius,
                   ),
                 ),
-                const SizedBox(width: 15),
+                SizedBox(width: spacingBetweenProfileAndText),
 
-                // 왼쪽 영역: 제목, 내용, 메타정보 (세로)
-                Expanded(
+                /// 텍스트 영역
+                Flexible(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         post.title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontSize: titleFontSize,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: contentSpacingSmall),
                       Text(
                         post.content ?? '',
-                        style: const TextStyle(fontSize: 12, color: Colors.black87),
+                        style: TextStyle(
+                          fontSize: contentFontSize,
+                          color: Colors.black87,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: contentSpacingMedium),
                       Row(
                         children: [
-                          Text('좋아요 ${post.likeCount}   |', style: _metaStyle),
-                          const SizedBox(width: 8),
-                          Text('댓글 ${post.commentCount}   |', style: _metaStyle),
-                          const SizedBox(width: 8),
-                          Text(_getTimeAgo(post.timestamp), style: _metaStyle),
+                          Text('좋아요 ${post.likeCount}   |',
+                              style: TextStyle(fontSize: metaFontSize, color: Colors.grey)),
+                          SizedBox(width: spacingBetweenMeta),
+                          Text('댓글 ${post.commentCount}   |',
+                              style: TextStyle(fontSize: metaFontSize, color: Colors.grey)),
+                          SizedBox(width: spacingBetweenMeta),
+                          Text(_getTimeAgo(post.timestamp),
+                              style: TextStyle(fontSize: metaFontSize, color: Colors.grey)),
                         ],
                       ),
                     ],
                   ),
                 ),
 
-                // 오른쪽 썸네일 이미지
-                // imageUrl이 null이 아니고 빈 문자열도 아닐 경우에만 이미지 렌더링
+                /// 썸네일 이미지
                 if (post.imageUrl != null && post.imageUrl!.isNotEmpty) ...[
-                  const SizedBox(width: 8),
+                  SizedBox(width: spacingBetweenMeta),
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(imageBorderRadius),
                     child: Container(
                       width: imageSize,
                       height: imageSize,
                       color: Colors.white,
                       child: Image.network(
                         post.imageUrl!,
-                        width: 60,
-                        height: 60,
                         fit: BoxFit.cover,
-
-                        // 이미지 로딩 실패 시 기본 아이콘으로 대체
-                        errorBuilder: (context, error, stackTrace) => const Icon(
+                        errorBuilder: (context, error, stackTrace) => Icon(
                           Icons.image_not_supported,
-                          size: 24,
+                          size: iconSize,
                           color: Colors.grey,
                         ),
                       ),
@@ -98,7 +122,7 @@ class PostCard extends StatelessWidget {
                 ],
               ],
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: dividerSpacing),
             const Divider(thickness: 0.4),
           ],
         ),
@@ -121,123 +145,3 @@ class PostCard extends StatelessWidget {
     return '${difference.inDays}일 전';
   }
 }
-/*
-import 'package:flutter/material.dart';
-import '../models/post_model.dart';
-import 'package:flutter_application_sajindongnae/screen/post/post_detail.dart';
-
-class PostCard extends StatelessWidget {
-  final PostModel post;
-
-  const PostCard({super.key, required this.post});
-
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final profileRadius = screenWidth * 0.04; // 예: 16px 정도
-    final imageSize = screenWidth * 0.18;     // 예: 60~70px 정도
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => PostDetailScreen(post: post)),
-        );
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        child: Column(
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  backgroundImage: NetworkImage(post.profileImageUrl),
-                  radius: profileRadius,
-                ),
-                const SizedBox(width: 12),
-
-                /// 텍스트 영역
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        post.title,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: screenWidth * 0.038,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        post.content ?? '',
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.034,
-                          color: Colors.black87,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          Text('좋아요 ${post.likeCount}', style: _metaStyle),
-                          Text('댓글 ${post.commentCount}', style: _metaStyle),
-                          Text(_getTimeAgo(post.timestamp), style: _metaStyle),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                /// 썸네일 이미지 (있을 경우만)
-                if (post.imageUrl != null && post.imageUrl!.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      width: imageSize,
-                      height: imageSize,
-                      color: Colors.grey[100],
-                      child: Image.network(
-                        post.imageUrl!,
-                        width: imageSize,
-                        height: imageSize,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const Icon(
-                          Icons.image_not_supported,
-                          size: 24,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Divider(thickness: 0.5),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static const TextStyle _metaStyle = TextStyle(
-    fontSize: 11,
-    color: Colors.grey,
-  );
-
-  static String _getTimeAgo(DateTime time) {
-    final now = DateTime.now();
-    final difference = now.difference(time);
-
-    if (difference.inMinutes < 1) return '방금 전';
-    if (difference.inMinutes < 60) return '${difference.inMinutes}분 전';
-    if (difference.inHours < 24) return '${difference.inHours}시간 전';
-    return '${difference.inDays}일 전';
-  }
-}*/

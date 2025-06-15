@@ -94,6 +94,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         title: Text('${widget.post.category} 게시판'), 
         centerTitle: true,
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent, 
         foregroundColor: Colors.black,
         elevation: 0,
         ),
@@ -123,6 +124,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       ),
                     ],
                   ),
+                  //Icon(Icons.more_vert_rounded)
                 ],
               ),
               const Divider(height: 32, thickness: 0.5, color: Color.fromARGB(255, 180, 180, 180),),
