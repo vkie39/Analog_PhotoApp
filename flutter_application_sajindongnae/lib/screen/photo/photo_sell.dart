@@ -17,7 +17,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
   List<String> _selectedTags = []; 
 
   final List<String> tabs = ['판매', '구매']; // 탭 이름 정의
-  late TabController _tabController; // late는 당장 초기화 안해도  nullable되는 것을 방지(나중에 값 넣을거라고 알려주는 타입)
+  late TabController _tabController;
 
   final List<String> prices = [ // 가격 임시 데이터
     '₩1,000',
@@ -33,73 +33,64 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
   ];
 
   @override
-  void initState(){ // 탭바 초기화
+  void initState() {
     super.initState();
-    _tabController = TabController(length: tabs.length, vsync: this); // SingleTickerProviderStateMixin 로 this를 받아올 수 있음. 애니메이션을 위해 사용
+    _tabController = TabController(length: tabs.length, vsync: this);
   }
 
   @override
-  void dispose() { // 위젯 제거될 때 메모리 정리를 위해 호출
+  void dispose() {
     _tabController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width; // 화면 너비 가져오기
-    final horizontalPadding = screenWidth * 0.06; // 좌우 패딩
-    final verticalPadding = screenWidth * 0.02; // 상하 패딩
-    final tagSpacing = screenWidth * 0.02; // 태그 간 간격
-    final tagHeight = screenWidth * 0.10; // 높이 약간 키움
-    final tagFontSize = screenWidth * 0.020; // 글자 약간 키움
-    final tagBorderRadius = screenWidth * 0.025; // 둥글기 살짝 키움
-    final tagPaddingH = screenWidth * 0.04;
-    final tagPaddingV = screenWidth * 0.015;
+    final screenWidth = MediaQuery.of(context).size.width; // 화면 너비
+    final isSmallScreen = screenWidth <= 360;
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0, //그림자
-        surfaceTintColor: Colors.transparent, 
-        title: SearchBarWidget( //search.dart에서 정의한 검색창
+        surfaceTintColor: Colors.transparent,
+        title: SearchBarWidget(
           controller: searchController,
-          onChanged: (value){
+          onChanged: (value) {
             print('검색어 : $value');
-            // 이후에 Firestore 쿼리 또는 리스트 필터링 로직 추가 필요함
           },
           leadingIcon: IconButton(
             icon: const Icon(Icons.menu, color: Colors.black54),
-            onPressed: (){
+            onPressed: () {
               print('photo_sell 메뉴 클릭');
             },
-          )
+          ),
         ),
       ),
-
       body: Listener(
-        behavior: HitTestBehavior.translucent, // 클릭 이벤트가 있는(탭바 등)을 눌러도 키보드 내림
+        behavior: HitTestBehavior.translucent,
         onPointerDown: (_) {
           FocusManager.instance.primaryFocus?.unfocus();
         },
-        child: Container( 
+        child: Container(
           color: Colors.white,
           child: Column(
             children: [
 
               // 태그 영역
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: SizedBox(
-                  height: screenWidth * 0.10, // 태그 영역 높이 ↑ 살짝 높임
+                  height: 44,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    itemCount: tags.isEmpty ? 1 : tags.length + 1, // '+ 태그 추가' 포함
-                    separatorBuilder: (context, index) => SizedBox(width: tagSpacing),
+                    itemCount: tags.isEmpty ? 1 : tags.length + 1,
+                    separatorBuilder: (context, index) => const SizedBox(width: 10),
                     itemBuilder: (context, index) {
-                      final tagPaddingH = screenWidth * 0.04;
-                      final tagPaddingV = screenWidth * 0.015;
-                      final tagFontSize = screenWidth * 0.037;
-                      final tagBorderRadius = screenWidth * 0.025;
+                      const double tagPaddingH = 16;
+                      const double tagPaddingV = 10;
+                      final double tagFontSize = isSmallScreen ? 12 : 14;
+                      const double tagBorderRadius = 16;
 
                       if (tags.isEmpty || index == tags.length) {
                         return GestureDetector(
@@ -107,11 +98,12 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                             print('태그 추가 버튼 클릭');
                           },
                           child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: tagPaddingH, vertical: tagPaddingV),
-                            decoration: BoxDecoration(
+                            padding: const EdgeInsets.symmetric(horizontal: tagPaddingH, vertical: tagPaddingV),
+                            decoration: const BoxDecoration(
                               color: Colors.white,
                             ),
-                            child: Center(
+                            child: Align(
+                              alignment: Alignment.center,
                               child: Text(
                                 '+ 태그 추가',
                                 style: TextStyle(
@@ -139,7 +131,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                           });
                         },
                         child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: tagPaddingH, vertical: tagPaddingV),
+                          padding: const EdgeInsets.symmetric(horizontal: tagPaddingH, vertical: tagPaddingV),
                           decoration: BoxDecoration(
                             color: isSelected ? const Color(0xFFDDECC7) : Colors.white,
                             border: Border.all(
@@ -148,7 +140,8 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                             ),
                             borderRadius: BorderRadius.circular(tagBorderRadius),
                           ),
-                          child: Center(
+                          child: Align(
+                            alignment: Alignment.center,
                             child: Text(
                               tag,
                               style: TextStyle(
@@ -165,63 +158,58 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                 ),
               ),
 
-
-              // 탭 바 영역(판매,구매)
+              // 탭 바
               TabBar(
                 controller: _tabController,
                 labelColor: Colors.black,
                 unselectedLabelColor: Colors.grey,
                 indicatorColor: Colors.black,
-                tabs: tabs.map((label) => Tab(text: label)).toList(), // map의 결과는 Iterable임. 위젯은 List를 보통 써서 toList로 형변환이 필요
+                tabs: tabs.map((label) => Tab(text: label)).toList(),
               ),
 
-              // 탭 콘텐츠
+              // 콘텐츠
               Expanded(
                 child: _tabController.index == 0
-                    // 판매탭
                     ? Padding(
-                        padding: EdgeInsets.symmetric(horizontal: horizontalPadding * 0.6, vertical: verticalPadding),
-                        child: MasonryGridView.count( // 동적 높이를 할당하는 그리드뷰
-                          crossAxisCount: 2, // 열 개수
-                          mainAxisSpacing: 8, // 세로 간격
-                          crossAxisSpacing: 8, // 좌우 간격
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        child: MasonryGridView.count(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
                           itemCount: 10,
                           itemBuilder: (context, index) {
-                            // 임시 데이터 (나중에 firestore랑 연결 필요)
                             final imageName = 'assets/images/sellPhoto${index + 1}.JPG';
                             final price = prices[index];
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 ClipRRect(
-                                  borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                                  borderRadius: BorderRadius.circular(12),
                                   child: Image.asset(
                                     imageName,
                                     fit: BoxFit.cover,
                                   ),
                                 ),
-                                const SizedBox(height: 2), // 이미지와 텍스트 사이 간격
+                                const SizedBox(height: 2),
                                 Align(
                                   alignment: Alignment.centerRight,
                                   child: Text(
                                     price,
                                     style: TextStyle(
                                       fontWeight: FontWeight.w300,
-                                      fontSize: screenWidth * 0.025,
+                                      fontSize: isSmallScreen ? 10 : 12,
                                     ),
                                   ),
                                 ),
-                              ]
-                            );                                      
+                              ],
+                            );
                           },
                         ),
                       )
-                    // 구매탭
                     : const Center(
                         child: Text('구매 탭입니다', style: TextStyle(color: Colors.grey)),
                       ),
               ),
-
             ],
           ),
         ),
@@ -231,15 +219,14 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           final selectedCategory = tabs[_tabController.index];
-          // 글쓰기 화면으로 이동
           Navigator.push(
-            context, 
+            context,
             MaterialPageRoute(
               builder: (context) => SellDetailScreen(),
             ),
-          ); 
+          );
         },
-        shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(100)), // 버튼 모양
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)), // 버튼 모양
         backgroundColor: const Color(0xFFDDECC7),
         elevation: 5, // 그림자
         icon: const Icon(Icons.photo, size: 20, color: Colors.black),
