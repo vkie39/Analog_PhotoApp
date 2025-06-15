@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PostModel {
   final String postId;
-  final String userId;
+  final String uId;
   final String nickname;
   final String profileImageUrl;
   final String category;
@@ -15,7 +15,7 @@ class PostModel {
 
   PostModel({
     required this.postId,
-    required this.userId,
+    required this.uId,
     required this.nickname,
     required this.profileImageUrl,
     required this.category,
@@ -35,7 +35,7 @@ class PostModel {
       postId: doc.id, // Firestore의 문서 ID (문서 고유 식별자)
 
       // ↓ 필드가 null일 수 있으므로 기본값 처리 (null 대비)
-      userId: map['userId'] ?? '',
+      uId: map['uId'] ?? '',
       nickname: map['nickname'] ?? '',
       profileImageUrl: map['profileImageUrl'] ?? '',
       category: map['category'] ?? '',

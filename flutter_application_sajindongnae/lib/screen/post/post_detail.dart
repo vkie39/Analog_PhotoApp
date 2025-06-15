@@ -2,10 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart'; 
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
-import 'package:flutter_application_sajindongnae/component/comment_list.dart'; // 댓글 컴포넌트 분리한 위젯
-import 'package:flutter_application_sajindongnae/models/comment_model.dart';     // ✅ 추가됨
-import 'package:flutter_application_sajindongnae/services/comment_service.dart'; // ✅ 추가됨
+import 'package:flutter_application_sajindongnae/component/comment_list.dart'; 
+import 'package:flutter_application_sajindongnae/models/comment_model.dart';   
+import 'package:flutter_application_sajindongnae/services/comment_service.dart';
 import 'package:flutter_application_sajindongnae/services/post_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:developer';
 
 class PostDetailScreen extends StatefulWidget {
@@ -23,7 +24,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   bool isLiked = false; // 좋아요 상태 (색 채울지 말지)
   int likeCount = 0; // 좋아요 수 상태
 
-    // 수정된 부분: 댓글 저장 방식 변경
+  // 수정된 부분: 댓글 저장 방식 변경
   void _submitComment() async {
     FocusScope.of(context).unfocus();
 
@@ -118,15 +119,107 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       Text(widget.post.nickname, // 닉네임
                           style: const TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 14)),
-                      Text( // 작성 시간간
+                      Text( // 작성 시간
                         _getFormattedTime(widget.post.timestamp),
                         style: const TextStyle(color: Colors.grey, fontSize: 12),
                       ),
                     ],
                   ),
-                  //Icon(Icons.more_vert_rounded)
+                  const Spacer(), // 닉네임-시간과 메뉴 사이 간격을 벌리기
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        // TODO: 수정 로직
+                      } else if (value == 'delete') {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              backgroundColor: Colors.white, // 배경 흰색
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              title: const Text(
+                                '게시글 삭제',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              content: const Text(
+                                '정말 이 게시글을 삭제하시겠어요?',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop(); // 다이얼로그 닫기
+                                  },
+                                  child: const Text(
+                                    '취소',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    Navigator.of(context).pop(); // 다이얼로그 닫기
+                                    await PostService.deletePostWithImage(widget.post); // 삭제 실행
+                                    Navigator.pop(context); // 게시글 상세 화면 닫기
+                                  },
+                                  child: const Text(
+                                    '삭제',
+                                    style: TextStyle(
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: const Text(
+                          '수정하기',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: const Text(
+                          '삭제하기',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                    ],
+                    color: Colors.white, // 팝업 배경 흰색
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    icon: const Icon(Icons.more_vert_rounded, color: Colors.black),
+                  ),
+
                 ],
               ),
+                            
               const Divider(height: 32, thickness: 0.5, color: Color.fromARGB(255, 180, 180, 180),),
               const SizedBox(height: 10),
               

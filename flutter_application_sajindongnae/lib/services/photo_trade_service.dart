@@ -26,7 +26,7 @@ class PhotoTradeService {
       imageUrl: imageUrl,
       price: price,
       userId: user.uid,
-      userNickname: await _getNickname(user.uid),
+      nickname: await _getNickname(user.uid),
       tags: tags,
       isSold: false,
       createdAt: DateTime.now(),

@@ -91,7 +91,7 @@ class HomeScreen extends StatelessWidget {
 
               // 게시글 베스트 3개 표시
               StreamBuilder<List<PostModel>>(
-                stream: PostService.getBestPostsStream(), // TODO: getBestPostsStream()으로 교체 가능
+                stream: PostService.getBestPostsStream(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Padding(
@@ -99,9 +99,10 @@ class HomeScreen extends StatelessWidget {
                       child: Center(child: CircularProgressIndicator()),
                     );
                   } else if (snapshot.hasError) {
-                    return Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Text('오류 발생: ${snapshot.error}'),
+                    debugPrint('게시글 스트림 에러: ${snapshot.error}');
+                    return const Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: Text('오류 발생. 나중에 다시 시도해주세요.'),
                     );
                   } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return const Padding(
@@ -109,15 +110,10 @@ class HomeScreen extends StatelessWidget {
                       child: Text('게시글이 없습니다.'),
                     );
                   } else {
-                    final latestPosts = snapshot.data!.take(3).toList();
+                    final bestPosts = snapshot.data!;
 
-                    return ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: latestPosts.length,
-                      itemBuilder: (context, index) {
-                        return PostCard(post: latestPosts[index]);
-                      },
+                    return Column(
+                      children: bestPosts.map((post) => PostCard(post: post)).toList(),
                     );
                   }
                 },

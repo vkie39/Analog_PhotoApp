@@ -18,7 +18,7 @@ class PostService {
   static Future<void> createPost(PostModel post) async {
     log('!!파이어 스토어에 업로드 시작!!');
     await _postCollection.doc(post.postId).set({
-      'userId': post.userId,
+      'uId': post.uId,
       'nickname': post.nickname,
       'profileImageUrl': post.profileImageUrl,
       'category': post.category,
