@@ -61,10 +61,17 @@ class HomeScreen extends StatelessWidget {
                       final width = constraints.maxWidth;
                       final aspectRatio = width < 400 ? 1.0 : 1.3;
 
+                      final bestImagePaths = [
+                        'assets/images/best.JPG',
+                        'assets/images/sellPhoto9.JPG',
+                        'assets/images/sellPhoto10.JPG',
+                        'assets/images/sellPhoto5.JPG',
+                      ];
+
                       return GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: 4,
+                        itemCount: bestImagePaths.length,
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           mainAxisSpacing: 8,
@@ -75,7 +82,7 @@ class HomeScreen extends StatelessWidget {
                           return ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.asset(
-                              'assets/images/best.JPG',
+                              bestImagePaths[index],
                               fit: BoxFit.cover,
                             ),
                           );
