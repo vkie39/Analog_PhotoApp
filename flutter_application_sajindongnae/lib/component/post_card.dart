@@ -1,7 +1,4 @@
-
-
 // 게시글 리스트를 카드 형태로 디자인. 클릭하면 post_detail로 페이지 이동 및 postId 전달달 (실시간으로 firestore에서 정보 받아오는 코드는 list.dart에서 처리 예정)
-
 
 import 'package:flutter/material.dart';
 import '../models/post_model.dart';
@@ -71,7 +68,8 @@ class PostCard extends StatelessWidget {
                 ),
 
                 // 오른쪽 썸네일 이미지
-                if (post.imageUrl != null) ...[
+                // imageUrl이 null이 아니고 빈 문자열도 아닐 경우에만 이미지 렌더링
+                if (post.imageUrl != null && post.imageUrl!.isNotEmpty) ...[
                   const SizedBox(width: 8),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(6),
@@ -80,6 +78,18 @@ class PostCard extends StatelessWidget {
                       width: 60,
                       height: 60,
                       fit: BoxFit.cover,
+
+                      // 이미지 로딩 실패 시 기본 아이콘으로 대체
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        width: 60,
+                        height: 60,
+                        color: Colors.grey[200],
+                        child: const Icon(
+                          Icons.image_not_supported,
+                          size: 24,
+                          color: Colors.grey,
+                        ),
+                      ),
                     ),
                   ),
                 ],

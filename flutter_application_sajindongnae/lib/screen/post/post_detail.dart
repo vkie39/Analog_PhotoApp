@@ -1,7 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart'; 
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
 import 'package:flutter_application_sajindongnae/component/comment_list.dart'; // 댓글 컴포넌트 분리한 위젯
+import 'package:flutter_application_sajindongnae/models/comment_model.dart';     // ✅ 추가됨
+import 'package:flutter_application_sajindongnae/services/comment_service.dart'; // ✅ 추가됨
+
 
 class PostDetailScreen extends StatefulWidget {
 
@@ -18,19 +22,31 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   bool isLiked = false; // 좋아요 상태 (색 채울지 말지)
   int likeCount = 0; // 좋아요 수 상태태
 
+    // 수정된 부분: 댓글 저장 방식 변경
   void _submitComment() async {
     final commentText = _commentController.text.trim();
     if (commentText.isEmpty) return;
 
-    await FirebaseFirestore.instance.collection('comments').add({  // post_service로 옮길 내용용
-      'postId': widget.post.postId,
-      'nickname': '익명', 
-      'profileImageUrl': '', 
-      'content': commentText,
-      'timestamp': DateTime.now(),
-    });
+    final commentId = const Uuid().v4();  // UUID로 고유 ID 생성
 
-    _commentController.clear();
+    final newComment = CommentModel(     // CommentModel 객체 생성
+      commentId: commentId,
+      userId: '임시유저ID', // 로그인 연동 시 교체
+      nickname: '익명',
+      profileImageUrl: '',
+      content: commentText,
+      timestamp: DateTime.now(),
+    );
+
+    try {
+      await CommentService.addComment(widget.post.postId, newComment);  // CommentService 호출로 변경
+      _commentController.clear();  // 입력창 비우기
+    } catch (e) {
+      print('댓글 업로드 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('댓글 등록에 실패했어요. 다시 시도해주세요.')),
+      );
+    }
   }
 
   @override
