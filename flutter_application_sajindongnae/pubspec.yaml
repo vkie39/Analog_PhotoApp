@@ -45,6 +45,8 @@ dependencies:
   cloud_firestore: ^4.17.5
   dropdown_button2: ^2.3.9
   uuid: ^4.0.0
+  geolocator: ^10.1.0
+  permission_handler: ^11.3.1
 
 flutter_native_splash:
   color: "#DFF0C1" # 스플래시 화면의 배경색

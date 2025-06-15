@@ -7,11 +7,14 @@ import 'package:flutter_application_sajindongnae/screen/chat/chat_list.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage.dart';
 import 'package:flutter_application_sajindongnae/screen/auth/login_screen.dart';
 import 'component/bottom_nav.dart'; // bottom_nav.dart에서 UI 분리한 하단바
+import 'package:flutter_application_sajindongnae/services/permission_service.dart';
 
 Future<void> main() async {
   // 앱 실행 전 firebase 초기화, 앱 루트 위젯으로 MyApp 실행
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  // 앱 최초 실행 시 필요한 권한들을 요청합니다.
+  await PermissionService().requestInitialPermissions();
   runApp(const MyApp()); // MyApp 클래스부터 어플 시작
 }
 
