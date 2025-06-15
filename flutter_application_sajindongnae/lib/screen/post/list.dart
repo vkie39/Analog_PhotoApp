@@ -1,14 +1,18 @@
-
-
 // 게시판 페이지
 
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_sajindongnae/component/search.dart';
 import 'package:flutter_application_sajindongnae/component/post_card.dart';
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
 import 'package:flutter_application_sajindongnae/services/post_service.dart';
 import 'package:flutter_application_sajindongnae/screen/post/write.dart';
+
+
+// 검색 기능을 위한 필드
+String searchKeyword = '';
+List<PostModel> searchResults = [];
+List<PostModel> allPosts = []; // 전체 게시글 저장용
 
 
 class ListScreen extends StatefulWidget {
@@ -44,7 +48,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
     30,
     (index) => PostModel(
       postId: 'post_$index',
-      userId: 'user_$index',
+      uid: 'user_$index',
       nickname: '사용자$index',
       profileImageUrl: 'https://', // 아무 주소 없어서 오류 뜰거지만 괜찮음. 임시임
       category: index % 3 == 0 
@@ -59,8 +63,8 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
       content: '$index번째 테스트 게시글',
     ),
   );
-  */
-
+  
+*/
 
 
 
@@ -73,8 +77,11 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
         title: SearchBarWidget( //search.dart에서 정의한 검색창
           controller: searchController,
           onChanged: (value){
-            print('검색어 : $value');
             // 이후에 Firestore 쿼리 또는 리스트 필터링 로직 추가 필요함
+            // 검색어 업데이트
+            setState(() {
+              searchKeyword = value.trim().toLowerCase();
+            });
           },
         ),
       ),
@@ -108,7 +115,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
                 ),
                 indicatorSize: TabBarIndicatorSize.tab, */
               ),
-              
+            
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
@@ -124,7 +131,8 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
                         return PostCard(post: filteredList[index]);
                       },
                     );
-                  }).toList(),   */
+                  }).toList(),  
+                  */ 
                   children: tabs.map((category) {
                     return StreamBuilder<List<PostModel>>(
                       stream: PostService.getPostsByCategory(category), // ← Firestore에서 데이터 스트림 가져오기
@@ -135,8 +143,16 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
                         if (!snapshot.hasData || snapshot.data!.isEmpty) { // 게시글이 없을 경우 안내문구구 출력
                           return Center(child: Text('게시글이 없습니다.'));
                         }
+                        // 검색기능을 위해 추가된 부분
+                        final List<PostModel> rawList = snapshot.data!;
 
-                        final filteredList = snapshot.data!; // 게시글이이 있으면
+                        final filteredList = rawList.where((post){
+                          if(searchKeyword.isEmpty) return true;
+                          return post.title.toLowerCase().contains(searchKeyword) ||
+                                 post.content.toLowerCase().contains(searchKeyword);
+                        }).toList();
+                
+                
                         return ListView.builder(
                           padding: EdgeInsets.symmetric(vertical: 15),
                           itemCount: filteredList.length,
@@ -146,7 +162,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
                         );
                       },
                     );
-                  }).toList(),                
+                  }).toList(),            
                 ),  
               ),
             ],
@@ -156,16 +172,23 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
 
       /// 글쓰기 버튼
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
+        onPressed: () async { // ← 수정: async 추가
           final selectedCategory = tabs[_tabController.index];
           // 글쓰기 화면으로 이동
-          Navigator.push(
+          final result = await Navigator.push( // ← 수정: await + result로 결과 받음
             context, 
             MaterialPageRoute(
               builder: (context) => WriteScreen(category: selectedCategory),
             ),
           ); 
+
+          // ← 추가: 글쓰기 완료 후 새로고침 트리거
+          if (result == true) {
+            setState(() {}); 
+          }
         },
+
+
         shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(100)), // 버튼 모양
         backgroundColor: Color(0xFFDDECC7),
         elevation: 5, // 그림자

@@ -65,3 +65,7 @@ ios/Flutter/Flutter.podspec
 
 lib/screen/test_*
 
+**/flutter/generated_plugin_registrant.*
+**/flutter/generated_plugins.cmake
+
+
