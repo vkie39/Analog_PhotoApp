@@ -92,8 +92,8 @@ class ImageService {
   
 
   /// 사진 거래 게시글 전용 업로드 함수
-  static Future<String> uploadPhotoTradeImage(File file, String userId) async {
-    final fileName = '${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+  static Future<String> uploadPhotoTradeImage(File file, String uid) async {
+    final fileName = '${uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
     final fullPath = 'photo_trades/$fileName';
     return await uploadImage(file, fullPath);
   }

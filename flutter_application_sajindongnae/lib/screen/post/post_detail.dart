@@ -34,7 +34,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
     final newComment = CommentModel(     // CommentModel 객체 생성
       commentId: commentId,
-      userId: '임시유저ID', // 로그인 연동 시 교체
+      uid: '임시유저ID', // 로그인 연동 시 교체
       nickname: '익명',
       profileImageUrl: '',
       content: commentText,

@@ -90,7 +90,7 @@ void submitPost() async {
   // 제목, 내용 다 있으면 저장장
   final newPost = PostModel(
     postId: const Uuid().v4(),
-    userId: '임시유저ID', // 로그인된 사용자 ID로 수정 필요
+    uid: '임시유저ID', // 로그인된 사용자 ID로 수정 필요
     nickname: '용용선생',
     profileImageUrl: '', // 프로필 이미지 URL
     category: category,
@@ -163,7 +163,7 @@ void submitPost() async {
 
   final newPost = PostModel(
     postId: const Uuid().v4(),
-    userId: '임시유저ID', // 로그인된 사용자 ID로 수정 필요
+    uid: '임시유저ID', // 로그인된 사용자 ID로 수정 필요
     nickname: '용용선생',
     profileImageUrl: '',
     category: category,
@@ -578,7 +578,7 @@ class _WriteScreenState extends State<WriteScreen> {
 
     final post = PostModel(
       postId: const Uuid().v4(),
-      userId: 'tempUser',
+      uid: 'tempUser',
       nickname: 'tempNick',
       profileImageUrl: '',
       category: selectedCategory,
