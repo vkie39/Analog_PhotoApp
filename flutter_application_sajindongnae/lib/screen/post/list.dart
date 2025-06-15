@@ -2,13 +2,11 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
 import 'package:flutter_application_sajindongnae/component/search.dart';
 import 'package:flutter_application_sajindongnae/component/post_card.dart';
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
 import 'package:flutter_application_sajindongnae/services/post_service.dart';
 import 'package:flutter_application_sajindongnae/screen/post/write.dart';
-import 'package:flutter/gestures.dart';
 
 
 // 검색 기능을 위한 필드
