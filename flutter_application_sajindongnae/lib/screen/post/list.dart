@@ -93,10 +93,6 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
         onPointerDown: (_) {
           FocusManager.instance.primaryFocus?.unfocus();
         },
-        /*onTap: () {
-          FocusScope.of(context).unfocus(); // 키보드 내리기
-        },
-        behavior: HitTestBehavior.opaque, */
         child: Container( 
           color: Colors.white,
           child: Column(
@@ -106,16 +102,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
                 labelColor: Colors.black,
                 unselectedLabelColor: Colors.grey,
                 indicatorColor: Colors.black,
-                tabs: tabs.map((label) => Tab(text: label)).toList() // map의 결과는 Iterable임. 위젯은 List를 보통 써서 toList로 형변환이 필요요
-                /*indicator: const BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Colors.black,
-                      width: 2.5,
-                    ),
-                  ),
-                ),
-                indicatorSize: TabBarIndicatorSize.tab, */
+                tabs: tabs.map((label) => Tab(text: label)).toList() // map의 결과는 Iterable임. 위젯은 List를 보통 써서 toList로 형변환이 필요
               ),
             
               Expanded(

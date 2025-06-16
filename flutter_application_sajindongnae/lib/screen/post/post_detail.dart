@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_sajindongnae/screen/post/update.dart';
 import 'package:uuid/uuid.dart'; 
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
 import 'package:flutter_application_sajindongnae/component/comment_list.dart'; 
@@ -23,6 +24,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   final TextEditingController _commentController = TextEditingController(); // 댓글 컨트롤러
   bool isLiked = false; // 좋아요 상태 (색 채울지 말지)
   int likeCount = 0; // 좋아요 수 상태
+  late PostModel _post; // 
 
   // 수정된 부분: 댓글 저장 방식 변경
   void _submitComment() async {
@@ -43,7 +45,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
 
     try {
-      await CommentService.addComment(widget.post.postId, newComment);  // CommentService 호출로 변경
+      await CommentService.addComment(_post.postId, newComment);  
       _commentController.clear();  // 입력창 비우기
     } catch (e) {
       print('댓글 업로드 실패: $e');
@@ -56,9 +58,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   @override
   void initState(){
     super.initState();
-    likeCount = widget.post.likeCount; // DB에서 좋아요 수 가져오기
+    _post = widget.post; 
+    likeCount = _post.likeCount;
   }
-
 
   @override
   void dispose() {
@@ -72,70 +74,73 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       likeCount += isLiked ? 1 : -1;
     });
 
-    //await FirebaseFirestore.instance  // post_service로 옮길 내용
-    //.collection('posts')
-    //.doc(widget.post.postId)
-    //.update({'likeCount': likeCount});
     try {
-      await PostService.updateLikeCount(widget.post.postId, likeCount);
+      await PostService.updateLikeCount(_post.postId, likeCount); 
     } catch (e) {
       log('좋아요 업데이트 실패: $e');
     }
-    
   }
 
-
   @override
-  Widget build(BuildContext context) { // build는 ui를 그리는 함수 (항상 Widget을 반환함)
+  Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        appBar: AppBar( // 상단바(게시글 카테고리, 이전 버튼)
-        title: Text('${widget.post.category} 게시판'), 
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent, 
-        foregroundColor: Colors.black,
-        elevation: 0,
+        appBar: AppBar(
+          title: Text('${_post.category} 게시판'), 
+          centerTitle: true,
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent, 
+          foregroundColor: Colors.black,
+          elevation: 0,
         ),
 
         body: Container(
           color: const Color.fromARGB(255, 255, 255, 255),
           child: ListView(
-            //padding: const EdgeInsets.all(16),
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
             children: [
-              Row( // 글 작성자 정보
+              Row(
                 children: [
-                  CircleAvatar( // 프사
-                    backgroundImage: NetworkImage(widget.post.profileImageUrl),
+                  CircleAvatar(
+                    backgroundImage: NetworkImage(_post.profileImageUrl), // ✅ 수정
                     radius: 20,
                   ),
                   const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(widget.post.nickname, // 닉네임
+                      Text(_post.nickname, 
                           style: const TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 14)),
-                      Text( // 작성 시간
-                        _getFormattedTime(widget.post.timestamp),
+                      Text(
+                        _getFormattedTime(_post.timestamp),
                         style: const TextStyle(color: Colors.grey, fontSize: 12),
                       ),
                     ],
                   ),
-                  const Spacer(), // 닉네임-시간과 메뉴 사이 간격을 벌리기
+                  const Spacer(),
                   PopupMenuButton<String>(
-                    onSelected: (value) {
+                    onSelected: (value) async {
                       if (value == 'edit') {
-                        // TODO: 수정 로직
+                        final updatedPost = await Navigator.of(context).push<PostModel>(
+                          MaterialPageRoute(
+                            builder: (context) => UpdateScreen(existingPost: _post), // ✅ 수정
+                          ),
+                        );
+
+                        if (updatedPost != null) {
+                          setState(() {
+                            _post = updatedPost; 
+                          });
+                        }
                       } else if (value == 'delete') {
                         showDialog(
                           context: context,
                           builder: (context) {
                             return AlertDialog(
-                              backgroundColor: Colors.white, // 배경 흰색
+                              backgroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -157,7 +162,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                               actions: [
                                 TextButton(
                                   onPressed: () {
-                                    Navigator.pop(context); // 다이얼로그 닫기
+                                    Navigator.pop(context);
                                   },
                                   child: const Text(
                                     '취소',
@@ -169,9 +174,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                                 ),
                                 TextButton(
                                   onPressed: () async {
-                                    Navigator.of(context).pop(); // 다이얼로그 닫기
-                                    await PostService.deletePostWithImage(widget.post); // 삭제 실행
-                                    Navigator.pop(context); // 게시글 상세 화면 닫기
+                                    Navigator.of(context).pop();
+                                    await PostService.deletePostWithImage(_post);
+                                    Navigator.pop(context);
                                   },
                                   child: const Text(
                                     '삭제',
@@ -189,64 +194,53 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       }
                     },
                     itemBuilder: (context) => [
-                      PopupMenuItem(
+                      const PopupMenuItem(
                         value: 'edit',
-                        child: const Text(
+                        child: Text(
                           '수정하기',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.black87,
-                          ),
+                          style: TextStyle(fontSize: 14, color: Colors.black87),
                         ),
                       ),
-                      PopupMenuItem(
+                      const PopupMenuItem(
                         value: 'delete',
-                        child: const Text(
+                        child: Text(
                           '삭제하기',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.black87,
-                          ),
+                          style: TextStyle(fontSize: 14, color: Colors.black87),
                         ),
                       ),
                     ],
-                    color: Colors.white, // 팝업 배경 흰색
+                    color: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     icon: const Icon(Icons.more_vert_rounded, color: Colors.black),
                   ),
-
                 ],
               ),
-                            
-              const Divider(height: 32, thickness: 0.5, color: Color.fromARGB(255, 180, 180, 180),),
+
+              const Divider(height: 32, thickness: 0.5, color: Color.fromARGB(255, 180, 180, 180)),
               const SizedBox(height: 10),
-              
+
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16), //좌우 패딩
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 제목
-                    Text(
-                      widget.post.title, 
-                      style:const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                    Text(_post.title, 
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
-                    // 본문
-                    Text(widget.post.content, style: const TextStyle(fontSize: 15)), 
-                    // 본문 속 사진
-                    if (widget.post.imageUrl != null) ...[
+                    Text(_post.content, style: const TextStyle(fontSize: 15)), 
+                    if (_post.imageUrl != null) ...[
                       const SizedBox(height: 12),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(
-                            maxWidth: double.infinity, // 부모의 최대 너비까지
+                            maxWidth: double.infinity,
                           ),
                           child: Image.network(
-                            widget.post.imageUrl!,
-                            fit: BoxFit.fitWidth, // 너비에 맞추고, 세로는 비율대로 조정
+                            _post.imageUrl!, 
+                            fit: BoxFit.fitWidth,
                             loadingBuilder: (context, child, loadingProgress) {
                               if (loadingProgress == null) return child;
                               return const Center(child: CircularProgressIndicator());
@@ -262,18 +256,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         ),
                       ),
                     ],
-
                   ],
                 ),
               ),
-              // 제목
-              
 
               const SizedBox(height: 16),
-              const Divider(height: 32, thickness: 0.5, color: Color.fromARGB(255, 180, 180, 180),),
-              
-              // 좋아요, 댓글 수 표시
-              Row( 
+              const Divider(height: 32, thickness: 0.5, color: Color.fromARGB(255, 180, 180, 180)),
+
+              Row(
                 children: [
                   InkWell(
                     onTap: _toggleLike,
@@ -281,38 +271,36 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       children: [
                         Icon(
                           isLiked ? Icons.favorite : Icons.favorite_border,
-                          size: 30, 
+                          size: 30,
                           color: isLiked
-                                 ? const Color.fromARGB(255, 102, 204, 105)
-                                 : const Color.fromARGB(255, 161, 161, 161),
+                              ? const Color.fromARGB(255, 102, 204, 105)
+                              : const Color.fromARGB(255, 161, 161, 161),
                         ),
                         const SizedBox(width: 6),
-                        Text('$likeCount', style: const TextStyle(color: Color.fromARGB(255, 161, 161, 161)),),
-                      ],)
+                        Text('$likeCount', style: const TextStyle(color: Color.fromARGB(255, 161, 161, 161))),
+                      ],
+                    ),
                   ),
                   const SizedBox(width: 80),
                   const Icon(Icons.comment, size: 30, color: Color.fromARGB(255, 191, 191, 191)),
                   const SizedBox(width: 6),
-                  Text('${widget.post.commentCount}', style: const TextStyle(color: Color.fromARGB(255, 161, 161, 161))),
+                  Text('${_post.commentCount}', style: const TextStyle(color: Color.fromARGB(255, 161, 161, 161))), 
                 ],
               ),
 
-              // const Text('댓글', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 18),
-              /// 댓글 리스트 위젯 (게시글 ID를 넘겨줘야 함!!)
-              CommentList(postId: widget.post.postId), 
+              CommentList(postId: _post.postId), 
             ],
           ),
         ),
 
-        // 댓글 입력용 입력필드
         bottomNavigationBar: Container(
           color: Colors.white,
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom + 5,
-            left:16,
+            left: 16,
             right: 16,
-            top:5,
+            top: 5,
           ),
           child: SafeArea(
             child: Row(
@@ -321,23 +309,23 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   child: Container(
                     decoration: BoxDecoration(
                       color: const Color(0xFFE8E8E8),
-                      borderRadius:  BorderRadius.circular(100),
+                      borderRadius: BorderRadius.circular(100),
                     ),
                     child: TextField(
                       controller: _commentController,
                       decoration: const InputDecoration(
                         hintText: '댓글을 입력해주세요',
                         hintStyle: TextStyle(color: Color.fromARGB(255, 189, 189, 189), fontSize: 14),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16),
                         border: InputBorder.none,
                       ),
                     ),
                   ),
-                ), 
+                ),
                 const SizedBox(width: 8),
                 IconButton(
-                    icon: const Icon(Icons.send, color:const Color.fromARGB(255, 102, 204, 105)),
-                    onPressed: _submitComment,
+                  icon: const Icon(Icons.send, color: Color.fromARGB(255, 102, 204, 105)),
+                  onPressed: _submitComment,
                 ),
               ],
             ),
@@ -346,6 +334,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       ),
     );
   }
+}
 
 
 
@@ -356,4 +345,3 @@ String _getFormattedTime(DateTime time) {
 
 String _twoDigits(int n) => n.toString().padLeft(2, '0'); // 두 자리 채워주는 함수
 
-}
