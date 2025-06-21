@@ -9,6 +9,10 @@
         android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true">  <!--이 줄도 갤러리 접근을 위해 추가가-->
         
+        <meta-data
+              android:name="io.flutter.embedding.android.EnableImpeller"
+              android:value="false"/>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -36,6 +40,8 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

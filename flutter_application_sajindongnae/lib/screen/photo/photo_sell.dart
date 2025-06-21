@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_sajindongnae/component/search.dart';
+import 'package:flutter_application_sajindongnae/models/photo_model.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/sell_detail.dart';
+import 'package:flutter_application_sajindongnae/screen/photo/sell_write.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 class PhotoSellScreen extends StatefulWidget {
@@ -32,6 +34,8 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
     '₩500',
   ];
 
+
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +52,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width; // 화면 너비
     final isSmallScreen = screenWidth <= 360;
+
 
     return Scaffold(
       appBar: AppBar(
@@ -91,7 +96,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                       const double tagPaddingV = 10;
                       final double tagFontSize = isSmallScreen ? 12 : 14;
                       const double tagBorderRadius = 16;
-
+                      
                       if (tags.isEmpty || index == tags.length) {
                         return GestureDetector(
                           onTap: () {
@@ -180,29 +185,60 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                           itemBuilder: (context, index) {
                             final imageName = 'assets/images/sellPhoto${index + 1}.JPG';
                             final price = prices[index];
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Image.asset(
-                                    imageName,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: Text(
-                                    price,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w300,
-                                      fontSize: isSmallScreen ? 10 : 12,
+                            
+                            //임시 데이터
+                            PhotoModel dummyPhoto = PhotoModel(
+                              photoId: '1',
+                              uid: 'dummy_uid',
+                              nickname: '반딧불이 작가',
+                              profileImageUrl: 'https://example.com/profile.png',
+                              category: '몽골,하늘사진,소니카메라',
+                              likeCount: 20,
+                              commentCount: 5,
+                              dateTime: DateTime(2025, 2, 5),
+                              title: '몽골 은하수',
+                              description: '아름다운 몽골 은하수와 보랏빛 하늘\n그리고 나무가 어우러진 사진입니다',
+                              imageUrl: 'assets/images/sellPhoto${index + 1}.JPG', // 로컬 이미지 경로
+                              price: 2000,
+                              location: 'Baganuur, Ulaanbaatar 12060',
+                            );
+
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SellDetailScreen(
+                                      photo: dummyPhoto,
                                     ),
                                   ),
-                                ),
-                              ],
+                                );
+                              },
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Image.asset(
+                                      imageName,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                      price,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w300,
+                                        fontSize: isSmallScreen ? 10 : 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             );
+
                           },
                         ),
                       )
@@ -222,7 +258,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => SellDetailScreen(),
+              builder: (context) => SellWriteScreen(),
             ),
           );
         },

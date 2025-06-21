@@ -8,6 +8,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart'; // 이미�
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:developer';
 
 
 class ImageService {
@@ -22,8 +23,23 @@ class ImageService {
     return true;
   }
 
+  // 카메라 접근 권한 요청에 대한 결과 반환
+  Future<bool> requestPermissionForCamera() async {
+    bool camera = await Permission.camera.request().isGranted; // 카메라
+    if (!camera) return false; // 거부되면 false
+    return true;
+  }
+
+  // 갤러리 접근 권한 요청에 대한 결과 반환
+  Future<bool> requestPermissionForGallery() async {
+    bool storage = await Permission.storage.request().isGranted; // 갤러리
+    if (!storage) return false; // 하나라도 거부되면 false
+    return true;
+  }
+
   // 사진을 찍고 XFile객체 반환, 안찍으면 null
   Future<XFile?> takePhoto() async {
+    log('1. 카메라 열기 시도');
     return await _picker.pickImage(source: ImageSource.camera);
   }
 
@@ -33,11 +49,14 @@ class ImageService {
   }
 
   Future<XFile?> pickImageFromFileSystem() async {
+    log('1. 파일시스템 열기 시도');
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
       allowMultiple: false,
     );
+    log('2. 파일 받아옴');
     if (result != null && result.files.single.path != null) {
+      log('3. 파일 리턴');
       return XFile(result.files.single.path!); // image_picker와 호환
     }
     return null;

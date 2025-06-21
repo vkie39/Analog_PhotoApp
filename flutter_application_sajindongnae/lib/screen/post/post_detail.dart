@@ -126,7 +126,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       if (value == 'edit') {
                         final updatedPost = await Navigator.of(context).push<PostModel>(
                           MaterialPageRoute(
-                            builder: (context) => UpdateScreen(existingPost: _post), // ✅ 수정
+                            builder: (context) => UpdateScreen(existingPost: _post), 
                           ),
                         );
 
