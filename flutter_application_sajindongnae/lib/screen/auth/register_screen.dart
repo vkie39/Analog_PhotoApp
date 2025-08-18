@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'register_phoneNum.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -30,7 +31,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'createdAt': DateTime.now(),
       });
 
-      if (mounted) Navigator.pop(context);
+      if (mounted)
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const RegisterPhoneNumScreen(),
+          ),
+        );
+
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? '회원가입 실패')),
