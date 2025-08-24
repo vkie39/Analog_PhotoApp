@@ -140,11 +140,11 @@ void submitPost() async {
   if (_cropedImage != null) {
     try {
       final path = _cropedImage!.path;
-      print('🧪 [DEBUG] _cropedImage.path: $path');
+      print('[DEBUG] _cropedImage.path: $path');
 
       final file = File(path);
       final fileExists = file.existsSync();
-      print('🧪 [DEBUG] File exists: $fileExists');
+      print('[DEBUG] File exists: $fileExists');
 
       if (!fileExists) {
         throw Exception('파일이 존재하지 않음: $path');

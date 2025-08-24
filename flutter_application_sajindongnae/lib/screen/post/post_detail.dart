@@ -104,7 +104,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundImage: NetworkImage(_post.profileImageUrl), // ✅ 수정
+                    backgroundImage: NetworkImage(_post.profileImageUrl), 
                     radius: 20,
                   ),
                   const SizedBox(width: 10),
