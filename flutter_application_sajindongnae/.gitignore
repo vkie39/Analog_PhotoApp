@@ -45,7 +45,6 @@ app.*.map.json
 /android/app/release
 
 # Firebase config files
-android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 
 # Flutter build outputs
