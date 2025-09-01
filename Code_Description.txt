@@ -1,0 +1,54 @@
+## 코드 개발 관련해서 궁금한 부분 있거나 문제 생길 때를 대비해서 임시로 정리 해놓겠습니다.
+## 참고하기 좋은 블로그나 잘 정리되어 있는 유투브 링크 있으면 정리해놓을 테니까 참고해 주세용
+## 참고사항은 # , 개발 내용에 관한 사항은 1,2,3.. 으로 표시
+## 함경민
+
+
+# vscode에서 flutter 프로젝트 생성 및 애뮬레이터 실행하는 방법
+  유투브 링크 : https://www.youtube.com/watch?v=YFtbrSUPQTY
+
+# flutter 개념 공부 - 위젯, 컴포넌트, 스크린
+  블로그 링크 : https://nomal-dev.tistory.com/13
+
+# 위젯 역할
+  블로그 링크 : https://mondaymonday2.tistory.com/1008
+
+# 깃 버전관리
+  블로그 링크 : https://evan-moon.github.io/2019/07/28/git-tutorial-advanced/
+
+1. 스플래시 화면 개발 
+ 블로그 : https://daco2020.tistory.com/876 
+ 공식 문서 : https://pub.dev/packages/flutter_launcher_icons
+
+
+2. 게시판 개발
+ 유투브 : https://www.youtube.com/watch?v=HkpnIdqN5nU
+ 공식 샘플 : https://github.com/flutter/samples/tree/main/infinite_list
+ 참고 깃허브 : https://github.com/DonaldMurdock/Craigslist-Plus-Plus
+
+
+3. 하단바 개발
+ 블로그 : https://dokit.tistory.com/11
+
+
+4. firestore에서 post를 받아오는 방법
+ 블로그 : https://dawonny.tistory.com/261 
+
+
+5. global 변수로 네비게이션 하기 (프로젝트에서 아직 안씀)
+ 블로그 : https://velog.io/@adbr/context-%EC%97%86%EB%8A%94-%ED%99%98%EA%B2%BD%EC%97%90%EC%84%9C-%ED%99%94%EB%A9%B4-%ED%98%B8%EC%B6%9C
+
+6. 갤러리 사진 가져오기
+ 블로그 : https://velog.io/@s_soo100/Flutter%EB%A1%9C-%EC%82%AC%EC%A7%84-%EC%97%85%EB%A1%9C%EB%8D%94-%EB%A7%8C%EB%93%A4%EA%B8%B0
+
+7. floatingButton 애니메이셔 적용
+ 유투브 : https://www.youtube.com/watch?v=GxlIaQjHixY
+ GPT : https://chatgpt.com/c/684c5dc7-b248-8004-9f03-634269324a2b
+
+[출처 임시]
+ 홈 아이콘 : https://www.flaticon.com/kr/free-icon/home_1946488?term=%ED%99%88&page=1&position=8&origin=search&related_id=1946488
+ 커뮤니티 아이콘 : https://www.flaticon.com/kr/free-icon/public_5450236?term=%EC%BB%A4%EB%AE%A4%EB%8B%88%ED%8B%B0&page=1&position=9&origin=search&related_id=5450236
+ 채팅 아이콘 : https://www.flaticon.com/kr/free-icon/chat_7309444?term=%EC%B1%84%ED%8C%85&page=1&position=3&origin=search&related_id=7309444
+ 거래 아이콘 : https://www.flaticon.com/kr/free-icon/gallery_833281?term=%EC%82%AC%EC%A7%84&page=1&position=3&origin=search&related_id=833281
+ 마이페이지 아이콘 : https://www.flaticon.com/kr/free-icon/person_5393061?term=%EC%82%AC%EB%9E%8C&page=1&position=9&origin=search&related_id=5393061
+ 알람 아이콘 : https://www.flaticon.com/kr/free-icon/notification-bell_6144209?term=%EC%95%8C%EB%A6%BC&page=3&position=95&origin=tag&related_id=6144209
