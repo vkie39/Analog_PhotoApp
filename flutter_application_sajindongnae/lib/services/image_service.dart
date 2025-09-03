@@ -4,7 +4,6 @@ import 'package:permission_handler/permission_handler.dart'; // 카메라, 갤�
 import 'package:image_picker/image_picker.dart'; // 사진 찍거나, 갤러리의 사진을 가져오기 위한 패키지
 import 'package:image_cropper/image_cropper.dart'; // 이미지 자르기 
 import 'package:flutter_image_compress/flutter_image_compress.dart'; // 이미지 압축
-// 이미지 업로드를 위해 필요
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';

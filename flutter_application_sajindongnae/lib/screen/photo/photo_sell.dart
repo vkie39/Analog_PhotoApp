@@ -138,13 +138,13 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: tagPaddingH, vertical: tagPaddingV),
                           decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFFDDECC7) : Colors.white,
+                            color: isSelected ? const Color(0xFFDDECC7) : Colors.white,              //선택된 태그 색상
                             border: Border.all(
-                              color: isSelected ? const Color(0xFFBBD18B) : Colors.grey.shade300,
+                              color: isSelected ? const Color(0xFFBBD18B) : Colors.grey.shade300,    //선택된 태그 테두리 색상
                               width: 1,
                             ),
                             borderRadius: BorderRadius.circular(tagBorderRadius),
-                          ),
+                          ), 
                           child: Align(
                             alignment: Alignment.center,
                             child: Text(
@@ -192,7 +192,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                               uid: 'dummy_uid',
                               nickname: '반딧불이 작가',
                               profileImageUrl: 'https://example.com/profile.png',
-                              category: '몽골,하늘사진,소니카메라',
+                              category: '몽골,하늘사진,소니카메라,안녕하세요,태그,어디까지,스크롤,크로와상',
                               likeCount: 20,
                               commentCount: 5,
                               dateTime: DateTime(2025, 2, 5),
@@ -262,7 +262,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
             ),
           );
         },
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)), // 버튼 모양
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)), // 버튼 모양
         backgroundColor: const Color(0xFFDDECC7),
         elevation: 5, // 그림자
         icon: const Icon(Icons.photo, size: 20, color: Colors.black),

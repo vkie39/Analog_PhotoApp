@@ -136,7 +136,7 @@ void submitPost() async {
 
   String? imageUrl;
 
-  // ✅ 이미지 업로드 전 경로 및 파일 존재 여부 확인
+  // 이미지 업로드 전 경로 및 파일 존재 여부 확인
   if (_cropedImage != null) {
     try {
       final path = _cropedImage!.path;

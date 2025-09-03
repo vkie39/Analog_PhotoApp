@@ -2,6 +2,7 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:label="flutter_application_sajindongnae"
@@ -12,6 +13,10 @@
         <meta-data
               android:name="io.flutter.embedding.android.EnableImpeller"
               android:value="false"/>
+
+        <meta-data              
+              android:name="com.google.android.geo.API_KEY"
+              android:value="AIzaSyD08a7ITr6A8IgDYt4zDcmeXHvyYKhZrdE"/> <!--내 구글 API key-->
 
         <provider
             android:name="androidx.core.content.FileProvider"
