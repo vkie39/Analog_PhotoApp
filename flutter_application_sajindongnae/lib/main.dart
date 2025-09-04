@@ -51,7 +51,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-
 //MainPage: 하단 탭을 클릭할 때 바뀌는 UI. 
 // 화면 상태를 바꾸려면 StatelessWidget이 아니라 StatefulWidget을 사용해야 함
 class MainPage extends StatefulWidget {

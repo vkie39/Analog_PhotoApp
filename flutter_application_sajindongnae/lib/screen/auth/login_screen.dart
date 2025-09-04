@@ -64,6 +64,36 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
               },
               child: const Text('회원가입'),
+                          ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () {},
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 0),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    '아이디 찾기',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () {},
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 0),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    '비밀번호 찾기',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
             )
           ],
         ),
