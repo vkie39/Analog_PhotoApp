@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_application_sajindongnae/screen/auth/Find_account.dart';
 import 'screen/post/list.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/photo_sell.dart';
 import 'package:flutter_application_sajindongnae/screen/chat/chat_list.dart';
@@ -43,6 +44,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/signup': (context) => const SignupStartScreen(),
         '/login': (context) => const LoginScreen(),
+        '/find_account': (context) => const FindAccountScreen(),
         '/find_id':(context) => const IdfoundScreen(),
         '/find_password':(context) => const PwfoundScreen(),
       },

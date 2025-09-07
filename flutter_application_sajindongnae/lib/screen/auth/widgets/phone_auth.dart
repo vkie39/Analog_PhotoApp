@@ -65,7 +65,6 @@ class PhoneAuthWidget extends StatelessWidget {
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
                     ),
-                    errorText: phoneErrorText,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(4),
                       borderSide: const BorderSide(

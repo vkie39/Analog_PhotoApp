@@ -1,8 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_sajindongnae/screen/auth/Idfound.dart';
-import 'package:flutter_application_sajindongnae/screen/auth/Pwfound.dart';
+import 'package:flutter_application_sajindongnae/screen/auth/Find_account.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -79,9 +78,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       Navigator.pushReplacementNamed(context, '/home');
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? '로그인에 실패했습니다.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message ?? '로그인에 실패했습니다.')));
     }
   }
 
@@ -95,7 +94,10 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Center(
           child: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 32.0,
+                vertical: 40.0,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
@@ -131,19 +133,26 @@ class _LoginScreenState extends State<LoginScreen> {
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(4),
                         borderSide: BorderSide(
-                          color: idErrorText != null ? Colors.red : const Color(0xFFC0C0C0),
+                          color:
+                              idErrorText != null
+                                  ? Colors.red
+                                  : const Color(0xFFC0C0C0),
                           width: 1.5,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(4),
                         borderSide: BorderSide(
-                          color: idErrorText != null ? Colors.red : Colors.black,
+                          color:
+                              idErrorText != null ? Colors.red : Colors.black,
                           width: 1.5,
                         ),
                       ),
                       errorText: idErrorText,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 12,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -161,7 +170,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(4),
                         borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 12,
+                      ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(4),
                         borderSide: const BorderSide(
@@ -201,6 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: const Text("로그인하기"),
                   ),
                   const SizedBox(height: 15),
+
                   // 회원가입 / 아이디 찾기 / 비밀번호 찾기
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -216,13 +229,29 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: const Text(
                           '회원가입',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300, color: Color.fromARGB(255, 128, 128, 128)),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w300,
+                            color: Color.fromARGB(255, 128, 128, 128),
+                          ),
                         ),
                       ),
-                      Container(width: 1, height: 12, color: Colors.grey, margin: const EdgeInsets.symmetric(horizontal: 10)),
+
+                      Container(
+                        width: 1,
+                        height: 12,
+                        color: Colors.grey,
+                        margin: const EdgeInsets.symmetric(horizontal: 10),
+                      ),
+
                       TextButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, '/find_id');
+                          Navigator.push(
+                            context, 
+                            MaterialPageRoute(
+                              builder: (context) => const FindAccountScreen(initialTab: 0),
+                            ),
+                          );
                         },
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
@@ -231,13 +260,28 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: const Text(
                           '아이디 찾기',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300, color: Color.fromARGB(255, 128, 128, 128)),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w300,
+                            color: Color.fromARGB(255, 128, 128, 128),
+                          ),
                         ),
                       ),
-                      Container(width: 1, height: 12, color: Colors.grey, margin: const EdgeInsets.symmetric(horizontal: 10)),
+
+                      Container(
+                        width: 1,
+                        height: 12,
+                        color: Colors.grey,
+                        margin: const EdgeInsets.symmetric(horizontal: 10),
+                      ),
+
                       TextButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, '/find_password');
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const FindAccountScreen(initialTab: 1),
+                            ),
+                          );
                         },
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
@@ -246,7 +290,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: const Text(
                           '비밀번호 찾기',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300, color: Color.fromARGB(255, 128, 128, 128)),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w300,
+                            color: Color.fromARGB(255, 128, 128, 128),
+                          ),
                         ),
                       ),
                     ],
@@ -260,7 +308,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         padding: EdgeInsets.symmetric(horizontal: 8.0),
                         child: Text(
                           "  or  ",
-                          style: TextStyle(color: Color.fromARGB(255, 112, 112, 112), fontWeight: FontWeight.w400, fontSize: 15),
+                          style: TextStyle(
+                            color: Color.fromARGB(255, 112, 112, 112),
+                            fontWeight: FontWeight.w400,
+                            fontSize: 15,
+                          ),
                         ),
                       ),
                       Expanded(child: Divider()),
@@ -272,15 +324,22 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {},
                     style: OutlinedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                      side: const BorderSide(color: Color.fromARGB(255, 192, 192, 192)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      side: const BorderSide(
+                        color: Color.fromARGB(255, 192, 192, 192),
+                      ),
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: const Center(
                       child: Text(
                         "Google로 시작하기",
-                        style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
@@ -290,15 +349,22 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {},
                     style: OutlinedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                      side: const BorderSide(color: Color.fromARGB(255, 192, 192, 192)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      side: const BorderSide(
+                        color: Color.fromARGB(255, 192, 192, 192),
+                      ),
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: const Center(
                       child: Text(
                         "Mycrosoft로 시작하기",
-                        style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
