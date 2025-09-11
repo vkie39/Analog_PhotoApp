@@ -188,7 +188,7 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
                           // ),
                           // const SizedBox(width: 12),
                           const Text(
-                            "Mycrosoft로 시작하기",
+                            "Microsoft로 시작하기",
                             style: TextStyle(
                               color: Colors.black,
                               fontWeight: FontWeight.w600,
