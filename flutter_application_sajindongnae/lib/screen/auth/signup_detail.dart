@@ -20,41 +20,65 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
   final TextEditingController idController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController passwordConfirmController =
-      TextEditingController();
+  TextEditingController();
   final TextEditingController nicknameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController authCodeController = TextEditingController();
 
+  // ── Phone Auth 상태 ─────────────────────────────────────────────
+  String? _verificationId;
+  int? _resendToken;
+  bool _isCodeSent = false;
+  bool _isPhoneVerified = false;
+
+  // 한국 휴대폰번호를 E.164(+82)로 변환
+  String toE164KR(String input) {
+    final digits = input.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) return '';
+    if (digits.startsWith('0')) return '+82${digits.substring(1)}';
+    if (digits.startsWith('82')) return '+$digits';
+    return '+82$digits';
+  }
+
   Future<void> _registerWithFirebase() async {
-    setState(() => isLoading = true); // isLoading을 선언해 주세요 (bool)
+    setState(() => isLoading = true);
     try {
       final credential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
-            email: emailController.text.trim(),
-            password: passwordController.text.trim(),
-          );
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      // (선택) 휴대폰을 계정에 링크하고 싶다면, 아래 주석 해제
+      // if (_verificationId != null && _isPhoneVerified) {
+      //   final phoneCred = PhoneAuthProvider.credential(
+      //     verificationId: _verificationId!,
+      //     smsCode: authCodeController.text.trim(),
+      //   );
+      //   await credential.user?.linkWithCredential(phoneCred);
+      // }
 
       await FirebaseFirestore.instance
           .collection('users')
           .doc(credential.user!.uid)
           .set({
-            'uid': credential.user!.uid,
-            'email': emailController.text.trim(),
-            'nickname': nicknameController.text.trim(), // nicknameController 사용
-            'createdAt': DateTime.now(),
-          });
+        'uid': credential.user!.uid,
+        'email': emailController.text.trim(),
+        'nickname': nicknameController.text.trim(),
+        'createdAt': DateTime.now(),
+        'phone': phoneController.text.trim(),
+      });
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('회원가입이 완료되었습니다.')));
-        Navigator.pop(context); // 또는 Navigator.push to home/login
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('회원가입이 완료되었습니다.')));
+        Navigator.pop(context);
       }
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message ?? '회원가입 실패')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? '회원가입 실패')),
+      );
     } finally {
       setState(() => isLoading = false);
     }
@@ -79,19 +103,15 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
 
   bool isLoading = false;
 
+  // ✅ 휴대폰 인증 완료(_isPhoneVerified) 조건을 포함
   bool get isSignupEnabled {
-    // 조건
-    // 1. 아이디가 유효해야 하고 (idErrorText == null)
-    // 2. 아이디가 비어있지 않고
-    // 3. 비밀번호, 비밀번호 확인, 이메일, 휴대폰 번호 등 모두 입력되어 있고
-    // 4. 필수 약관 동의가 모두 체크되어야 함
-
     return idErrorText == null &&
         idController.text.isNotEmpty &&
         passwordController.text.isNotEmpty &&
         passwordConfirmController.text.isNotEmpty &&
         emailController.text.isNotEmpty &&
         phoneController.text.isNotEmpty &&
+        _isPhoneVerified && // ← 추가됨
         isAgreeTerms &&
         isAgreePrivacy;
   }
@@ -100,7 +120,6 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
   void _validatePhoneNumber(String value) {
     String digitsOnly = value.replaceAll(RegExp(r'\D'), '');
     digitsOnly = digitsOnly.trim();
-    print('[$digitsOnly] length=${digitsOnly.length}');
 
     if (digitsOnly.isEmpty) {
       phoneErrorText = '휴대폰 번호를 입력해주세요.';
@@ -111,16 +130,105 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
     }
   }
 
-  void _onRequestAuthCode() {
-    FocusScope.of(context).unfocus();           // 포커스 제거
+  // 인증번호 요청 (Firebase SMS 전송)
+  void _onRequestAuthCode() async {
+    FocusScope.of(context).unfocus(); // 포커스 제거
     _validatePhoneNumber(phoneController.text); // 전화번호 검증
+    setState(() {}); // 에러 표시 갱신
+
+    if (phoneErrorText != null) return;
+
+    final phone = toE164KR(phoneController.text);
+    if (phone.isEmpty) {
+      setState(() => phoneErrorText = '휴대폰 번호를 다시 확인해 주세요.');
+      return;
+    }
+
+    setState(() {
+      authCodeErrorText = null;
+      _isCodeSent = false;
+      _isPhoneVerified = false;
+    });
+
+    await FirebaseAuth.instance.verifyPhoneNumber(
+      phoneNumber: phone,
+      timeout: const Duration(seconds: 60),
+      forceResendingToken: _resendToken,
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        try {
+          await FirebaseAuth.instance.signInWithCredential(credential);
+          await FirebaseAuth.instance.signOut();
+          if (mounted) {
+            setState(() => _isPhoneVerified = true);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('휴대폰이 자동으로 인증되었습니다.')),
+            );
+          }
+        } catch (_) {}
+      },
+      verificationFailed: (FirebaseAuthException e) {
+        if (mounted) {
+          setState(() {
+            authCodeErrorText = e.message ?? '인증번호 요청 실패';
+          });
+        }
+      },
+      codeSent: (String verificationId, int? resendToken) {
+        if (mounted) {
+          setState(() {
+            _verificationId = verificationId;
+            _resendToken = resendToken;
+            _isCodeSent = true;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('인증번호를 전송했습니다.')),
+          );
+        }
+      },
+      codeAutoRetrievalTimeout: (String verificationId) {
+        _verificationId = verificationId;
+      },
+    );
+  }
+
+  // 인증번호 확인
+  Future<void> _onConfirmAuthCode() async {
+    if (!_isCodeSent || _verificationId == null) {
+      setState(() => authCodeErrorText = '먼저 인증번호를 요청해 주세요.');
+      return;
+    }
+    final code = authCodeController.text.trim();
+    if (code.length != 6) {
+      setState(() => authCodeErrorText = '6자리 인증번호를 입력해 주세요.');
+      return;
+    }
+
+    try {
+      final credential = PhoneAuthProvider.credential(
+        verificationId: _verificationId!,
+        smsCode: code,
+      );
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      await FirebaseAuth.instance.signOut();
+
+      if (mounted) {
+        setState(() {
+          _isPhoneVerified = true;
+          authCodeErrorText = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('휴대폰 인증이 완료되었습니다.')),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      setState(() => authCodeErrorText = e.message ?? '인증번호가 올바르지 않습니다.');
+    }
   }
 
   // 이메일 형식
   bool isValidEmail(String email) {
-    final emailRegex = RegExp(
-      r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
-    );
+    final emailRegex =
+    RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
     return emailRegex.hasMatch(email);
   }
 
@@ -133,7 +241,6 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
     } else {
       error = null;
     }
-
     setState(() {
       emailErrorText = error;
     });
@@ -267,11 +374,10 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 앱바 구별을 위해 색상 변경
-      backgroundColor: Colors.white, // 앱 전체 배경색
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0, // 그림자 없애기
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: () {
@@ -287,10 +393,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 32.0,
-              vertical: 20.0,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -303,7 +406,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                   onChanged: _validateId,
                   onCheckDuplicate: () {
                     // TODO: 중복 확인 API 호출 또는 유효성 검사
-                    print("아이디 중복 확인: ${idController.text}");
+                    // print("아이디 중복 확인: ${idController.text}");
                   },
                 ),
 
@@ -321,7 +424,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
 
                 const SizedBox(height: 16),
 
-                // 전화번호 입력
+                // 전화번호 입력 + 인증요청 버튼은 내부 위젯에서 onRequestAuthCode로 연결되어 있다고 가정
                 PhoneAuthWidget(
                   phoneController: phoneController,
                   phoneErrorText: phoneErrorText,
@@ -347,7 +450,9 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                                 LengthLimitingTextInputFormatter(6),
                               ],
                               decoration: InputDecoration(
-                                hintText: '인증번호 입력',
+                                hintText: _isPhoneVerified
+                                    ? '인증 완료'
+                                    : '인증번호 입력',
                                 hintStyle: const TextStyle(
                                   color: Color.fromARGB(255, 128, 128, 128),
                                   fontSize: 14,
@@ -359,10 +464,9 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(4),
                                   borderSide: BorderSide(
-                                    color:
-                                        authCodeErrorText != null
-                                            ? Colors.red
-                                            : const Color(0xFFC0C0C0),
+                                    color: authCodeErrorText != null
+                                        ? Colors.red
+                                        : const Color(0xFFC0C0C0),
                                     width: 1.0,
                                   ),
                                 ),
@@ -378,6 +482,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                                   ),
                                 ),
                               ),
+                              enabled: !_isPhoneVerified,
                             ),
                           ),
                           if (authCodeErrorText != null) ...[
@@ -397,9 +502,9 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                     SizedBox(
                       height: 48,
                       child: ElevatedButton(
-                        onPressed: () {
-                          // 인증 확인 로직
-                        },
+                        onPressed: _isCodeSent && !_isPhoneVerified
+                            ? _onConfirmAuthCode
+                            : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFDBEFC4),
                           foregroundColor: Colors.black,
@@ -412,9 +517,9 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                           ),
                           elevation: 0,
                         ),
-                        child: const Text(
-                          "인증 확인",
-                          style: TextStyle(
+                        child: Text(
+                          _isPhoneVerified ? "완료" : "인증 확인",
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -453,94 +558,51 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
 
                 // 가입하기 버튼
                 ElevatedButton(
-                  onPressed:
-                      isSignupEnabled && !isLoading
-                          ? () async {
-                            _validateId(idController.text);
-
-                            if (idErrorText != null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(idErrorText!)),
-                              );
-                              return;
-                            }
-
-                            if (!isAgreeTerms || !isAgreePrivacy) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('필수 약관에 동의해 주세요.'),
-                                ),
-                              );
-                              return;
-                            }
-
-                            setState(() => isLoading = true);
-
-                            try {
-                              final credential = await FirebaseAuth.instance
-                                  .createUserWithEmailAndPassword(
-                                    email: emailController.text.trim(),
-                                    password: passwordController.text.trim(),
-                                  );
-
-                              await FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(credential.user!.uid)
-                                  .set({
-                                    'uid': credential.user!.uid,
-                                    'email': emailController.text.trim(),
-                                    'nickname':
-                                        idController.text
-                                            .trim(), // 닉네임은 ID 입력값으로 사용
-                                    'createdAt': DateTime.now(),
-                                  });
-
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('회원가입이 완료되었습니다.'),
-                                  ),
-                                );
-                                Navigator.pop(context); // 또는 다음 화면으로 이동
-                              }
-                            } on FirebaseAuthException catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(e.message ?? '회원가입 실패')),
-                              );
-                            } finally {
-                              setState(() => isLoading = false);
-                            }
-                          }
-                          : null,
+                  onPressed: isSignupEnabled && !isLoading
+                      ? () async {
+                    _validateId(idController.text);
+                    if (idErrorText != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(idErrorText!)),
+                      );
+                      return;
+                    }
+                    if (!isAgreeTerms || !isAgreePrivacy) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('필수 약관에 동의해 주세요.'),
+                        ),
+                      );
+                      return;
+                    }
+                    await _registerWithFirebase();
+                  }
+                      : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        isSignupEnabled
-                            ? const Color(0xFFDBEFC4)
-                            : const Color(0xFFE0E0E0),
+                    backgroundColor: isSignupEnabled
+                        ? const Color(0xFFDBEFC4)
+                        : const Color(0xFFE0E0E0),
                     foregroundColor:
-                        isSignupEnabled
-                            ? Colors.black
-                            : const Color.fromARGB(255, 82, 82, 82),
+                    isSignupEnabled ? Colors.black : const Color(0xFF525252),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4),
                     ),
                     elevation: 0,
                   ),
-                  child:
-                      isLoading
-                          ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                          : const Text(
-                            "가입하기",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                  child: isLoading
+                      ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                      : const Text(
+                    "가입하기",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
 
                 const SizedBox(height: 40),
@@ -556,9 +618,9 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
 class PhoneNumberFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
     final digitsOnly = newValue.text.replaceAll(RegExp(r'\D'), '');
 
     String formatted = '';
@@ -568,10 +630,10 @@ class PhoneNumberFormatter extends TextInputFormatter {
       formatted = '${digitsOnly.substring(0, 3)}-${digitsOnly.substring(3)}';
     } else if (digitsOnly.length <= 11) {
       formatted =
-          '${digitsOnly.substring(0, 3)}-${digitsOnly.substring(3, 7)}-${digitsOnly.substring(7)}';
+      '${digitsOnly.substring(0, 3)}-${digitsOnly.substring(3, 7)}-${digitsOnly.substring(7)}';
     } else {
       formatted =
-          '${digitsOnly.substring(0, 3)}-${digitsOnly.substring(3, 7)}-${digitsOnly.substring(7, 11)}';
+      '${digitsOnly.substring(0, 3)}-${digitsOnly.substring(3, 7)}-${digitsOnly.substring(7, 11)}';
     }
 
     return TextEditingValue(
