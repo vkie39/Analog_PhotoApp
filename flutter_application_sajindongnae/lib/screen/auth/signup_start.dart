@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter_application_sajindongnae/screen/auth/login.dart';
 import 'signup_detail.dart';
 
-
-// StatefulWidget을 상속받아 회원가입 시작 화면 정의 시작
-// 버튼 등에 변화가 생겨서 수정함
 class SignupStartScreen extends StatefulWidget {
   const SignupStartScreen({super.key});
 
@@ -14,54 +15,118 @@ class SignupStartScreen extends StatefulWidget {
 }
 
 class _SignupStartScreenState extends State<SignupStartScreen> {
+  bool _isMsLoading = false;
+
+  /// Microsoft 계정으로 Firebase 로그인 (또는 신규 가입)
+  Future<void> _signInWithMicrosoft() async {
+    setState(() => _isMsLoading = true);
+    try {
+      // Firebase Auth의 OAuthProvider 사용 (microsoft.com)
+      final provider = OAuthProvider('microsoft.com');
+
+      // 원하면 필요한 범위를 추가 (기본 openid/profile/email은 콘솔에 추가하는 것을 권장)
+      provider.addScope('openid');
+      provider.addScope('profile');
+      provider.addScope('email');
+      // Graph API를 쓰려면 예: provider.addScope('User.Read');
+
+      // 어떤 테넌트를 허용할지(개인/조직/모두) 선택: common | consumers | organizations
+      provider.setCustomParameters({'tenant': 'common'});
+
+      // iOS/Android/Web에서 모두 동작하는 통합 API
+      final credential = await FirebaseAuth.instance.signInWithProvider(provider);
+      final user = credential.user;
+
+      if (user != null) {
+        // Firestore에 사용자 문서 생성/업데이트
+        final users = FirebaseFirestore.instance.collection('users');
+        final userRef = users.doc(user.uid);
+        final snap = await userRef.get();
+
+        final dataToMerge = {
+          'uid': user.uid,
+          'email': user.email,
+          'nickname': user.displayName ?? '',
+          'photoURL': user.photoURL,
+          'provider': 'microsoft',
+          // 서버 시간 기록 (최초/갱신 구분)
+          if (!snap.exists) 'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+
+        await userRef.set(dataToMerge, SetOptions(merge: true));
+
+        if (!mounted) return;
+
+        // 전화번호 인증/약관 동의 등 추가정보를 수집하려면 가입 상세 화면으로 이동
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Microsoft 계정으로 로그인되었습니다.')),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const SignupDetailScreen(),
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      var msg = e.message ?? '로그인 실패';
+      if (e.code == 'account-exists-with-different-credential') {
+        msg =
+        '이미 다른 로그인 방식으로 가입된 이메일입니다. 기존 방식으로 로그인 후 계정 연결을 진행해 주세요.';
+      } else if (e.code == 'operation-not-allowed') {
+        msg = 'Firebase 콘솔에서 Microsoft 제공자 설정을 확인해 주세요.';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Microsoft 로그인 실패: $msg')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Microsoft 로그인 중 오류: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isMsLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 이메일 입력을 받기 위한 컨트롤러
-
     return Scaffold(
       // 시스템 UI(노치 등)를 피하기 위해 SafeArea 사용함
-      // SafeArea는 화면의 안전한 영역(노치, 상태바, 홈 버튼 등을 피하기) 안에서만 UI를 그려주도록 제한해주는 위젯
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
-          // 화면 중앙에 배치
           child: SingleChildScrollView(
             // 키보드 대응 및 오버플로 방지
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 32.0,
-                vertical: 40.0,
-              ), // 좌우 설정 및 상하 설정
-              child: Container(
-                // color: Colors.blue.withOpacity(0.2), // 컨테이너 확인용
-                child: Column(
-                  mainAxisSize: MainAxisSize.min, // 자식 크기만큼만 세로 공간 차지
-                  crossAxisAlignment: CrossAxisAlignment.stretch, // 전체 너비 사용
-                  children: [
-                    const SizedBox(height: 20), // 상단 여백
-                    const Text(
-                      "처음 방문하셨나요?",
-                      textAlign: TextAlign.center, // 센터 정렬
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                    ),
-
-                  const SizedBox(height: 4), // 간격 설정
-
+              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 20),
+                  const Text(
+                    "처음 방문하셨나요?",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 4),
                   const Text(
                     "회원가입을 위해 이메일을 입력해주세요",
-                    textAlign: TextAlign.center, // 센터 정렬
+                    textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
                   ),
+                  const SizedBox(height: 25),
 
-                  const SizedBox(height: 25), // 간격 설정
-
-                  // 이메일로 시작하기 버튼
+                  // 이메일로 시작하기
                   OutlinedButton(
                     onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          // signup_detail 스크린으로 변경
                           builder: (context) => const SignupDetailScreen(),
                         ),
                       );
@@ -75,18 +140,11 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: Center(
+                    child: const Center(
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // 마땅한 이미지 선택을 아직 X
-                          // Image.asset(
-                          //   'assets/images/.png', // png 파일 업로드
-                          //   width: 20,
-                          //   height: 20,
-                          // ),
-                          // const SizedBox(width: 12),
-                          const Text(
+                          Text(
                             "이메일로 시작하기",
                             style: TextStyle(
                               color: Colors.black,
@@ -98,11 +156,12 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 25), // 간격 설정
-                  // 소셜 로그인 구분선
+                  const SizedBox(height: 25),
+
+                  // 구분선
                   const Row(
                     children: [
-                      Expanded(child: Divider()), // 좌측 선
+                      Expanded(child: Divider()),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8.0),
                         child: Text(
@@ -112,42 +171,33 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
                             fontWeight: FontWeight.w400,
                             fontSize: 15,
                           ),
-                        ), // 가운데 텍스트
+                        ),
                       ),
-                      Expanded(child: Divider()), // 우측 선
+                      Expanded(child: Divider()),
                     ],
                   ),
 
                   const SizedBox(height: 25),
 
-                  // 구글 로그인
+                  // Google (미구현 상태 - 주석 참고)
                   OutlinedButton(
                     onPressed: () {
-                      // 구글 로그인 API 호출 처리
+                      // TODO: 구글 로그인 연결
                     },
                     style: OutlinedButton.styleFrom(
                       backgroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      side: BorderSide(
-                        color: Color.fromARGB(255, 192, 192, 192),
-                      ),
+                      side: const BorderSide(color: Color.fromARGB(255, 192, 192, 192)),
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: Center(
+                    child: const Center(
                       child: Row(
-                        mainAxisSize: MainAxisSize.min, // 콘텐츠 크기에 맞춰 정렬
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          // 이미지 변경하고 주석 풀 예정..
-                          // Image.asset(
-                          //   'assets/images/google.png',
-                          //   width: 20,
-                          //   height: 20,
-                          // ),
-                          // const SizedBox(width: 7), // 이미지와 텍스트 사이 간격
-                          const Text(
+                          Text(
                             "Google로 시작하기",
                             style: TextStyle(
                               color: Colors.black,
@@ -161,19 +211,15 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
 
                   const SizedBox(height: 7),
 
-                  // 마이크로소프트 로그인
+                  // Microsoft 로그인
                   OutlinedButton(
-                    onPressed: () {
-                      // 마이크로소프트 로그인 API 호출 처리
-                    },
+                    onPressed: _isMsLoading ? null : _signInWithMicrosoft,
                     style: OutlinedButton.styleFrom(
                       backgroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      side: BorderSide(
-                        color: Color.fromARGB(255, 192, 192, 192),
-                      ),
+                      side: const BorderSide(color: Color.fromARGB(255, 192, 192, 192)),
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
@@ -181,12 +227,13 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Image.asset(
-                          //   'assets/images/kakao.png',
-                          //   width: 20,
-                          //   height: 20,
-                          // ),
-                          // const SizedBox(width: 12),
+                          if (_isMsLoading)
+                            const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          if (_isMsLoading) const SizedBox(width: 8),
                           const Text(
                             "Microsoft로 시작하기",
                             style: TextStyle(
@@ -199,57 +246,15 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
                     ),
                   ),
 
-                  // const SizedBox(height: 8),
+                  const SizedBox(height: 20),
 
-                  // OutlinedButton(
-                  //   onPressed: () {
-                  //     // 네이버 로그인 API 호출 처리
-                  //   },
-                  //   style: OutlinedButton.styleFrom(
-                  //     backgroundColor: Color(0xFF2BC622),
-                  //     shape: RoundedRectangleBorder(
-                  //       borderRadius: BorderRadius.circular(4),
-                  //     ),
-                  //     side: BorderSide.none,
-                  //     elevation: 0,
-                  //     padding: const EdgeInsets.symmetric(vertical: 8),
-                  //   ),
-                  //   child: Center(
-                  //     child: Row(
-                  //       mainAxisSize: MainAxisSize.min,
-                  //       children: [
-                  //         // 이미지 변경하고 주석 풀 예정..
-                  //         // Image.asset(
-                  //         //   'assets/images/naver.jpg',
-                  //         //   width: 30,
-                  //         //   height: 30,
-                  //         // ),
-                  //         // const SizedBox(width: 12),
-                  //         const Text(
-                  //           "네이버로 시작하기",
-                  //           style: TextStyle(
-                  //             color: Colors.white,
-                  //             fontWeight: FontWeight.w600,
-                  //           ),
-                  //         ),
-                  //       ],
-                  //     ),
-                  //   ),
-                  // ),
-
-                  const SizedBox(height: 20), // 간격 설정
-                  // 계정이 이미 있는 사용자 등.. 로그인 화면으로 이동
+                  // 로그인 이동
                   RichText(
                     textAlign: TextAlign.center,
                     text: TextSpan(
                       style: const TextStyle(
                         fontSize: 12,
-                        color: Color.fromARGB(
-                          255,
-                          128,
-                          128,
-                          128,
-                        ), // "이미 회원이신가요?" 스타일
+                        color: Color.fromARGB(255, 128, 128, 128),
                         fontWeight: FontWeight.w300,
                       ),
                       children: [
@@ -257,12 +262,11 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
                         TextSpan(
                           text: " 로그인하기",
                           style: const TextStyle(
-                            color: Colors.black, // 로그인하기는 강조
+                            color: Colors.black,
                             fontWeight: FontWeight.w500,
                           ),
                           recognizer: TapGestureRecognizer()
                             ..onTap = () {
-                              // 로그인 이동 로직 설정
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -275,13 +279,14 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 90), // 간격 설정
-                  // 비회원 로그인 또는 건너뛰기 버튼 (작업 진행 X) -> 메인 화면
+                  const SizedBox(height: 90),
+
+                  // 비회원 진입 (미구현)
                   GestureDetector(
                     onTap: () {
-                      // 비회원으로 진입
+                      // TODO: 비회원 진입 로직
                     },
-                    behavior: HitTestBehavior.translucent, // 텍스트 외에는 터치 무시
+                    behavior: HitTestBehavior.translucent,
                     child: const Text(
                       "건너뛰기",
                       textAlign: TextAlign.center,
@@ -292,8 +297,7 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
                       ),
                     ),
                   ),
-                  ],
-                ),
+                ],
               ),
             ),
           ),
