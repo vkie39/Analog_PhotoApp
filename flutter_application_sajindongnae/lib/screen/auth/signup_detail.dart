@@ -494,8 +494,9 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
 
                 const SizedBox(height: 16),
 
-                // 인증번호 입력 + 인증확인 버튼 가로 배치
+                // 인증번호 입력 + 버튼
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start, // 버튼을 TextField 상단에 맞춤
                   children: [
                     Expanded(
                       child: Column(
@@ -510,6 +511,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                                 FilteringTextInputFormatter.digitsOnly,
                                 LengthLimitingTextInputFormatter(6),
                               ],
+                              enabled: !_isPhoneVerified,
                               decoration: InputDecoration(
                                 hintText: _isPhoneVerified ? '인증 완료' : '인증번호 입력',
                                 hintStyle: const TextStyle(
@@ -529,10 +531,6 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                                     width: 1.0,
                                   ),
                                 ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                  horizontal: 12,
-                                ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(4),
                                   borderSide: const BorderSide(
@@ -540,53 +538,57 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                                     width: 1.5,
                                   ),
                                 ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 12,
+                                ),
                               ),
-                              enabled: !_isPhoneVerified,
                             ),
                           ),
-                          if (authCodeErrorText != null) ...[
-                            const SizedBox(height: 6),
-                            Text(
-                              authCodeErrorText!,
-                              style: const TextStyle(
-                                color: Colors.red,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
+                          const SizedBox(height: 6),
+                          Text(
+                            authCodeErrorText ?? '',
+                            style: const TextStyle(color: Colors.red, fontSize: 12),
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(width: 10),
                     SizedBox(
-                      height: 48,
+                      height: 48, // TextField 높이와 동일
+                      width: 88,
                       child: ElevatedButton(
-                        onPressed: _isCodeSent && !_isPhoneVerified
+                        onPressed: _isCodeSent && !_isPhoneVerified && !isLoading
                             ? _onConfirmAuthCode
                             : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFDBEFC4),
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
+                          backgroundColor: _isCodeSent && !_isPhoneVerified
+                              ? const Color(0xFFDBEFC4)
+                              : const Color(0xFFE0E0E0),
+                          foregroundColor: _isCodeSent && !_isPhoneVerified
+                              ? Colors.black
+                              : const Color.fromARGB(255, 82, 82, 82),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
                           ),
                           elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         ),
-                        child: Text(
-                          _isPhoneVerified ? "완료" : "인증 확인",
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Text(
+                                _isPhoneVerified ? "완료" : "인증 확인",
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                              ),
                       ),
                     ),
                   ],
                 ),
+
 
                 const SizedBox(height: 16),
 

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_application_sajindongnae/screen/auth/widgets/phone_auth.dart';
-// import 'pw_reset.dart';
+import 'package:flutter_application_sajindongnae/screen/auth/pw_reset.dart';
+
 
 class PwfoundScreen extends StatefulWidget {
   const PwfoundScreen({super.key});
@@ -29,7 +30,7 @@ class _PwfoundScreenState extends State<PwfoundScreen> {
   void initState() {
     super.initState();
     authCodeController.addListener(() {
-      setState(() {}); // 6자리 입력 여부에 따라 버튼 색상/활성화 업데이트
+      setState(() {}); // 인증번호 6자리 입력 여부 업데이트
     });
   }
 
@@ -45,7 +46,7 @@ class _PwfoundScreenState extends State<PwfoundScreen> {
     FocusScope.of(context).unfocus();
     _validateId(idController.text);
     _validatePhone(phoneController.text);
-    // 실제로는 백엔드 API 호출
+    // 실제로는 백엔드 API 호출 예정
   }
 
   void _validateId(String value) {
@@ -76,7 +77,7 @@ class _PwfoundScreenState extends State<PwfoundScreen> {
 
     setState(() => isLoading = true);
 
-    await Future.delayed(const Duration(seconds: 1)); // 백엔드 호출이 없어서 if문으로 대충 실행함
+    await Future.delayed(const Duration(seconds: 1)); // 실제 API 대체
     if (authCodeController.text == "123456") {
       isAuthConfirmed = true;
       authCodeErrorText = null;
@@ -87,6 +88,86 @@ class _PwfoundScreenState extends State<PwfoundScreen> {
 
     setState(() => isLoading = false);
   }
+
+  // 팝업 알림창
+  Future<void> _showCustomDialog(BuildContext context, String message) async {
+  return showDialog(
+    context: context,
+    barrierDismissible: true, // 바깥 클릭 시 닫힘 여부
+    builder: (BuildContext context) {
+      return Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8), // 팝업 모서리
+        ),
+        child: Container(
+          width: 280, // 팝업 크기
+          decoration: BoxDecoration(
+            color: Colors.white, // 팝업 배경
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 닫기 버튼 (오른쪽 상단)
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12, right: 12),
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: const Icon(Icons.close, color: Colors.black54),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // 메시지
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Colors.black,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 36),
+
+              // 확인 버튼
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 132, 172, 87),
+                    foregroundColor: Colors.white,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(8),
+                        bottomRight: Radius.circular(8),
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical:12),
+                    elevation: 0,
+                  ),
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text(
+                    "확 인",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -114,14 +195,14 @@ class _PwfoundScreenState extends State<PwfoundScreen> {
               TextField(
                 controller: idController,
                 style: const TextStyle(
-                  color: Colors.black, // 입력 후 글씨 색
+                  color: Colors.black,
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
                 ),
                 decoration: InputDecoration(
                   hintText: "아이디 입력",
                   hintStyle: const TextStyle(
-                    color: Color.fromARGB(255, 128, 128, 128), // 입력 전(힌트) 글씨 색
+                    color: Color.fromARGB(255, 128, 128, 128),
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                   ),
@@ -133,17 +214,15 @@ class _PwfoundScreenState extends State<PwfoundScreen> {
                     borderRadius: BorderRadius.circular(4),
                     borderSide: BorderSide(
                       color: idErrorText == null
-                          ? const Color.fromARGB(255, 192, 192, 192) // 정상일 때 연회색
-                          : Colors.red, // 에러일 때 빨강
+                          ? const Color.fromARGB(255, 192, 192, 192)
+                          : Colors.red,
                       width: 1,
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(4),
                     borderSide: BorderSide(
-                      color: idErrorText == null
-                          ? Colors.black // 포커스 시 검정
-                          : Colors.red, // 에러일 때 빨강
+                      color: idErrorText == null ? Colors.black : Colors.red,
                       width: 1.5,
                     ),
                   ),
@@ -213,13 +292,14 @@ class _PwfoundScreenState extends State<PwfoundScreen> {
                         ),
                         const SizedBox(height: 6),
                         SizedBox(
-                          height: 16, // 항상 공간 확보
+                          height: 16,
                           width: double.infinity,
                           child: Align(
                             alignment: Alignment.centerLeft,
                             child: Text(
-                            authCodeErrorText ?? '', // 없으면 빈 문자열
-                            style: const TextStyle(color: Colors.red, fontSize: 12),
+                              authCodeErrorText ?? '',
+                              style: const TextStyle(
+                                  color: Colors.red, fontSize: 12),
                             ),
                           ),
                         ),
@@ -241,8 +321,10 @@ class _PwfoundScreenState extends State<PwfoundScreen> {
                         foregroundColor: isAuthCodeEntered
                             ? Colors.black
                             : const Color.fromARGB(255, 82, 82, 82),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4)),
                         elevation: 0,
                       ),
                       child: isLoading
@@ -253,7 +335,8 @@ class _PwfoundScreenState extends State<PwfoundScreen> {
                             )
                           : const Text(
                               "인증 확인",
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                  fontSize: 14, fontWeight: FontWeight.w600),
                             ),
                     ),
                   ),
@@ -261,16 +344,29 @@ class _PwfoundScreenState extends State<PwfoundScreen> {
               ),
 
               const SizedBox(height: 16),
-              // 다음 버튼 → 비밀번호 재설정 화면으로 이동
+              // 다음 버튼
               SizedBox(
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
                   onPressed: isNextEnabled
-                      ? () {
-                          // Navigator.push(context, MaterialPageRoute(
-                          //   builder: (_) => const PwResetScreen(),
-                          // ));
+                      ? () async {
+                          String phone = phoneController.text.trim();
+                          String id = idController.text.trim();
+
+                          // 임시 테스트 조건 (나중에 API 호출로 대체)
+                          if (phone != "010-1234-5678") {
+                            await _showCustomDialog(
+                                context, "회원 정보를 찾을 수 없습니다.");
+                          } else if (id != "testUser123") {
+                            await _showCustomDialog(
+                                context, "회원 아이디가 존재하지 않습니다.");
+                          } else {
+                            // 정상 → 비밀번호 재설정 화면으로 이동
+                            Navigator.push(context, MaterialPageRoute(
+                               builder: (_) => const PwResetScreen(),
+                             ));
+                          }
                         }
                       : null,
                   style: ElevatedButton.styleFrom(
@@ -320,4 +416,3 @@ class PhoneNumberFormatter extends TextInputFormatter {
     );
   }
 }
-
