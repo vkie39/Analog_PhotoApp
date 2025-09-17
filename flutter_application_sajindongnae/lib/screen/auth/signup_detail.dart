@@ -19,8 +19,7 @@ class SignupDetailScreen extends StatefulWidget {
 class _SignupDetailScreenState extends State<SignupDetailScreen> {
   final TextEditingController idController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController passwordConfirmController =
-  TextEditingController();
+  final TextEditingController passwordConfirmController = TextEditingController();
   final TextEditingController nicknameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -32,64 +31,14 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
   bool _isCodeSent = false;
   bool _isPhoneVerified = false;
 
-  // 한국 휴대폰번호를 E.164(+82)로 변환
-  String toE164KR(String input) {
-    final digits = input.replaceAll(RegExp(r'\D'), '');
-    if (digits.isEmpty) return '';
-    if (digits.startsWith('0')) return '+82${digits.substring(1)}';
-    if (digits.startsWith('82')) return '+$digits';
-    return '+82$digits';
-  }
-
-  Future<void> _registerWithFirebase() async {
-    setState(() => isLoading = true);
-    try {
-      final credential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
-      );
-
-      // (선택) 휴대폰을 계정에 링크하고 싶다면, 아래 주석 해제
-      // if (_verificationId != null && _isPhoneVerified) {
-      //   final phoneCred = PhoneAuthProvider.credential(
-      //     verificationId: _verificationId!,
-      //     smsCode: authCodeController.text.trim(),
-      //   );
-      //   await credential.user?.linkWithCredential(phoneCred);
-      // }
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(credential.user!.uid)
-          .set({
-        'uid': credential.user!.uid,
-        'email': emailController.text.trim(),
-        'nickname': nicknameController.text.trim(),
-        'createdAt': DateTime.now(),
-        'phone': phoneController.text.trim(),
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('회원가입이 완료되었습니다.')));
-        Navigator.pop(context);
-      }
-    } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? '회원가입 실패')),
-      );
-    } finally {
-      setState(() => isLoading = false);
-    }
-  }
-
+  // 동의 항목 상태
   bool isAllAgreed = false; // 전체 이용 동의
   bool isAgreeTerms = false; // 이용 약관 동의 (필수)
-  bool isAgreePrivacy = false; // 개인정보 수집 및 이용 동의
+  bool isAgreePrivacy = false; // 개인정보 수집 및 이용 동의 (필수)
   bool isAgreeMarketing = false; // 개인정보 마케팅 활용 동의 (선택)
   bool isAgreeSmsEmail = false; // SMS 및 이메일 수신 동의 (선택)
 
+  // 에러/상태
   String? idErrorText;
   bool isIdValid = false;
 
@@ -111,15 +60,125 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
         passwordConfirmController.text.isNotEmpty &&
         emailController.text.isNotEmpty &&
         phoneController.text.isNotEmpty &&
-        _isPhoneVerified && // ← 추가됨
+        _isPhoneVerified && // ← 휴대폰 인증 필수
         isAgreeTerms &&
         isAgreePrivacy;
   }
 
-  // 전화번호 형식
+  // 한국 휴대폰번호를 E.164(+82)로 변환
+  String toE164KR(String input) {
+    final digits = input.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) return '';
+    if (digits.startsWith('0')) return '+82${digits.substring(1)}';
+    if (digits.startsWith('82')) return '+$digits';
+    return '+82$digits';
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // 아이디 중복확인: 버튼 콜백
+  Future<void> _onCheckDuplicateId() async {
+    final id = idController.text.trim();
+    _validateId(id); // 형식 검증 유지
+    if (idErrorText != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(idErrorText!)),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+    try {
+      final unique = await _isIdUnique(id);
+      if (unique) {
+        setState(() {
+          isIdValid = true;
+          idErrorText = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('사용 가능한 아이디입니다.')),
+        );
+      } else {
+        setState(() {
+          isIdValid = false;
+          idErrorText = '이미 사용 중인 아이디입니다.';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('이미 사용 중인 아이디입니다.')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('중복 확인 중 오류가 발생했습니다: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  /// Firestore에서 id_lower(소문자)로 중복 여부 확인
+  Future<bool> _isIdUnique(String id) async {
+    final idLower = id.toLowerCase();
+    final snap = await FirebaseFirestore.instance
+        .collection('users')
+        .where('id_lower', isEqualTo: idLower)
+        .limit(1)
+        .get();
+
+    return snap.docs.isEmpty; // 비어있으면 사용 가능
+  }
+  // ───────────────────────────────────────────────────────────────
+
+  Future<void> _registerWithFirebase() async {
+    setState(() => isLoading = true);
+    try {
+      // 1) 가입 직전 최종 형식/중복 확인
+      final id = idController.text.trim();
+      _validateId(id);
+      if (idErrorText != null) {
+        throw FirebaseAuthException(code: 'invalid-id', message: idErrorText);
+      }
+      final unique = await _isIdUnique(id);
+      if (!unique) {
+        throw FirebaseAuthException(code: 'duplicate-id', message: '이미 사용 중인 아이디입니다.');
+      }
+
+      // 2) 이메일/비밀번호 가입
+      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      // 3) Firestore 저장 (id / id_lower 포함)
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(credential.user!.uid)
+          .set({
+        'uid': credential.user!.uid,
+        'id': id,                           // 사용자 표시용 아이디
+        'id_lower': id.toLowerCase(),       // 중복검사용(소문자)
+        'email': emailController.text.trim(),
+        'nickname': nicknameController.text.trim(),
+        'phone': phoneController.text.trim(),
+        'createdAt': DateTime.now(),
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('회원가입이 완료되었습니다.')));
+        Navigator.pop(context);
+      }
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? '회원가입 실패')),
+      );
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  // 전화번호 형식 검증
   void _validatePhoneNumber(String value) {
-    String digitsOnly = value.replaceAll(RegExp(r'\D'), '');
-    digitsOnly = digitsOnly.trim();
+    String digitsOnly = value.replaceAll(RegExp(r'\D'), '').trim();
 
     if (digitsOnly.isEmpty) {
       phoneErrorText = '휴대폰 번호를 입력해주세요.';
@@ -227,8 +286,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
 
   // 이메일 형식
   bool isValidEmail(String email) {
-    final emailRegex =
-    RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+    final emailRegex = RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
     return emailRegex.hasMatch(email);
   }
 
@@ -246,18 +304,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
     });
   }
 
-  @override
-  void dispose() {
-    idController.dispose();
-    passwordController.dispose();
-    passwordConfirmController.dispose();
-    nicknameController.dispose();
-    phoneController.dispose();
-    authCodeController.dispose();
-    super.dispose();
-  }
-
-  // 전체 이용 동의
+  // 전체 이용 동의 토글
   void _toggleAllAgree(bool? checked) {
     if (checked == null) return;
     setState(() {
@@ -285,7 +332,6 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
     });
   }
 
-  // 마케팅 활용 동의 토글 함수
   void _toggleAgreeMarketing() {
     setState(() {
       isAgreeMarketing = !isAgreeMarketing;
@@ -293,7 +339,6 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
     });
   }
 
-  // SMS/이메일 동의 토글 함수
   void _toggleAgreeSmsEmail() {
     setState(() {
       isAgreeSmsEmail = !isAgreeSmsEmail;
@@ -302,10 +347,10 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
   }
 
   void _updateAllAgree() {
-    isAllAgreed =
-        isAgreeTerms && isAgreePrivacy && isAgreeMarketing && isAgreeSmsEmail;
+    isAllAgreed = isAgreeTerms && isAgreePrivacy && isAgreeMarketing && isAgreeSmsEmail;
   }
 
+  // 아이디 형식 검증
   void _validateId(String value) {
     String? error;
     final RegExp startsWithNumber = RegExp(r'^[0-9]');
@@ -327,10 +372,13 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
 
     setState(() {
       idErrorText = error;
-      isIdValid = error == null;
+      // 형식이 유효하다고 해서 곧바로 중복 미검증 상태를 true로 두진 않음
+      // isIdValid는 실제 중복검사 통과 시에만 true로 변경
+      if (error != null) isIdValid = false;
     });
   }
 
+  // 비밀번호 형식
   void _validatePassword(String value) {
     String? error;
     final RegExp startsWithNumber = RegExp(r'^[0-9]');
@@ -372,6 +420,18 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
   }
 
   @override
+  void dispose() {
+    idController.dispose();
+    passwordController.dispose();
+    passwordConfirmController.dispose();
+    nicknameController.dispose();
+    phoneController.dispose();
+    authCodeController.dispose();
+    emailController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -403,11 +463,12 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                 IdInputWidget(
                   idController: idController,
                   idErrorText: idErrorText,
-                  onChanged: _validateId,
-                  onCheckDuplicate: () {
-                    // TODO: 중복 확인 API 호출 또는 유효성 검사
-                    // print("아이디 중복 확인: ${idController.text}");
+                  onChanged: (v) {
+                    _validateId(v);
+                    // 사용자가 아이디를 수정하면 이전의 중복확인 결과는 무효화
+                    setState(() => isIdValid = false);
                   },
+                  onCheckDuplicate: _onCheckDuplicateId, // ✅ 중복확인 연결
                 ),
 
                 const SizedBox(height: 16),
@@ -450,9 +511,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                                 LengthLimitingTextInputFormatter(6),
                               ],
                               decoration: InputDecoration(
-                                hintText: _isPhoneVerified
-                                    ? '인증 완료'
-                                    : '인증번호 입력',
+                                hintText: _isPhoneVerified ? '인증 완료' : '인증번호 입력',
                                 hintStyle: const TextStyle(
                                   color: Color.fromARGB(255, 128, 128, 128),
                                   fontSize: 14,
@@ -560,21 +619,32 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                 ElevatedButton(
                   onPressed: isSignupEnabled && !isLoading
                       ? () async {
-                    _validateId(idController.text);
+                    // 형식 재검증
+                    final id = idController.text.trim();
+                    _validateId(id);
                     if (idErrorText != null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text(idErrorText!)),
                       );
                       return;
                     }
-                    if (!isAgreeTerms || !isAgreePrivacy) {
+
+                    // 사용자가 중복확인 버튼을 누르지 않았을 수도 있으니, 여기서도 최종 확인
+                    final unique = await _isIdUnique(id);
+                    if (!unique) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('필수 약관에 동의해 주세요.'),
-                        ),
+                        const SnackBar(content: Text('이미 사용 중인 아이디입니다.')),
                       );
                       return;
                     }
+
+                    if (!isAgreeTerms || !isAgreePrivacy) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('필수 약관에 동의해 주세요.')),
+                      );
+                      return;
+                    }
+
                     await _registerWithFirebase();
                   }
                       : null,
