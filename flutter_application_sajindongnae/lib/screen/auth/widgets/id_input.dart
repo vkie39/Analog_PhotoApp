@@ -6,6 +6,7 @@ class IdInputWidget extends StatelessWidget {
   final String? idErrorText;
   final Function(String) onChanged;
   final VoidCallback onCheckDuplicate; // 중복 확인 버튼 클릭 콜백
+  final bool isChecking;
 
   // 외부 파일 (signup_detail.dart 등)에서 필요한 값들을 위젯에 전달받기 위한 생성자
   const IdInputWidget({
@@ -13,7 +14,8 @@ class IdInputWidget extends StatelessWidget {
     required this.idController, // 위젯 밖에서 넘겨받는 텍스트 컨트롤러
     this.idErrorText, // 에러 메시지는 null 가능
     required this.onChanged, // 텍스트 바뀔 때 콜백 함수
-    required this.onCheckDuplicate, // 중복 확인 버튼 눌렀을 때 콜백
+    required this.onCheckDuplicate,
+    this.isChecking = false, // 중복 확인 버튼 눌렀을 때 콜백
   }) : super(key: key);
 
   @override
@@ -64,21 +66,24 @@ class IdInputWidget extends StatelessWidget {
             SizedBox(
               height: 48,
               child: ElevatedButton(
-                onPressed: onCheckDuplicate,
+                onPressed: isChecking ? null : onCheckDuplicate,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFFDBEFC4),
-                  foregroundColor: Colors.black,
+                  backgroundColor: isChecking ? Colors.grey[300] : Color(0xFFDBEFC4),
+                  foregroundColor: isChecking ? Colors.grey[600] : Colors.black,
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(4),
                   ),
                   elevation: 0,
                 ),
-                child: Text(
-                  "중복 확인",
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                ),
-              ),
+                child: isChecking
+                  ? SizedBox(
+                      width: 55.5,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text("중복 확인", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            ),
             ),
           ],
         ),

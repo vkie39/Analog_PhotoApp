@@ -51,6 +51,8 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
   String? emailErrorText;
 
   bool isLoading = false;
+  bool isCheckingId = false; // 기존 isLoading과 분리
+
 
   // ✅ 휴대폰 인증 완료(_isPhoneVerified) 조건을 포함
   bool get isSignupEnabled {
@@ -86,7 +88,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
       return;
     }
 
-    setState(() => isLoading = true);
+    setState(() => isCheckingId = true);
     try {
       final unique = await _isIdUnique(id);
       if (unique) {
@@ -111,7 +113,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
         SnackBar(content: Text('중복 확인 중 오류가 발생했습니다: $e')),
       );
     } finally {
-      if (mounted) setState(() => isLoading = false);
+      if (mounted) setState(() => isCheckingId = false);
     }
   }
 
@@ -468,7 +470,8 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                     // 사용자가 아이디를 수정하면 이전의 중복확인 결과는 무효화
                     setState(() => isIdValid = false);
                   },
-                  onCheckDuplicate: _onCheckDuplicateId, // ✅ 중복확인 연결
+                  onCheckDuplicate: _onCheckDuplicateId,
+                  isChecking: isCheckingId, // 중복확인 연결
                 ),
 
                 const SizedBox(height: 16),
