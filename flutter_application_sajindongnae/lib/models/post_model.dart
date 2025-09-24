@@ -5,21 +5,13 @@ class PostModel {
   final String uId;
   final String nickname;
   final String profileImageUrl;
-<<<<<<< HEAD
   late final String category;
   final int likeCount;
   final int commentCount;
   final DateTime timestamp;
   late final String title;
   late final String content;
-=======
-  final String category;
-  final int likeCount;
-  final int commentCount;
-  final DateTime timestamp;
-  final String title;
-  final String content;
->>>>>>> origin/main
+
   final String? imageUrl;
 
   PostModel({
