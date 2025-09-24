@@ -64,6 +64,11 @@ class PostService {
   /// 이미지 업로드 (Storage)
   static Future<String?> uploadImage(File imageFile, String postId) async {
     try {
+<<<<<<< HEAD
+      log('이미지 업로드 시작: $postId, 경로: ${imageFile.path}');
+
+=======
+>>>>>>> origin/main
       final ref = FirebaseStorage.instance
           .ref()
           .child('post_images')
@@ -79,6 +84,10 @@ class PostService {
     }
   }
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> origin/main
   //게시글 수정
   static Future<void> updatePost(String postId, Map<String, dynamic> updatedData) async {
   try {

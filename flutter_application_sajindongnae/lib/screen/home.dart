@@ -59,7 +59,11 @@ class HomeScreen extends StatelessWidget {
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final width = constraints.maxWidth;
+<<<<<<< HEAD
+                      final aspectRatio = width < 400 ? 4/3 : 1.3;
+=======
                       final aspectRatio = width < 400 ? 1.0 : 1.3;
+>>>>>>> origin/main
 
                       final bestImagePaths = [
                         'assets/images/best.JPG',

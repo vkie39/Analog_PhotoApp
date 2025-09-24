@@ -52,6 +52,8 @@
           <option name="screenY" value="2412" />
         </PersistentDeviceSelectionData>
         <PersistentDeviceSelectionData>
+<<<<<<< HEAD
+=======
           <option name="api" value="35" />
           <option name="brand" value="OnePlus" />
           <option name="codename" value="OP5552L1" />
@@ -64,6 +66,7 @@
           <option name="screenY" value="2412" />
         </PersistentDeviceSelectionData>
         <PersistentDeviceSelectionData>
+>>>>>>> origin/main
           <option name="api" value="34" />
           <option name="brand" value="OPPO" />
           <option name="codename" value="OP573DL1" />
@@ -90,6 +93,8 @@
         <PersistentDeviceSelectionData>
           <option name="api" value="34" />
           <option name="brand" value="samsung" />
+<<<<<<< HEAD
+=======
           <option name="codename" value="a14m" />
           <option name="id" value="a14m" />
           <option name="labId" value="google" />
@@ -102,6 +107,7 @@
         <PersistentDeviceSelectionData>
           <option name="api" value="34" />
           <option name="brand" value="samsung" />
+>>>>>>> origin/main
           <option name="codename" value="a15" />
           <option name="id" value="a15" />
           <option name="labId" value="google" />
@@ -148,6 +154,15 @@
           <option name="screenY" value="2340" />
         </PersistentDeviceSelectionData>
         <PersistentDeviceSelectionData>
+<<<<<<< HEAD
+          <option name="api" value="31" />
+          <option name="brand" value="samsung" />
+          <option name="codename" value="a51" />
+          <option name="id" value="a51" />
+          <option name="labId" value="google" />
+          <option name="manufacturer" value="Samsung" />
+          <option name="name" value="Galaxy A51" />
+=======
           <option name="api" value="34" />
           <option name="brand" value="google" />
           <option name="codename" value="akita" />
@@ -155,12 +170,17 @@
           <option name="labId" value="google" />
           <option name="manufacturer" value="Google" />
           <option name="name" value="Pixel 8a" />
+>>>>>>> origin/main
           <option name="screenDensity" value="420" />
           <option name="screenX" value="1080" />
           <option name="screenY" value="2400" />
         </PersistentDeviceSelectionData>
         <PersistentDeviceSelectionData>
+<<<<<<< HEAD
+          <option name="api" value="34" />
+=======
           <option name="api" value="35" />
+>>>>>>> origin/main
           <option name="brand" value="google" />
           <option name="codename" value="akita" />
           <option name="id" value="akita" />
@@ -367,6 +387,8 @@
           <option name="screenY" value="384" />
         </PersistentDeviceSelectionData>
         <PersistentDeviceSelectionData>
+<<<<<<< HEAD
+=======
           <option name="api" value="35" />
           <option name="brand" value="motorola" />
           <option name="codename" value="eqe" />
@@ -379,6 +401,7 @@
           <option name="screenY" value="2712" />
         </PersistentDeviceSelectionData>
         <PersistentDeviceSelectionData>
+>>>>>>> origin/main
           <option name="api" value="33" />
           <option name="brand" value="google" />
           <option name="codename" value="felix" />
@@ -585,6 +608,8 @@
           <option name="screenY" value="2244" />
         </PersistentDeviceSelectionData>
         <PersistentDeviceSelectionData>
+<<<<<<< HEAD
+=======
           <option name="api" value="34" />
           <option name="brand" value="motorola" />
           <option name="codename" value="lion" />
@@ -597,6 +622,7 @@
           <option name="screenY" value="1612" />
         </PersistentDeviceSelectionData>
         <PersistentDeviceSelectionData>
+>>>>>>> origin/main
           <option name="api" value="33" />
           <option name="brand" value="google" />
           <option name="codename" value="lynx" />
@@ -611,6 +637,8 @@
         <PersistentDeviceSelectionData>
           <option name="api" value="34" />
           <option name="brand" value="motorola" />
+<<<<<<< HEAD
+=======
           <option name="codename" value="lyriq" />
           <option name="id" value="lyriq" />
           <option name="labId" value="google" />
@@ -623,6 +651,7 @@
         <PersistentDeviceSelectionData>
           <option name="api" value="34" />
           <option name="brand" value="motorola" />
+>>>>>>> origin/main
           <option name="codename" value="manaus" />
           <option name="id" value="manaus" />
           <option name="labId" value="google" />
@@ -830,6 +859,8 @@
           <option name="screenY" value="2424" />
         </PersistentDeviceSelectionData>
         <PersistentDeviceSelectionData>
+<<<<<<< HEAD
+=======
           <option name="api" value="36" />
           <option name="brand" value="google" />
           <option name="codename" value="tokay" />
@@ -843,6 +874,7 @@
           <option name="screenY" value="2424" />
         </PersistentDeviceSelectionData>
         <PersistentDeviceSelectionData>
+>>>>>>> origin/main
           <option name="api" value="34" />
           <option name="brand" value="samsung" />
           <option name="codename" value="xcover7" />

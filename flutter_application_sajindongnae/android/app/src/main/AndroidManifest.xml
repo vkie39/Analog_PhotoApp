@@ -2,6 +2,30 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.CAMERA" />
+<<<<<<< HEAD
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
+
+
+
+    <application
+        android:label="flutter_application_sajindongnae"
+        android:icon="@mipmap/ic_launcher"
+        android:requestLegacyExternalStorage="true">  <!--이 줄도 갤러리 접근을 위해 추가가-->
+        
+        <meta-data
+              android:name="io.flutter.embedding.android.EnableImpeller"
+              android:value="false"/>
+
+        <meta-data              
+              android:name="com.google.android.geo.API_KEY"
+              android:value="AIzaSyD08a7ITr6A8IgDYt4zDcmeXHvyYKhZrdE"/> <!--내 구글 API key-->
+
+=======
 
     <application
         android:label="사진 동네"
@@ -9,6 +33,7 @@
         android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true">  <!--이 줄도 갤러리 접근을 위해 추가가-->
         
+>>>>>>> origin/main
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -36,11 +61,24 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+<<<<<<< HEAD
+
+
+=======
+>>>>>>> origin/main
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+<<<<<<< HEAD
+        <activity
+           android:name="com.yalantis.ucrop.UCropActivity"
+           android:exported="false"
+           android:screenOrientation="portrait"
+           android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+=======
+>>>>>>> origin/main
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

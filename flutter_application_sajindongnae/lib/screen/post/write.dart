@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
+import 'package:uuid/uuid.dart';
+=======
 import 'package:flutter_application_sajindongnae/component/action_button.dart';
 import 'package:flutter_application_sajindongnae/component/expandable_fab.dart';
 import 'package:flutter_application_sajindongnae/main.dart';
@@ -9,15 +12,29 @@ import 'package:flutter_application_sajindongnae/services/image_service.dart';
 import 'package:uuid/uuid.dart';
 import '../../services/post_service.dart';
 import '../../models/post_model.dart';
+>>>>>>> origin/main
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+<<<<<<< HEAD
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
+import 'package:firebase_storage/firebase_storage.dart';
+
+import 'package:flutter_application_sajindongnae/component/action_button.dart';
+import 'package:flutter_application_sajindongnae/component/expandable_fab.dart';
+import 'package:flutter_application_sajindongnae/main.dart';
+import 'package:flutter_application_sajindongnae/services/image_service.dart';
+import 'package:flutter_application_sajindongnae/models/post_model.dart';
+import 'package:flutter_application_sajindongnae/services/post_service.dart';
+=======
 
 import 'package:firebase_storage/firebase_storage.dart';
 
+>>>>>>> origin/main
 
 
 class WriteScreen extends StatefulWidget {
@@ -34,9 +51,16 @@ class _WriteScreenState extends State<WriteScreen> {
   late String selectedCategory;
   late ImageService _imageService;
   XFile? _originalImage; // ?는 null의 의미
+<<<<<<< HEAD
+  XFile? _resultImage;
+  bool? _isPictureUploaded;
+  bool _isFabExpanded = false;
+  bool _cropping = false;
+=======
   XFile? _cropedImage;
   bool? _isPictureUploaded;
   bool _isFabExpanded = false;
+>>>>>>> origin/main
 
   final TextEditingController titleController = TextEditingController(); // 제목 필드
   final TextEditingController contentController = TextEditingController(); // 내용 필드
@@ -54,8 +78,13 @@ class _WriteScreenState extends State<WriteScreen> {
   void initState() {
     super.initState();
     selectedCategory = widget.category;
+<<<<<<< HEAD
+    _imageService = ImageService();
+
+=======
     _imageService = ImageService(); // ImageService의 메소드를 사용하기 위해 인스턴스 생성
     _requestPermission();
+>>>>>>> origin/main
   }
 /*
 void submitPost() async {
@@ -136,6 +165,17 @@ void submitPost() async {
 
   String? imageUrl;
 
+<<<<<<< HEAD
+  // 이미지 업로드 전 경로 및 파일 존재 여부 확인
+  if (_resultImage != null) {
+    try {
+      final path = _resultImage!.path;
+      print('[DEBUG] _cropedImage.path: $path');
+
+      final file = File(path);
+      final fileExists = file.existsSync();
+      print('[DEBUG] File exists: $fileExists');
+=======
   // ✅ 이미지 업로드 전 경로 및 파일 존재 여부 확인
   if (_cropedImage != null) {
     try {
@@ -145,6 +185,7 @@ void submitPost() async {
       final file = File(path);
       final fileExists = file.existsSync();
       print('🧪 [DEBUG] File exists: $fileExists');
+>>>>>>> origin/main
 
       if (!fileExists) {
         throw Exception('파일이 존재하지 않음: $path');
@@ -193,6 +234,21 @@ void submitPost() async {
 }
 
 
+<<<<<<< HEAD
+
+  // image_service에서 pickImageFromGallery와 pickImageFromCamera로 
+  // 이미지를 가져오면 null여부 확인 후 setState로 화면에 반영
+  
+  Future<void> _pickImageFromGallery(BuildContext context) async {
+    _originalImage = await pickImageFromGallery(context);
+    if (_originalImage != null) {
+      await _cropImage(_originalImage!.path);
+      // 크롭 없이 바로 이미지 삽입할 거면 주석처리된 내용으로 하기
+      //setState(() {
+      //  _cropedImage = _originalImage; // 크롭, 압축 없이 바로 사용
+      //  _isPictureUploaded = true;
+      //});
+=======
   Future<void> _requestPermission() async {
     bool permissionGranted = await _imageService.requestPermission();
     if (permissionGranted == false) {
@@ -224,16 +280,25 @@ void submitPost() async {
         _cropedImage = _originalImage; // 크롭, 압축 없이 바로 사용
         _isPictureUploaded = true;
       });
+>>>>>>> origin/main
     } else {
       Fluttertoast.showToast(msg: '사진 선택이 취소되었습니다.');
     }
   }
 
+<<<<<<< HEAD
+  Future<void> _pickImageFromCamera(BuildContext context) async {
+    _originalImage = await pickImageFromCamera(context); // 카메라에서 이미지 촬영
+    if (_originalImage != null) {
+      setState(() {
+        _resultImage = _originalImage; // 크롭, 압축 없이 바로 사용
+=======
   Future<void> _takePhoto(BuildContext context) async {
     _originalImage = await _imageService.takePhoto(); // 카메라에서 이미지 촬영
     if (_originalImage != null) {
       setState(() {
         _cropedImage = _originalImage; // 크롭, 압축 없이 바로 사용
+>>>>>>> origin/main
         _isPictureUploaded = true;
       });
     } else {
@@ -242,10 +307,17 @@ void submitPost() async {
   }
 
   Future<void> _pickImageFromFileSystem(BuildContext context) async {
+<<<<<<< HEAD
+    final file = await pickImageFromFileSystem(context);
+    if (file != null) {
+      setState(() {
+        _resultImage = file;
+=======
     final file = await _imageService.pickImageFromFileSystem();
     if (file != null) {
       setState(() {
         _cropedImage = file;
+>>>>>>> origin/main
         _isPictureUploaded = true;
       });
     } else {
@@ -254,6 +326,41 @@ void submitPost() async {
   }
 
 
+<<<<<<< HEAD
+  // 찍거나 가져온 사진 편집(크롭,회전)하는 함수
+  Future<void> _cropImage(String imagePath) async {
+    if(_cropping) return;  // 크롭 동작을 동시에 여러개 하지 못하도록 막음
+    _cropping = true;
+    try{
+      // 경로 복사
+      final normalizedPath = await _toTempFilePath(imagePath);           // 앱의 임시 디렉토리로 경로 복사 -> 좀 더 안전한 접근 
+      final croppedFile = await _imageService.cropImage(normalizedPath); // 크롭 결과
+
+      if (croppedFile != null) {
+        if (!mounted) return;  // 크롭 처리하는 동안 화면이 없어지지 않았는지 확인
+        setState(() {
+          _resultImage = XFile(croppedFile.path);
+          _isPictureUploaded = true;
+        });
+      }
+    } catch (e, st){
+      debugPrint('crop error : $e\n$st');
+      Fluttertoast.showToast(msg: '편집 중 오류 발생');
+    }finally{_cropping = false;}
+  }
+
+  
+  // 사진 경로를 받아서 어플의 임시 디렉토리 경로를 반환하는 함수
+  Future<String> _toTempFilePath(String pickedPath) async{                     // 갤러리나 카메라에서 가져온 사진 경로를 받음
+    final bytes = await XFile(pickedPath).readAsBytes();                       // 원본을 XFile로 감싸서 전체 바이트를 읽어옴
+    final ext = path.extension(pickedPath).isNotEmpty ? path.extension(pickedPath) : '.jpg';
+    final dir = await getTemporaryDirectory();                                 // 앱 전용 임시 디렉토리
+    final f = File('${dir.path}/${DateTime.now().millisecondsSinceEpoch}$ext');// 임시 디렉토리에 새로운 파일 만듦
+    await f.writeAsBytes(bytes, flush: true);                                  // 읽어온 바이트를 만든 파일에 기록. flush는 버퍼링된 내용을 바로 사용할 수 있도록 보장
+    return f.path;
+  } 
+
+=======
   // 찍거나 가져온 사진 편집
   Future<void> _cropAndCompressImage(String imagePath) async {
     final croppedFile = await _imageService.cropImage(imagePath);
@@ -265,6 +372,7 @@ void submitPost() async {
     }
   }
 
+>>>>>>> origin/main
   @override
   Widget build(BuildContext context) {
     final globalContext = Globals.navigatorKey.currentContext;
@@ -412,12 +520,61 @@ void submitPost() async {
                                 maxLines: null,
                                 keyboardType: TextInputType.multiline,
                               ),
+<<<<<<< HEAD
+                              SizedBox(height: _resultImage != null? 10:300)
+=======
                               SizedBox(height: _cropedImage != null? 10:300)
+>>>>>>> origin/main
                             ],
                           ),
                       ),
                       
 
+<<<<<<< HEAD
+                      if (_resultImage != null) ...[
+                        const SizedBox(height: 0),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 0),
+                          child: Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.file(
+                                  File(_resultImage!.path),
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _resultImage = null;
+                                      _isPictureUploaded = false;
+                                    });
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.6),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+
+=======
                       if (_cropedImage != null) ...[
                         const SizedBox(height: 0),
                         Padding(
@@ -434,6 +591,7 @@ void submitPost() async {
                         
                       ],
 
+>>>>>>> origin/main
                     ],
                   ),
                 ),
@@ -448,7 +606,11 @@ void submitPost() async {
           children: [
             ActionButton(
               onPressed: () async{
+<<<<<<< HEAD
+                await _pickImageFromCamera(context);
+=======
                 await _takePhoto(context);
+>>>>>>> origin/main
               },
               icon: Icons.camera_alt,
             ),
@@ -469,6 +631,9 @@ void submitPost() async {
       ),
     );
   }
+<<<<<<< HEAD
+}
+=======
 }
 /*
 import 'dart:io';
@@ -718,3 +883,4 @@ class _WriteScreenState extends State<WriteScreen> {
   }
 }
 */
+>>>>>>> origin/main

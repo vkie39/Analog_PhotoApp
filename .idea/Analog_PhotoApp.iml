@@ -396,6 +396,11 @@
       <excludeFolder url="file://$MODULE_DIR$/flutter_application_sajindongnae/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/flutter_application_sajindongnae/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/flutter_application_sajindongnae/build" />
+<<<<<<< HEAD
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+=======
       <excludeFolder url="file://$MODULE_DIR$/flutter_application_sajindongnae/linux/flutter/ephemeral/.plugin_symlinks/file_picker/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/flutter_application_sajindongnae/linux/flutter/ephemeral/.plugin_symlinks/file_picker/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/flutter_application_sajindongnae/linux/flutter/ephemeral/.plugin_symlinks/file_picker/build" />
@@ -467,5 +472,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Dart SDK" level="project" />
     <orderEntry type="library" name="Dart Packages" level="project" />
+>>>>>>> origin/main
   </component>
 </module>

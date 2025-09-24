@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+# Analog_PhotoApp
+=======
 j# Analog_PhotoApp
+>>>>>>> origin/main
 
 ## 📷 사진 동네
 **사진을 등록하여 구매 및 판매가 가능한 어플, 유저들의 커뮤니티 제공**
