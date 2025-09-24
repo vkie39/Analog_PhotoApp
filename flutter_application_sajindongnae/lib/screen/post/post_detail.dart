@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart'; 
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
@@ -22,6 +23,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   final TextEditingController _commentController = TextEditingController(); // 댓글 컨트롤러
   bool isLiked = false; // 좋아요 상태 (색 채울지 말지)
   int likeCount = 0; // 좋아요 수 상태
+  
 
     // 수정된 부분: 댓글 저장 방식 변경
   void _submitComment() async {
@@ -32,10 +34,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     
     final commentId = const Uuid().v4();  // UUID로 고유 ID 생성
 
+     // 🔑 현재 로그인한 사용자 가져오기
+    final user = FirebaseAuth.instance.currentUser; // ✅ 여기서 user 변수를 정의
+
     final newComment = CommentModel(     // CommentModel 객체 생성
       commentId: commentId,
-      uid: '임시유저ID', // 로그인 연동 시 교체
-      nickname: '익명',
+      //uid: '임시유저ID', // 로그인 연동 시 교체
+      uid: user?.uid ?? 'guest',
+      nickname: user?.email ?? '익명', 
       profileImageUrl: '',
       content: commentText,
       timestamp: DateTime.now(),
@@ -52,11 +58,16 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     }
   }
 
-  @override
-  void initState(){
-    super.initState();
-    likeCount = widget.post.likeCount; // DB에서 좋아요 수 가져오기
+@override
+void initState() {
+  super.initState();
+  likeCount = widget.post.likeCount;
+
+  final uid = FirebaseAuth.instance.currentUser?.uid;
+  if (uid != null && widget.post.likedBy.contains(uid)) {
+    isLiked = true;
   }
+}
 
 
   @override
@@ -64,7 +75,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     _commentController.dispose();
     super.dispose();
   }
-
+/*
   void _toggleLike() async{
     setState(() {
       isLiked = !isLiked;
@@ -81,10 +92,59 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       log('좋아요 업데이트 실패: $e');
     }
     
+  }*/
+
+  //좋아요 중복 방지를 위해 수정
+  void _toggleLike() async {
+  try {
+    await PostService.toggleLike(widget.post.postId);
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    setState(() {
+      // Firestore에 반영된 likedBy 기반으로 내 상태 토글
+      if (widget.post.likedBy.contains(uid)) {
+        widget.post.likedBy.remove(uid);
+        likeCount -= 1;
+        isLiked = false;
+      } else {
+        widget.post.likedBy.add(uid);
+        likeCount += 1;
+        isLiked = true;
+      }
+    });
+  } catch (e) {
+    log('좋아요 토글 실패: $e');
   }
+}
 
 
-  @override
+/* 원래코드 주석처리
+  @overridevoid _toggleLike() async {
+  try {
+    await PostService.toggleLike(widget.post.postId);
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    setState(() {
+      // Firestore에 반영된 likedBy 기반으로 내 상태 토글
+      if (widget.post.likedBy.contains(uid)) {
+        widget.post.likedBy.remove(uid);
+        likeCount -= 1;
+        isLiked = false;
+      } else {
+        widget.post.likedBy.add(uid);
+        likeCount += 1;
+        isLiked = true;
+      }
+    });
+  } catch (e) {
+    log('좋아요 토글 실패: $e');
+  }
+}
+*/
   Widget build(BuildContext context) { // build는 ui를 그리는 함수 (항상 Widget을 반환함)
     return GestureDetector(
       behavior: HitTestBehavior.opaque,

@@ -17,7 +17,7 @@ class PhotoTradeModel {
     required this.uid,        // 수정됨
     required this.nickname,
     required this.tags,
-    required this.isSold,
+    required this.isSold, //판매여부 
     required this.createdAt,
   });
 

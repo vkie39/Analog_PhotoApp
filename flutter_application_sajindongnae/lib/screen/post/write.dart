@@ -18,6 +18,10 @@ import 'package:fluttertoast/fluttertoast.dart';
 
 import 'package:firebase_storage/firebase_storage.dart';
 
+import 'package:firebase_auth/firebase_auth.dart'; // 변경: 로그인 유저 uid 사용
+// 선택: 닉네임을 users 컬렉션에서 가져오고 싶으면 아래도 추가
+// import 'package:flutter_application_sajindongnae/services/user_service.dart';
+
 
 
 class WriteScreen extends StatefulWidget {

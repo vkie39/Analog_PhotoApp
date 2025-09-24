@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PostModel {
   final String postId;
-  final String uid; // ✅ 사용자 ID → uid로 통일
+  final String uid;
   final String nickname;
   final String profileImageUrl;
   final String category;
@@ -13,9 +13,12 @@ class PostModel {
   final String content;
   final String? imageUrl;
 
+  // ✅ 변경: likedBy 추가 (좋아요 누른 uid 목록)
+  final List<String> likedBy;
+
   PostModel({
     required this.postId,
-    required this.uid, //수정됨
+    required this.uid,
     required this.nickname,
     required this.profileImageUrl,
     required this.category,
@@ -25,34 +28,45 @@ class PostModel {
     required this.title,
     required this.content,
     this.imageUrl,
+    this.likedBy = const [], // 기본값: 빈 리스트
   });
 
   factory PostModel.fromDocument(DocumentSnapshot doc) {
-    final map = doc.data() as Map<String, dynamic>; // Firestore 문서 데이터를 Map으로 캐스팅
+    final map = doc.data() as Map<String, dynamic>;
 
     return PostModel(
-      postId: doc.id, // Firestore의 문서 ID (문서 고유 식별자)
-
-      // ↓ 필드가 null일 수 있으므로 기본값 처리 (null 대비)
-      uid: map['uid'] ?? '', // userId → uid로 변경
+      postId: doc.id,
+      uid: map['uid'] ?? '',
       nickname: map['nickname'] ?? '',
       profileImageUrl: map['profileImageUrl'] ?? '',
       category: map['category'] ?? '',
       likeCount: map['likeCount'] ?? 0,
       commentCount: map['commentCount'] ?? 0,
-
-      // createdAt이 null이거나 Timestamp가 아닐 경우 예외 발생 방지
-      //    → 안전하게 타입 체크 후 변환, 없으면 현재 시각으로 대체
       timestamp: map['createdAt'] != null && map['createdAt'] is Timestamp
           ? (map['createdAt'] as Timestamp).toDate()
-          : DateTime.now(), // ← createdAt이 없거나 잘못된 경우 기본값 설정
-
-      // ↓ 기본값 처리
+          : DateTime.now(),
       title: map['title'] ?? '',
       content: map['content'] ?? '',
-
-      // ↓ 선택 필드: null 허용
       imageUrl: map['imageUrl'] as String?,
+      // ✅ 변경: likedBy 읽어오기
+      likedBy: List<String>.from(map['likedBy'] ?? []),
     );
+  }
+
+  // Firestore 저장용 (추가)
+  Map<String, dynamic> toMap() {
+    return {
+      'uid': uid,
+      'nickname': nickname,
+      'profileImageUrl': profileImageUrl,
+      'category': category,
+      'likeCount': likeCount,
+      'commentCount': commentCount,
+      'createdAt': Timestamp.fromDate(timestamp),
+      'title': title,
+      'content': content,
+      'imageUrl': imageUrl,
+      'likedBy': likedBy, // ✅ 추가
+    };
   }
 }

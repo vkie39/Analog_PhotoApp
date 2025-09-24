@@ -29,8 +29,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp( //MaterialApp: Flutter앱의 최상위 위젯 트리, home 속성에 보여줄 첫 화면
       debugShowCheckedModeBanner: false,
       navigatorKey: Globals.navigatorKey, 
-      home: MainPage(), // 시작 시 보여줄 화면
-      /*home: StreamBuilder<User?>(
+      //home: MainPage(), // 시작 시 보여줄 화면
+      home: StreamBuilder<User?>(
         // authStateChanges()를 사용하여 Firebase 인증 상태의 변화를 감지
         stream: FirebaseAuth.instance.authStateChanges(), // 사용자가 로그인/로그아웃할 때마다 user 또는 null 반환
         builder: (context, snapshot) {
@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
             return const LoginScreen();
           }
         },
-      ),*/
+      ),
     );
   }
 }

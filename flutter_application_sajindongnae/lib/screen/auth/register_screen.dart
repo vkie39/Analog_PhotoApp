@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_sajindongnae/main.dart';
+
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -29,8 +31,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'nickname': nicknameController.text.trim(),
         'createdAt': DateTime.now(),
       });
+      //로그인 후 바로 메인페이지로 가기 위해 교체
+      //if (mounted) Navigator.pop(context);
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const MainPage()),
+          (route) => false,
+        );
+      }
 
-      if (mounted) Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? '회원가입 실패')),
