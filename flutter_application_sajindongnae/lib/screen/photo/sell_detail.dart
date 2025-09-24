@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import 'dart:math';
 import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
@@ -287,14 +286,4 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
         );
   }
 }
-=======
-import 'package:flutter/material.dart';
 
-class SellDetailScreen extends StatefulWidget{
-  @override
-  State<StatefulWidget> createState() {
-    // TODO: implement createState
-    throw UnimplementedError();
-  }
-}
->>>>>>> origin/main

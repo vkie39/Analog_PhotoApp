@@ -2,24 +2,14 @@ import 'dart:io';
 
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
 import 'package:uuid/uuid.dart';
-=======
-import 'package:flutter_application_sajindongnae/component/action_button.dart';
-import 'package:flutter_application_sajindongnae/component/expandable_fab.dart';
-import 'package:flutter_application_sajindongnae/main.dart';
-import 'package:flutter_application_sajindongnae/services/image_service.dart';
-import 'package:uuid/uuid.dart';
-import '../../services/post_service.dart';
-import '../../models/post_model.dart';
->>>>>>> origin/main
+
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-<<<<<<< HEAD
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:firebase_storage/firebase_storage.dart';
@@ -30,11 +20,7 @@ import 'package:flutter_application_sajindongnae/main.dart';
 import 'package:flutter_application_sajindongnae/services/image_service.dart';
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
 import 'package:flutter_application_sajindongnae/services/post_service.dart';
-=======
 
-import 'package:firebase_storage/firebase_storage.dart';
-
->>>>>>> origin/main
 
 
 class WriteScreen extends StatefulWidget {
@@ -51,16 +37,11 @@ class _WriteScreenState extends State<WriteScreen> {
   late String selectedCategory;
   late ImageService _imageService;
   XFile? _originalImage; // ?는 null의 의미
-<<<<<<< HEAD
   XFile? _resultImage;
   bool? _isPictureUploaded;
   bool _isFabExpanded = false;
   bool _cropping = false;
-=======
-  XFile? _cropedImage;
-  bool? _isPictureUploaded;
-  bool _isFabExpanded = false;
->>>>>>> origin/main
+
 
   final TextEditingController titleController = TextEditingController(); // 제목 필드
   final TextEditingController contentController = TextEditingController(); // 내용 필드
@@ -78,13 +59,9 @@ class _WriteScreenState extends State<WriteScreen> {
   void initState() {
     super.initState();
     selectedCategory = widget.category;
-<<<<<<< HEAD
     _imageService = ImageService();
 
-=======
-    _imageService = ImageService(); // ImageService의 메소드를 사용하기 위해 인스턴스 생성
-    _requestPermission();
->>>>>>> origin/main
+
   }
 /*
 void submitPost() async {
@@ -165,7 +142,6 @@ void submitPost() async {
 
   String? imageUrl;
 
-<<<<<<< HEAD
   // 이미지 업로드 전 경로 및 파일 존재 여부 확인
   if (_resultImage != null) {
     try {
@@ -175,17 +151,7 @@ void submitPost() async {
       final file = File(path);
       final fileExists = file.existsSync();
       print('[DEBUG] File exists: $fileExists');
-=======
-  // ✅ 이미지 업로드 전 경로 및 파일 존재 여부 확인
-  if (_cropedImage != null) {
-    try {
-      final path = _cropedImage!.path;
-      print('🧪 [DEBUG] _cropedImage.path: $path');
 
-      final file = File(path);
-      final fileExists = file.existsSync();
-      print('🧪 [DEBUG] File exists: $fileExists');
->>>>>>> origin/main
 
       if (!fileExists) {
         throw Exception('파일이 존재하지 않음: $path');
@@ -234,7 +200,6 @@ void submitPost() async {
 }
 
 
-<<<<<<< HEAD
 
   // image_service에서 pickImageFromGallery와 pickImageFromCamera로 
   // 이미지를 가져오면 null여부 확인 후 setState로 화면에 반영
@@ -248,57 +213,19 @@ void submitPost() async {
       //  _cropedImage = _originalImage; // 크롭, 압축 없이 바로 사용
       //  _isPictureUploaded = true;
       //});
-=======
-  Future<void> _requestPermission() async {
-    bool permissionGranted = await _imageService.requestPermission();
-    if (permissionGranted == false) {
-      Fluttertoast.showToast(
-        msg: '갤러리 접근 권한이 필요합니다',
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.black.withAlpha(178),
-        textColor: Colors.white,
-        fontSize: 14,
-      );
-    }
-  }
 
-  // 디바이스 갤러리에서 사진 가져오기
-  /*Future<void> _pickImageFromGallery(BuildContext context) async {
-    _originalImage = await _imageService.pickImageFromGallery();
-    if (_originalImage != null) {
-      await _cropAndCompressImage(_originalImage!.path);
-    } else {
-      Fluttertoast.showToast(msg: '사진 선택이 취소되었습니다.');
-    }
-  }*/
-
-  // 디바이스 갤러리에서 사진 가져오기
-  Future<void> _pickImageFromGallery(BuildContext context) async {
-    _originalImage = await _imageService.pickImageFromGallery();
-    if (_originalImage != null) {
-      setState(() {
-        _cropedImage = _originalImage; // 크롭, 압축 없이 바로 사용
-        _isPictureUploaded = true;
-      });
->>>>>>> origin/main
     } else {
       Fluttertoast.showToast(msg: '사진 선택이 취소되었습니다.');
     }
   }
 
-<<<<<<< HEAD
+
   Future<void> _pickImageFromCamera(BuildContext context) async {
     _originalImage = await pickImageFromCamera(context); // 카메라에서 이미지 촬영
     if (_originalImage != null) {
       setState(() {
         _resultImage = _originalImage; // 크롭, 압축 없이 바로 사용
-=======
-  Future<void> _takePhoto(BuildContext context) async {
-    _originalImage = await _imageService.takePhoto(); // 카메라에서 이미지 촬영
-    if (_originalImage != null) {
-      setState(() {
-        _cropedImage = _originalImage; // 크롭, 압축 없이 바로 사용
->>>>>>> origin/main
+
         _isPictureUploaded = true;
       });
     } else {
@@ -307,17 +234,11 @@ void submitPost() async {
   }
 
   Future<void> _pickImageFromFileSystem(BuildContext context) async {
-<<<<<<< HEAD
     final file = await pickImageFromFileSystem(context);
     if (file != null) {
       setState(() {
         _resultImage = file;
-=======
-    final file = await _imageService.pickImageFromFileSystem();
-    if (file != null) {
-      setState(() {
-        _cropedImage = file;
->>>>>>> origin/main
+
         _isPictureUploaded = true;
       });
     } else {
@@ -326,7 +247,7 @@ void submitPost() async {
   }
 
 
-<<<<<<< HEAD
+
   // 찍거나 가져온 사진 편집(크롭,회전)하는 함수
   Future<void> _cropImage(String imagePath) async {
     if(_cropping) return;  // 크롭 동작을 동시에 여러개 하지 못하도록 막음
@@ -360,19 +281,7 @@ void submitPost() async {
     return f.path;
   } 
 
-=======
-  // 찍거나 가져온 사진 편집
-  Future<void> _cropAndCompressImage(String imagePath) async {
-    final croppedFile = await _imageService.cropImage(imagePath);
-    if (croppedFile != null) {
-      _cropedImage = await _imageService.compressImage(croppedFile.path);
-      setState(() {
-        _isPictureUploaded = true;
-      });
-    }
-  }
 
->>>>>>> origin/main
   @override
   Widget build(BuildContext context) {
     final globalContext = Globals.navigatorKey.currentContext;
@@ -520,17 +429,12 @@ void submitPost() async {
                                 maxLines: null,
                                 keyboardType: TextInputType.multiline,
                               ),
-<<<<<<< HEAD
                               SizedBox(height: _resultImage != null? 10:300)
-=======
-                              SizedBox(height: _cropedImage != null? 10:300)
->>>>>>> origin/main
+
                             ],
                           ),
                       ),
                       
-
-<<<<<<< HEAD
                       if (_resultImage != null) ...[
                         const SizedBox(height: 0),
                         Padding(
@@ -572,26 +476,6 @@ void submitPost() async {
                           ),
                         ),
                       ],
-
-
-=======
-                      if (_cropedImage != null) ...[
-                        const SizedBox(height: 0),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 0),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.file(
-                              File(_cropedImage!.path),
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                        
-                      ],
-
->>>>>>> origin/main
                     ],
                   ),
                 ),
@@ -606,11 +490,8 @@ void submitPost() async {
           children: [
             ActionButton(
               onPressed: () async{
-<<<<<<< HEAD
                 await _pickImageFromCamera(context);
-=======
-                await _takePhoto(context);
->>>>>>> origin/main
+
               },
               icon: Icons.camera_alt,
             ),
@@ -631,256 +512,5 @@ void submitPost() async {
       ),
     );
   }
-<<<<<<< HEAD
-}
-=======
-}
-/*
-import 'dart:io';
-
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:uuid/uuid.dart';
-import '../../services/post_service.dart';
-import '../../models/post_model.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
-// import 'package:permission_handler/permission_handler.dart'; // 권한 요청용 (주석처리됨)
-
-enum BlockType { text, image }
-
-class ContentBlock {
-  BlockType type;
-  String? text;
-  File? imageFile;
-
-  ContentBlock.text([this.text])
-      : type = BlockType.text,
-        imageFile = null;
-
-  ContentBlock.image(this.imageFile)
-      : type = BlockType.image,
-        text = null;
-
-  Map<String, dynamic> toJson() => {
-        'type': type.toString().split('.').last,
-        'value': type == BlockType.text ? text : imageFile?.path,
-      };
 }
 
-class WriteScreen extends StatefulWidget {
-  final String category;
-
-  const WriteScreen({super.key, required this.category});
-
-  @override
-  State<WriteScreen> createState() => _WriteScreenState();
-}
-
-class _WriteScreenState extends State<WriteScreen> {
-  final List<String> categoryList = ['자유', '카메라추천', '피드백'];
-  late String selectedCategory;
-
-  final TextEditingController titleController = TextEditingController();
-  final List<ContentBlock> contentBlocks = [];
-  final Map<int, TextEditingController> textControllers = {};
-
-  final picker = ImagePicker();
-
-  @override
-  void initState() {
-    super.initState();
-    selectedCategory = widget.category;
-    contentBlocks.add(ContentBlock.text(''));
-  }
-
-  Future<void> addImageAtCursor(int index) async {
-    print('addImageAtCursor called for index: $index');
-
-    if (!textControllers.containsKey(index)) {
-      print('❗ textControllers[$index] not found');
-      return;
-    }
-
-    // 권한 요청 코드 주석처리됨
-    // await Permission.photos.request();
-
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    print('Image picked: ${picked?.path}');
-
-    if (picked != null) {
-      final controller = textControllers[index]!;
-      final cursor = controller.selection.baseOffset;
-      final fullText = controller.text;
-
-      final before = cursor >= 0 ? fullText.substring(0, cursor) : fullText;
-      final after = cursor >= 0 ? fullText.substring(cursor) : '';
-
-      setState(() {
-        contentBlocks.removeAt(index);
-        contentBlocks.insertAll(index, [
-          ContentBlock.text(before),
-          ContentBlock.image(File(picked.path)),
-          ContentBlock.text(after),
-        ]);
-      });
-    }
-  }
-
-  void submitPost() async {
-    final title = titleController.text.trim();
-    final validBlocks = contentBlocks
-        .where((b) => (b.type == BlockType.text && b.text!.trim().isNotEmpty) ||
-                      (b.type == BlockType.image && b.imageFile != null))
-        .toList();
-
-    if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('제목을 입력해주세요')));
-      return;
-    } else if (validBlocks.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('내용을 입력해주세요')));
-      return;
-    }
-
-    final post = PostModel(
-      postId: const Uuid().v4(),
-      userId: 'tempUser',
-      nickname: 'tempNick',
-      profileImageUrl: '',
-      category: selectedCategory,
-      likeCount: 0,
-      commentCount: 0,
-      timestamp: DateTime.now(),
-      title: title,
-      content: validBlocks.map((e) => e.toJson()).toList().toString(),
-      imageUrl: null,
-    );
-
-    try {
-      await PostService.createPost(post);
-      if (mounted) Navigator.pop(context);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('적용 중 오류가 발생했습니다. 다시 시도해주세요.')));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('글쓰기', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        leading: BackButton(color: Colors.black),
-        centerTitle: true,
-        actions: [
-          TextButton(
-            onPressed: submitPost,
-            child: const Text('등록', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-          )
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildCategoryDropdown(),
-            const SizedBox(height: 20),
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(hintText: '제목을 입력해주세요', border: InputBorder.none),
-              maxLines: null,
-            ),
-            const Divider(),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              itemCount: contentBlocks.length,
-              itemBuilder: (context, index) {
-                final block = contentBlocks[index];
-                if (block.type == BlockType.text) {
-                  if (!textControllers.containsKey(index)) {
-                    textControllers[index] = TextEditingController(text: block.text);
-                  }
-                  final controller = textControllers[index]!;
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: controller,
-                            maxLines: null,
-                            onChanged: (value) => block.text = value,
-                            decoration: const InputDecoration.collapsed(hintText: "내용을 입력해주세요"),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.image, size: 20),
-                          onPressed: () => addImageAtCursor(index),
-                        )
-                      ],
-                    ),
-                  );
-                } else {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Image.file(block.imageFile!),
-                  );
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryDropdown() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color.fromARGB(255, 203, 227, 167)),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton2<String>(
-          isExpanded: true,
-          value: selectedCategory,
-          items: categoryList.map((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value, style: const TextStyle(fontSize: 12, color: Colors.black)),
-            );
-          }).toList(),
-          onChanged: (String? newValue) {
-            setState(() {
-              selectedCategory = newValue!;
-            });
-          },
-          buttonStyleData: const ButtonStyleData(
-            padding: EdgeInsets.symmetric(horizontal: 8),
-            height: 40,
-            width: 110,
-          ),
-          dropdownStyleData: DropdownStyleData(
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: Colors.white),
-            offset: const Offset(0, -5),
-          ),
-          iconStyleData: const IconStyleData(
-            icon: Icon(Icons.arrow_drop_down),
-            iconSize: 24,
-            iconEnabledColor: Colors.black,
-          ),
-          menuItemStyleData: const MenuItemStyleData(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            height: 40,
-          ),
-        ),
-      ),
-    );
-  }
-}
-*/
->>>>>>> origin/main

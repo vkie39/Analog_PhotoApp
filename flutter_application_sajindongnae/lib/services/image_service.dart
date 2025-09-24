@@ -1,15 +1,10 @@
-<<<<<<< HEAD
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/widgets.dart';
-=======
-// image_service.dart
-import 'package:file_picker/file_picker.dart';
->>>>>>> origin/main
+
 import 'package:permission_handler/permission_handler.dart'; // 카메라, 갤러리 권한 요청 패키지
 import 'package:image_picker/image_picker.dart'; // 사진 찍거나, 갤러리의 사진을 가져오기 위한 패키지
 import 'package:image_cropper/image_cropper.dart'; // 이미지 자르기 
 import 'package:flutter_image_compress/flutter_image_compress.dart'; // 이미지 압축
-<<<<<<< HEAD
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:developer';
@@ -181,31 +176,17 @@ final ImagePicker _picker = ImagePicker(); // ImagePicker 객체 생성
 
 
 class ImageService {
-=======
-// 이미지 업로드를 위해 필요
-import 'dart:io';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:uuid/uuid.dart';
-
-
-class ImageService {
-  final ImagePicker _picker = ImagePicker(); // ImagePicker 객체 생성
->>>>>>> origin/main
 
   // 접근 권한 요청에 대한 결과 반환
   Future<bool> requestPermission() async {
     bool storage = await Permission.storage.request().isGranted; // 갤러리
-<<<<<<< HEAD
     bool camera = await Permission.camera.request().isGranted;   // 카메라
-=======
-    bool camera = await Permission.camera.request().isGranted; // 카메라
->>>>>>> origin/main
+
 
     if (!storage || !camera) return false; // 하나라도 거부되면 false
     return true;
   }
 
-<<<<<<< HEAD
   // 카메라 접근 권한 요청에 대한 결과 반환
   Future<bool> requestPermissionForCamera() async {
     bool camera = await Permission.camera.request().isGranted; // 카메라
@@ -223,10 +204,7 @@ class ImageService {
   // 사진을 찍고 XFile객체 반환, 안찍으면 null
   Future<XFile?> takePhoto() async {
     log('1. 카메라 열기 시도');
-=======
-  // 사진을 찍고 XFile객체 반환, 안찍으면 null
-  Future<XFile?> takePhoto() async {
->>>>>>> origin/main
+
     return await _picker.pickImage(source: ImageSource.camera);
   }
 
@@ -236,21 +214,17 @@ class ImageService {
   }
 
   Future<XFile?> pickImageFromFileSystem() async {
-<<<<<<< HEAD
     log('1. 파일시스템 열기 시도');
-=======
->>>>>>> origin/main
+
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
       allowMultiple: false,
     );
-<<<<<<< HEAD
+
     log('2. 파일 받아옴');
     if (result != null && result.files.single.path != null) {
       log('3. 파일 리턴');
-=======
-    if (result != null && result.files.single.path != null) {
->>>>>>> origin/main
+
       return XFile(result.files.single.path!); // image_picker와 호환
     }
     return null;
@@ -259,7 +233,6 @@ class ImageService {
   // 이미지 경로를 받아서 자른 후 결과로 CroppedFile을 반환
   Future<CroppedFile?> cropImage(String imagePath) async {
     try {
-<<<<<<< HEAD
       // 원본 확장자 보존
       final ext = path.extension(imagePath).toLowerCase();
       ImageCompressFormat format; // 저장되는 최종 파일 확장자 지정
@@ -281,14 +254,7 @@ class ImageService {
         ]
       );
       return cropped; 
-=======
-      final cropped = await ImageCropper().cropImage(
-        sourcePath: imagePath,
-        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-        compressFormat: ImageCompressFormat.jpg,
-      );
-      return cropped;
->>>>>>> origin/main
+
     } catch (e) {
       print('Crop error: $e');
       return null; // 반드시 null 리턴
@@ -298,13 +264,9 @@ class ImageService {
   // 이미지 경로를 받아서 압축된 이미지 XFile 반환, 예외 발생시 null
   Future<XFile?> compressImage(String imagePath) async {
     try {
-<<<<<<< HEAD
       final ext = imagePath.split('.').last;                             
       final outputPath = imagePath.replaceAll(".$ext", '_compressed.webp'); 
-=======
-      final ext = imagePath.split('.').last;
-      final outputPath = imagePath.replaceAll(".$ext", '_compressed.webp');
->>>>>>> origin/main
+
       return await FlutterImageCompress.compressAndGetFile(
         imagePath,
         outputPath,
@@ -341,7 +303,6 @@ class ImageService {
   }
 
 
-<<<<<<< HEAD
 
 }
 
@@ -363,6 +324,4 @@ Future<bool> _showGoToSettingsDialog(BuildContext context, {required String reas
 void _toast(BuildContext context, String msg) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 }
-=======
-}
->>>>>>> origin/main
+

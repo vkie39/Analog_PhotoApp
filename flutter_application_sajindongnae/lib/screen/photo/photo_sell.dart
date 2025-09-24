@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_sajindongnae/component/search.dart';
-<<<<<<< HEAD
 import 'package:flutter_application_sajindongnae/models/photo_model.dart';
 import 'package:flutter_application_sajindongnae/models/request_model.dart';
 import 'package:flutter_application_sajindongnae/component/request_card.dart';
@@ -11,10 +10,7 @@ import 'package:flutter_application_sajindongnae/screen/photo/request_write.dart
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-=======
-import 'package:flutter_application_sajindongnae/screen/photo/sell_detail.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
->>>>>>> origin/main
+
 
 class PhotoSellScreen extends StatefulWidget {
   const PhotoSellScreen({super.key});
@@ -45,7 +41,6 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
     '₩500',
   ];
 
-<<<<<<< HEAD
   // 의뢰글 임시 데이터
   final List<RequestModel> dummyRequests = [
     RequestModel(
@@ -78,11 +73,6 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
     ),
   ];
 
-
-
-
-=======
->>>>>>> origin/main
   @override
   void initState() {
     super.initState();
@@ -100,10 +90,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
     final screenWidth = MediaQuery.of(context).size.width; // 화면 너비
     final isSmallScreen = screenWidth <= 360;
 
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/main
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -146,11 +133,6 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                       const double tagPaddingV = 10;
                       final double tagFontSize = isSmallScreen ? 12 : 14;
                       const double tagBorderRadius = 16;
-<<<<<<< HEAD
-                      
-=======
-
->>>>>>> origin/main
                       if (tags.isEmpty || index == tags.length) {
                         return GestureDetector(
                           onTap: () {
@@ -192,7 +174,6 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: tagPaddingH, vertical: tagPaddingV),
                           decoration: BoxDecoration(
-<<<<<<< HEAD
                             color: isSelected ? const Color(0xFFDDECC7) : Colors.white,              //선택된 태그 색상
                             border: Border.all(
                               color: isSelected ? const Color(0xFFBBD18B) : Colors.grey.shade300,    //선택된 태그 테두리 색상
@@ -200,15 +181,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                             ),
                             borderRadius: BorderRadius.circular(tagBorderRadius),
                           ), 
-=======
-                            color: isSelected ? const Color(0xFFDDECC7) : Colors.white,
-                            border: Border.all(
-                              color: isSelected ? const Color(0xFFBBD18B) : Colors.grey.shade300,
-                              width: 1,
-                            ),
-                            borderRadius: BorderRadius.circular(tagBorderRadius),
-                          ),
->>>>>>> origin/main
+
                           child: Align(
                             alignment: Alignment.center,
                             child: Text(
@@ -238,16 +211,12 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
 
               // 콘텐츠
               Expanded(
-<<<<<<< HEAD
                 child: TabBarView(
                   controller: _tabController,
                   children: [
                     // 판매 탭
                     Padding(
-=======
-                child: _tabController.index == 0
-                    ? Padding(
->>>>>>> origin/main
+
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         child: MasonryGridView.count(
                           crossAxisCount: 2,
@@ -256,9 +225,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                           itemCount: 10,
                           itemBuilder: (context, index) {
                             final imageName = 'assets/images/sellPhoto${index + 1}.JPG';
-                            final price = prices[index];
-<<<<<<< HEAD
-                            
+                            final price = prices[index];                   
                             //임시 데이터
                             PhotoModel dummyPhoto = PhotoModel(
                               photoId: '1',
@@ -338,37 +305,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                     )
                   ],
                 ),
-=======
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Image.asset(
-                                    imageName,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: Text(
-                                    price,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w300,
-                                      fontSize: isSmallScreen ? 10 : 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      )
-                    : const Center(
-                        child: Text('구매 탭입니다', style: TextStyle(color: Colors.grey)),
-                      ),
->>>>>>> origin/main
+
               ),
             ],
           ),
@@ -379,7 +316,6 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           final selectedCategory = tabs[_tabController.index];
-<<<<<<< HEAD
           switch (selectedCategory){       // 판매탭에서 '판매글 쓰기', 구매(의뢰)탭에선 '의뢰글 쓰기'로  
             case '판매':
               Navigator.push(
@@ -402,16 +338,6 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
           }     
         },
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)), // 버튼 모양
-=======
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SellDetailScreen(),
-            ),
-          );
-        },
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)), // 버튼 모양
->>>>>>> origin/main
         backgroundColor: const Color(0xFFDDECC7),
         elevation: 5, // 그림자
         icon: const Icon(Icons.photo, size: 20, color: Colors.black),
