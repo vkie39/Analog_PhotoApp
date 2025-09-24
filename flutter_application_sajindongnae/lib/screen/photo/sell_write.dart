@@ -2,10 +2,17 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/location_select.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
+
 
 import 'package:flutter_application_sajindongnae/screen/photo/tag_select.dart';
 import 'package:flutter_application_sajindongnae/services/image_service.dart';
+import 'package:flutter_application_sajindongnae/services/permission_service.dart';
 import 'package:flutter_application_sajindongnae/models/tag_model.dart';
+import 'package:flutter_application_sajindongnae/models/location_model.dart';
+
 
 
 
@@ -21,8 +28,12 @@ class SellWriteScreen extends StatefulWidget {      // 화면이 바뀌는 경�
 
 
 class _SellWriteScreenState extends State<SellWriteScreen> {
-  // 선택된 이미지 파일 (초기값 null)
+  // 선택한 이미지 파일
+  XFile? _originalImage;
   XFile? _selectedImage; 
+  bool _cropping = false;
+  late ImageService _imageService;
+
   
   // 선택된 태그
   SelectedTagState _selectedTagState = SelectedTagState();      // 선택된 태그 상태 관리 모델 (붕어빵 하나. 초기값은 빈 상태)
@@ -92,21 +103,21 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
     }
   }
 
+
   // 위치 선택 화면으로 이동하고 선택된 위치를 받아오는 함수
   Future<void> _openLocationSelector(BuildContext context) async {   
-    final location = await Navigator.push<String>(      
+    final result = await Navigator.push<LocationPickResult>(      
       context,  
       MaterialPageRoute(builder: (context) => LocationSelectScreen()), 
     );
 
     // LocationSelectScreen 선택된 위치를 받아와서 상태 업데이트
-    if (location != null) {                  
+    if (result != null) {                  
       setState(() {
-        locationController.text = location;        // 선택된 상태 업데이트
+        locationController.text = result.address;        // 선택된 상태 업데이트
       });
     }
   }
-
 
 
   // 컨트롤러 (입력칸 제어용)
@@ -131,6 +142,11 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
     descriptionController.dispose();
     locationController.dispose();
     super.dispose();
+  }
+  @override
+  void initState() {
+    super.initState();
+    _imageService = ImageService();
   }
 
 
@@ -182,6 +198,79 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
       print("폼 검증 실패");
     }
   }
+
+  // image_service에서 pickImageFromGallery와 pickImageFromCamera로 
+  // 이미지를 가져오면 null여부 확인 후 setState로 화면에 반영
+  
+  Future<void> _pickImageFromGallery(BuildContext context) async {
+    _originalImage = await pickImageFromGallery(context);
+    if (_originalImage != null) {
+      await _cropImage(_originalImage!.path);
+      // 크롭 없이 바로 이미지 삽입할 거면 주석처리된 내용으로 하기
+      //setState(() {
+      //  _cropedImage = _originalImage; // 크롭, 압축 없이 바로 사용
+      //  _isPictureUploaded = true;
+      //});
+    } else {
+      Fluttertoast.showToast(msg: '사진 선택이 취소되었습니다.');
+    }
+  }
+
+  Future<void> _pickImageFromCamera(BuildContext context) async {
+    _originalImage = await pickImageFromCamera(context); // 카메라에서 이미지 촬영
+    if (_originalImage != null) {
+      setState(() {
+        _selectedImage = _originalImage; // 크롭, 압축 없이 바로 사용
+      });
+    } else {
+      Fluttertoast.showToast(msg: '사진 촬영이 취소되었습니다.');
+    }
+  }
+
+  Future<void> _pickImageFromFileSystem(BuildContext context) async {
+    final file = await pickImageFromFileSystem(context);
+    if (file != null) {
+      setState(() {
+        _selectedImage = file;
+      });
+    } else {
+      Fluttertoast.showToast(msg: '파일 선택이 취소되었습니다.');
+    }
+  }
+
+
+  // 찍거나 가져온 사진 편집(크롭,회전)하는 함수
+  Future<void> _cropImage(String imagePath) async {
+    if(_cropping) return;  // 크롭 동작을 동시에 여러개 하지 못하도록 막음
+    _cropping = true;
+    try{
+      // 경로 복사
+      final normalizedPath = await _toTempFilePath(imagePath);           // 앱의 임시 디렉토리로 경로 복사 -> 좀 더 안전한 접근 
+      final croppedFile = await _imageService.cropImage(normalizedPath); // 크롭 결과
+
+      if (croppedFile != null) {
+        if (!mounted) return;  // 크롭 처리하는 동안 화면이 없어지지 않았는지 확인
+        setState(() {
+          _selectedImage = XFile(croppedFile.path);
+        });
+      }
+    } catch (e, st){
+      debugPrint('crop error : $e\n$st');
+      Fluttertoast.showToast(msg: '편집 중 오류 발생');
+    }finally{_cropping = false;}
+  }
+
+  
+  // 사진 경로를 받아서 어플의 임시 디렉토리 경로를 반환하는 함수
+  Future<String> _toTempFilePath(String pickedPath) async{                     // 갤러리나 카메라에서 가져온 사진 경로를 받음
+    final bytes = await XFile(pickedPath).readAsBytes();                       // 원본을 XFile로 감싸서 전체 바이트를 읽어옴
+    final ext = path.extension(pickedPath).isNotEmpty ? path.extension(pickedPath) : '.jpg';
+    final dir = await getTemporaryDirectory();                                 // 앱 전용 임시 디렉토리
+    final f = File('${dir.path}/${DateTime.now().millisecondsSinceEpoch}$ext');// 임시 디렉토리에 새로운 파일 만듦
+    await f.writeAsBytes(bytes, flush: true);                                  // 읽어온 바이트를 만든 파일에 기록. flush는 버퍼링된 내용을 바로 사용할 수 있도록 보장
+    return f.path;
+  } 
+
 
   @override
   Widget build(BuildContext context) {
@@ -256,27 +345,7 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
                 // 사진 업로드 버튼 (다시 선택 버튼)
                 ElevatedButton(
                   onPressed:() async{
-                    // 버튼 클릭시 이미지 선택 로직
-                    final imageService = ImageService(); // ImageService 인스턴스 생성
-/*
-                    bool permissionGranted = await imageService.requestPermission(); // 권한 요청
-                    if (!permissionGranted) { // 권한 거부 시
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('카메라 및 갤러리 접근 권한이 필요합니다.')),
-                      );
-                      return; // 함수 종료
-                    } 
-*/
-                    final XFile? image = await imageService.pickImageFromGallery(); // 파일시스템에서 이미지 선택
-                    if (image != null) {
-                      print('선택된 이미지 경로: ${image.path}'); // 선택된 이미지 경로 출력
-                      setState(() {
-                        _selectedImage = image; // 선택된 이미지 상태 업데이트
-                      });
-                    } 
-                    else {
-                      print('이미지 선택 취소됨');
-                    }
+                    _pickImageFromGallery(context);
                   },
                   style: ButtonStyle(
                     backgroundColor: WidgetStateProperty .resolveWith<Color>((Set<WidgetState> states) {
@@ -376,7 +445,10 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
                     ),
 
                   child: InkWell(
-                    onTap: ()  {
+                    onTap: ()  async{
+                      final permissionLocation = await ensureLocationPermission(context,needAlways: false);
+                      if (!permissionLocation) return; // 권한 없으면 중단
+
                       _openLocationSelector(context);
                     },
                     borderRadius: BorderRadius.circular(10), // 클릭 영역 모서리 둥글게

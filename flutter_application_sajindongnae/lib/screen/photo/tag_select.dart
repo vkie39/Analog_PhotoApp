@@ -115,7 +115,7 @@ class _TagSelectionScreenState extends State<TagSelectionScreen> {
               Theme(
                 data: Theme.of(context).copyWith(
                   chipTheme: ChipThemeData(                                         // 칩 위젯의 테마 설정
-                    backgroundColor: Colors.white,                           // 기본 배경색
+                    backgroundColor: Colors.white,                                // 기본 배경색
                     selectedColor: const Color.fromARGB(255, 18, 18, 18),         // 선택된 칩의 배경색
                     labelStyle: const TextStyle(color: Colors.black),             // 기본 텍스트 스타일
                     secondaryLabelStyle: const TextStyle(color: Colors.white),    // 선택된 칩의 텍스트 스타일

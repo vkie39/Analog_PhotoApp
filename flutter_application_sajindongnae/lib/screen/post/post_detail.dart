@@ -24,7 +24,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   final TextEditingController _commentController = TextEditingController(); // 댓글 컨트롤러
   bool isLiked = false; // 좋아요 상태 (색 채울지 말지)
   int likeCount = 0; // 좋아요 수 상태
-  late PostModel _post; // 
+  late PostModel _post; 
 
   // 수정된 부분: 댓글 저장 방식 변경
   void _submitComment() async {

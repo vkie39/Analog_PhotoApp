@@ -10,10 +10,10 @@ enum MoreAction { report, edit, delete }
 
 class SellDetailScreen extends StatefulWidget {
   final PhotoModel photo;
+  const SellDetailScreen({super.key, required this.photo});
+
   // 임시 유저 정보 
   final String currentUserUid = 'dummy_uid';
-
-  const SellDetailScreen({super.key, required this.photo});
 
   @override
   State<SellDetailScreen> createState() => _SellDetailScreenState();
@@ -137,12 +137,9 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 사진
-            AspectRatio(
-              aspectRatio: 4 / 3,
-              child: Image.network(
-                photo.imageUrl,
-                fit: BoxFit.cover,
-              ),
+            SizedBox(
+              width: double.infinity,
+              child: Image.asset(photo.imageUrl, fit: BoxFit.cover),
             ),
 
             const SizedBox(height: 10),

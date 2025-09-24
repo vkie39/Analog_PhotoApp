@@ -40,10 +40,13 @@
 
 6. 갤러리 사진 가져오기
  블로그 : https://velog.io/@s_soo100/Flutter%EB%A1%9C-%EC%82%AC%EC%A7%84-%EC%97%85%EB%A1%9C%EB%8D%94-%EB%A7%8C%EB%93%A4%EA%B8%B0
+ 블로그 : https://mundroid.tistory.com/2 (photo picker 설명)
 
 7. floatingButton 애니메이셔 적용
  유투브 : https://www.youtube.com/watch?v=GxlIaQjHixY
  GPT : https://chatgpt.com/c/684c5dc7-b248-8004-9f03-634269324a2b
+
+
 
 [출처 임시]
  홈 아이콘 : https://www.flaticon.com/kr/free-icon/home_1946488?term=%ED%99%88&page=1&position=8&origin=search&related_id=1946488
