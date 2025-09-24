@@ -20,7 +20,7 @@ class UserModel {
       'uid': uid,
       'email': email,
       'nickname': nickname,
-      'createdAt': Timestamp.fromDate(createdAt), // 🔹 안전하게 Timestamp 변환
+      'createdAt': Timestamp.fromDate(DateTime.now()),
       'profileImageUrl': profileImageUrl,
     };
   }
