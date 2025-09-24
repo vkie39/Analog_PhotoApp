@@ -1,11 +1,15 @@
 
 
 // 하단바 
+<<<<<<< HEAD
 // 탭 이벤트 발생시 onTap
+=======
+>>>>>>> origin/main
 
 
 import 'package:flutter/material.dart';
 
+<<<<<<< HEAD
 class BottomNav extends StatelessWidget {  // BottomNav 위젯 정의. 고정된 UI를 그리기 때문에 StatelessWidget 상속
   final int currentIndex;                  // main.dart에서 _currentIndex를 받아 currentIndex에 저장
   final ValueChanged<int> onTap;           //콜백함수
@@ -14,6 +18,16 @@ class BottomNav extends StatelessWidget {  // BottomNav 위젯 정의. 고정된
     super.key,                   // 고유 식별자. 성능 최적화를 위해 필요
     required this.currentIndex,  // BottomNav를 만들때 필수로 받아야 함
     required this.onTap,         // 마찬가지 필수로 받아야 함
+=======
+class BottomNav extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap; //콜백함수
+
+  const BottomNav({ //생성자
+    super.key,
+    required this.currentIndex,
+    required this.onTap,
+>>>>>>> origin/main
   });
 
   @override
@@ -28,12 +42,21 @@ class BottomNav extends StatelessWidget {  // BottomNav 위젯 정의. 고정된
         backgroundColor: Colors.white,
         currentIndex: currentIndex,
         onTap: onTap,
+<<<<<<< HEAD
         type: BottomNavigationBarType.fixed,                     // 고정된 크기 사용
         selectedItemColor: Color.fromARGB(255, 33, 165, 13),   // 선택되었을 때 스타일 
         unselectedItemColor: Colors.grey,                      // 선택되지 않았을 때 스타일
         selectedFontSize: 12,
         unselectedFontSize: 12,
         items: const [               // items에 각 버튼의 아이콘 모양과 라벨 이름 정의
+=======
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Color.fromARGB(255, 33, 165, 13),
+        unselectedItemColor: Colors.grey,
+        selectedFontSize: 12,
+        unselectedFontSize: 12,
+        items: const [
+>>>>>>> origin/main
           BottomNavigationBarItem(
             icon: ImageIcon(AssetImage('assets/icons/home_icon.png')),
             label: '홈',
