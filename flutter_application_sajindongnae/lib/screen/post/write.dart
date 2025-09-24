@@ -26,14 +26,17 @@ import 'package:firebase_auth/firebase_auth.dart'; // 변경: 로그인 유저 u
 
 class WriteScreen extends StatefulWidget {
   final String category;
-
+  
   const WriteScreen({super.key, required this.category});
+  
 
   @override
   State<WriteScreen> createState() => _WriteScreenState();
 }
 
 class _WriteScreenState extends State<WriteScreen> {
+  // 🔥 로그인한 사용자 가져오기
+  final User? user = FirebaseAuth.instance.currentUser;
   final List<String> categoryList = ['자유', '카메라추천', '피드백'];
   late String selectedCategory;
   late ImageService _imageService;
@@ -167,8 +170,8 @@ void submitPost() async {
 
   final newPost = PostModel(
     postId: const Uuid().v4(),
-    uid: '임시유저ID', // 로그인된 사용자 ID로 수정 필요
-    nickname: '용용선생',
+    uid: user?.uid ?? 'unknown',                  // 로그인된 사용자 UID
+    nickname: user?.email ?? '익명',              // 닉네임 대신 이메일 (DB에서 따로 가져와도 됨)
     profileImageUrl: '',
     category: category,
     likeCount: 0,
