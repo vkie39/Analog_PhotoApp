@@ -9,14 +9,14 @@ class PwInputWidget extends StatelessWidget {
   final Function(String) onPasswordConfirmChanged;
 
   const PwInputWidget({
-    Key? key,
+    super.key,
     required this.passwordController,
     required this.passwordConfirmController,
     required this.passwordErrorText,
     required this.passwordConfirmErrorText,
     required this.onPasswordChanged,
     required this.onPasswordConfirmChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

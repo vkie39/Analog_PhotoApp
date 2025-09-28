@@ -10,13 +10,13 @@ class IdInputWidget extends StatelessWidget {
 
   // 외부 파일 (signup_detail.dart 등)에서 필요한 값들을 위젯에 전달받기 위한 생성자
   const IdInputWidget({
-    Key? key,
+    super.key,
     required this.idController, // 위젯 밖에서 넘겨받는 텍스트 컨트롤러
     this.idErrorText, // 에러 메시지는 null 가능
     required this.onChanged, // 텍스트 바뀔 때 콜백 함수
     required this.onCheckDuplicate,
     this.isChecking = false, // 중복 확인 버튼 눌렀을 때 콜백
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
