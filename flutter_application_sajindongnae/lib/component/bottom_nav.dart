@@ -1,8 +1,4 @@
-
-
 // 하단바 
-
-
 import 'package:flutter/material.dart';
 
 class BottomNav extends StatelessWidget {
@@ -32,7 +28,7 @@ class BottomNav extends StatelessWidget {
         unselectedItemColor: Colors.grey,
         selectedFontSize: 12,
         unselectedFontSize: 12,
-        items: const [
+        items: const [               // items에 각 버튼의 아이콘 모양과 라벨 이름 정의
           BottomNavigationBarItem(
             icon: ImageIcon(AssetImage('assets/icons/home_icon.png')),
             label: '홈',

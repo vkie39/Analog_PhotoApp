@@ -72,10 +72,10 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0, //그림자
-        title: SearchBarWidget( //search.dart에서 정의한 검색창
-          controller: searchController,
+        backgroundColor: Colors.white, // 앱 바 배경색 
+        elevation: 0,                    // 그림자
+        title: SearchBarWidget(          // Appbar의 title자리에 search.dart에서 정의한 검색창 배치
+          controller: searchController,  // 위에서 정의한 검색창 컨트롤러
           onChanged: (value){
             // 이후에 Firestore 쿼리 또는 리스트 필터링 로직 추가 필요함
             // 검색어 업데이트
@@ -116,7 +116,8 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
                 indicatorSize: TabBarIndicatorSize.tab, */
               ),
             
-              Expanded(
+
+              Expanded(                                  // 남은 공간을 모두 차지하도록 하는 위젯
                 child: TabBarView(
                   controller: _tabController,
                   /*
@@ -145,6 +146,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
                         }
                         // 검색기능을 위해 추가된 부분
                         final List<PostModel> rawList = snapshot.data!;
+
 
                         final filteredList = rawList.where((post){
                           if(searchKeyword.isEmpty) return true;

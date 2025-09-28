@@ -9,8 +9,8 @@ class PostModel {
   final int likeCount;
   final int commentCount;
   final DateTime timestamp;
-  final String title;
-  final String content;
+  late final String title;
+  late final String content;
   final String? imageUrl;
 
   // ✅ 변경: likedBy 추가 (좋아요 누른 uid 목록)
