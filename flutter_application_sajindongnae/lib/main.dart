@@ -14,7 +14,7 @@ import 'package:flutter_application_sajindongnae/screen/auth/login.dart'; // 로
 import 'package:flutter_application_sajindongnae/screen/auth/signup_start.dart'; // 회원가입 화면 (추가)
 import 'package:flutter_application_sajindongnae/screen/auth/Idfound.dart'; // 아이디 찾는 화면
 import 'package:flutter_application_sajindongnae/screen/auth/Pwfound.dart'; // 비밀번호 찾는 화면
-
+import 'package:flutter_application_sajindongnae/default.dart';
 import 'package:flutter_application_sajindongnae/screen/home.dart';
 import 'component/bottom_nav.dart'; // bottom_nav.dart에서 UI 분리한 하단바
 
@@ -50,6 +50,7 @@ class MyApp extends StatelessWidget {
         '/find_account': (context) => const FindAccountScreen(),
         '/find_id':(context) => const IdfoundScreen(),
         '/find_password':(context) => const PwfoundScreen(),
+        '/home': (context) => const Default(),
       },
 
       //home: MainPage(), // 시작 시 보여줄 화면

@@ -16,7 +16,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('마이페이지지'),),
+      appBar: AppBar(title: Text('마이페이지'),),
     );
   }
 }
