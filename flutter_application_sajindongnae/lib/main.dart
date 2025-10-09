@@ -50,6 +50,9 @@ class MyApp extends StatelessWidget {
         '/find_account': (context) => const FindAccountScreen(),
         '/find_id':(context) => const IdfoundScreen(),
         '/find_password':(context) => const PwfoundScreen(),
+        // 화면 안넘어가서 추가함
+        '/home': (context) => const HomeScreen(),
+        '/list': (context) => const ListScreen(),
       },
 
       //home: MainPage(), // 시작 시 보여줄 화면

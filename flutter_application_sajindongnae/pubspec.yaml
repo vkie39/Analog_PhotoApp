@@ -49,20 +49,17 @@ dependencies:
   path_provider: ^2.1.5
   path: ^1.9.1
   
-  firebase_core: ^2.32.0
-  firebase_auth: ^4.16.0
-  firebase_storage: ^11.6.5
-  cloud_firestore: ^4.17.5
-  
+  # 로그인 오류나서 버전을 통일함. 원랜 core랑 auth가 버전이 달랐음.
+  firebase_core: ^3.4.0
+  firebase_auth: ^5.3.0
+  cloud_firestore: ^5.2.0
+  firebase_storage: ^12.3.0
 
   image_picker: ^1.1.2
   file_picker: ^10.2.0
   permission_handler: ^12.0.0+1
   image_cropper: ^9.1.0
   flutter_image_compress: ^2.4.0
-  fluttertoast: ^8.2.12
-  flutter_staggered_grid_view: ^0.7.0
-  flutter_screenutil: ^5.9.3
   google_maps_flutter: ^2.12.3
   geolocator: ^14.0.2 
   geocoding: ^2.1.0

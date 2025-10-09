@@ -200,8 +200,7 @@ class ImageService {
       allowMultiple: false,
     );
     if (result != null && result.files.single.path != null) {
-    log('2. 파일 받아옴');
-    if (result != null && result.files.single.path != null) {
+      log('2. 파일 받아옴');
       log('3. 파일 리턴');
       return XFile(result.files.single.path!); // image_picker와 호환
     }

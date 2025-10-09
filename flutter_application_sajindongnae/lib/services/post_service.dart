@@ -92,28 +92,15 @@ class PostService {
     }
   }
 
-  //게시글 수정
-  static Future<void> updatePost(String postId, Map<String, dynamic> updatedData) async {
-  try {
-    await _postCollection.doc(postId).update(updatedData);
-    log('게시글 수정 완료');
-    
-  } catch (e) {
-    log('게시글 수정 실패: $e');
-    rethrow;
-  }
-}
-
-
-  
-  // 게시글 삭제 기능
-  static Future<void> deletePostWithImage(PostModel post) async {
-  try {
-    // 1. 이미지가 있다면 Storage에서 삭제
-    if (post.imageUrl != null && post.imageUrl!.isNotEmpty) {
-      final ref = FirebaseStorage.instance.refFromURL(post.imageUrl!);
-      await ref.delete();
-      log('✅ 이미지 삭제 완료');
+  /// 게시글 수정
+  static Future<void> updatePost(
+      String postId, Map<String, dynamic> updatedData) async {
+    try {
+      await _postCollection.doc(postId).update(updatedData);
+      log('게시글 수정 완료');
+    } catch (e) {
+      log('게시글 수정 실패: $e');
+      rethrow;
     }
   }
 

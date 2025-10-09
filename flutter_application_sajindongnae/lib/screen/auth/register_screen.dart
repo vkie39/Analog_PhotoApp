@@ -1,8 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_sajindongnae/main.dart';
-
+import 'package:flutter_application_sajindongnae/screen/home.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -35,7 +34,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       //if (mounted) Navigator.pop(context);
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const MainPage()),
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
           (route) => false,
         );
       }
