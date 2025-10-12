@@ -1,3 +1,5 @@
+import 'dart:math' as dev show log;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/photo_sell.dart';
@@ -59,15 +61,15 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
             onSelected: (MoreAction action) async{
               switch (action) {
                 case MoreAction.report:
-                  dev.log('신고하기 선택됨');
+                  dev.log('신고하기 선택됨' as num);
                   // 신고하기 로직 추가
                   break;
                 case MoreAction.edit:
-                  dev.log('수정하기 선택됨');
+                  dev.log('수정하기 선택됨' as num);
                   // 수정하기 로직 추가
                   break;
                 case MoreAction.delete:
-                  dev.log('삭제하기 선택됨');
+                  dev.log('삭제하기 선택됨' as num);
                   // 삭제 확인 다이얼로그 표시
                   final shouldDelete = await showDialog<bool>(
                     context: context,
@@ -92,7 +94,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                   );
                   // 사용자가 삭제를 확인했을 때 삭제 로직 실행
                   if (shouldDelete == true) {
-                    dev.log('삭제 로직 실행됨');
+                    dev.log('삭제 로직 실행됨' as num);
                     // 실제 삭제 로직 추가
                     Navigator.of(context).pop(); // 삭제 후 이전 화면으로 돌아감
                   }
@@ -243,7 +245,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                             : const Color.fromARGB(255, 161, 161, 161),        // 좋아요 안눌렀을 때 색상
                         ) ,
                         onPressed: () {
-                          dev.log('좋아요 버튼 클릭됨');
+                          dev.log('좋아요 버튼 클릭됨' as num);
                           setState(() {
                             isLikedPhoto = !isLikedPhoto;                        // 좋아요 상태 토글(업데이트)
                           });
@@ -258,7 +260,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                   // 구매 버튼
                   ElevatedButton(
                     onPressed: () {
-                      dev.log('구매하기 버튼 클릭됨');
+                      dev.log('구매하기 버튼 클릭됨' as num);
                       // TODO : 구매하기 로직 추가 (결제 페이지로 이동 등)
                     },
                     style: ButtonStyle(
