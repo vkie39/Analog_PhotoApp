@@ -11,6 +11,8 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+// 워터마크 오버레이 위젯
+import 'package:flutter_application_sajindongnae/screen/photo/watermarked_image.dart';
 
 class PhotoSellScreen extends StatefulWidget {
   const PhotoSellScreen({super.key});
@@ -23,7 +25,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
   final searchController = TextEditingController(); // 검색창 내용을 컨트롤하기 위함
 
   List<String> tags = ['여름 방학','졸업 작품', '사진 동네', '바다', '감성 사진']; // 태그 저장 리스트 정의
-  List<String> _selectedTags = []; 
+  List<String> _selectedTags = [];
 
   final List<String> tabs = ['판매', '구매']; // 탭 이름 정의
   late TabController _tabController;
@@ -89,7 +91,6 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width; // 화면 너비
     final isSmallScreen = screenWidth <= 360;
-
 
     return Scaffold(
       appBar: AppBar(
@@ -180,7 +181,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                               width: 1,
                             ),
                             borderRadius: BorderRadius.circular(tagBorderRadius),
-                          ), 
+                          ),
 
                           child: Align(
                             alignment: Alignment.center,
@@ -216,79 +217,81 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                   children: [
                     // 판매 탭
                     Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      child: MasonryGridView.count(
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 8,
+                        itemCount: 10,
+                        itemBuilder: (context, index) {
+                          final imageName = 'assets/images/sellPhoto${index + 1}.JPG';
+                          final price = prices[index];
+                          //임시 데이터
+                          PhotoModel dummyPhoto = PhotoModel(
+                            photoId: '1',
+                            uid: 'dummy_uid',
+                            nickname: '반딧불이 작가',
+                            profileImageUrl: 'https://example.com/profile.png',
+                            category: '몽골,하늘사진,소니카메라,안녕하세요,태그,어디까지,스크롤,크로와상',
+                            likeCount: 20,
+                            commentCount: 5,
+                            dateTime: DateTime(2025, 2, 5),
+                            title: '몽골 은하수',
+                            description: '아름다운 몽골 은하수와 보랏빛 하늘\n그리고 나무가 어우러진 사진입니다',
+                            imageUrl: imageName, // 로컬 이미지 경로
+                            price: 2000,
+                            location: 'Baganuur, Ulaanbaatar 12060',
+                          );
 
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        child: MasonryGridView.count(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 8,
-                          crossAxisSpacing: 8,
-                          itemCount: 10,
-                          itemBuilder: (context, index) {
-                            final imageName = 'assets/images/sellPhoto${index + 1}.JPG';
-                            final price = prices[index];                   
-                            //임시 데이터
-                            PhotoModel dummyPhoto = PhotoModel(
-                              photoId: '1',
-                              uid: 'dummy_uid',
-                              nickname: '반딧불이 작가',
-                              profileImageUrl: 'https://example.com/profile.png',
-                              category: '몽골,하늘사진,소니카메라,안녕하세요,태그,어디까지,스크롤,크로와상',
-                              likeCount: 20,
-                              commentCount: 5,
-                              dateTime: DateTime(2025, 2, 5),
-                              title: '몽골 은하수',
-                              description: '아름다운 몽골 은하수와 보랏빛 하늘\n그리고 나무가 어우러진 사진입니다',
-                              imageUrl: 'assets/images/sellPhoto${index + 1}.JPG', // 로컬 이미지 경로
-                              price: 2000,
-                              location: 'Baganuur, Ulaanbaatar 12060',
-                            );
-
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => SellDetailScreen(
-                                      photo: dummyPhoto,
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SellDetailScreen(
+                                    photo: dummyPhoto,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: WatermarkedImage.asset(
+                                    imageName,
+                                    fit: BoxFit.cover,
+                                    watermarkText: '사진동네', // 필요 시 UID/날짜 조합 가능
+                                    opacity: 0.18,
+                                    paddingFactor: 2.5,
+                                    angleDeg: -45,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    price,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w300,
+                                      fontSize: isSmallScreen ? 10 : 12,
                                     ),
                                   ),
-                                );
-                              },
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Image.asset(
-                                      imageName,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Text(
-                                      price,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w300,
-                                        fontSize: isSmallScreen ? 10 : 12,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-
-                          },
-                        ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
+                    ),
 
                     // 구매탭 TODO : firebase 연동후 실시간 스트림으로 바꿔야 함
                     ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       itemCount: dummyRequests.length,
                       separatorBuilder: (_, __) =>
-                          const Divider(height: 1, color: Color(0xFFEFEFEF)),
+                      const Divider(height: 1, color: Color(0xFFEFEFEF)),
                       itemBuilder: (context, index) {
                         final r = dummyRequests[index];
                         return RequestCard(
@@ -305,7 +308,6 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                     )
                   ],
                 ),
-
               ),
             ],
           ),
@@ -316,26 +318,26 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           final selectedCategory = tabs[_tabController.index];
-          switch (selectedCategory){       // 판매탭에서 '판매글 쓰기', 구매(의뢰)탭에선 '의뢰글 쓰기'로  
+          switch (selectedCategory){       // 판매탭에서 '판매글 쓰기', 구매(의뢰)탭에선 '의뢰글 쓰기'로
             case '판매':
               Navigator.push(
-                context,      
+                context,
                 MaterialPageRoute(
-                  builder: (context) => SellWriteScreen(),
+                  builder: (context) => const SellWriteScreen(),
                 ),
               );
               break;
             case '구매':
               Navigator.push(
-                context,      
+                context,
                 MaterialPageRoute(
-                  builder: (context) => RequestWriteScreen(),
+                  builder: (context) => const RequestWriteScreen(),
                 ),
-              );    
+              );
               break;
             default:
               break;
-          }     
+          }
         },
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)), // 버튼 모양
         backgroundColor: const Color(0xFFDDECC7),

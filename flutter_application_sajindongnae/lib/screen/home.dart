@@ -4,6 +4,9 @@ import 'package:flutter_application_sajindongnae/component/post_card.dart';
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
 import 'package:flutter_application_sajindongnae/services/post_service.dart';
 
+// 워터마크 오버레이 위젯
+import 'package:flutter_application_sajindongnae/screen/photo/watermarked_image.dart';
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -82,9 +85,13 @@ class HomeScreen extends StatelessWidget {
                         itemBuilder: (context, index) {
                           return ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: Image.asset(
+                            child: WatermarkedImage.asset(
                               bestImagePaths[index],
                               fit: BoxFit.cover,
+                              watermarkText: '사진동네',
+                              opacity: 0.18,
+                              paddingFactor: 2.5,
+                              angleDeg: -45,
                             ),
                           );
                         },

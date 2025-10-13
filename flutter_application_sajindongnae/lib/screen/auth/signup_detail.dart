@@ -579,14 +579,14 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                         ),
                         child: isLoading
                             ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                             : Text(
-                                _isPhoneVerified ? "완료" : "인증 확인",
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                              ),
+                          _isPhoneVerified ? "완료" : "인증 확인",
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
                       ),
                     ),
                   ],

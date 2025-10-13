@@ -17,6 +17,27 @@ class SignupStartScreen extends StatefulWidget {
 class _SignupStartScreenState extends State<SignupStartScreen> {
   bool _isMsLoading = false;
 
+  // 로그인 링크용 TapGestureRecognizer를 필드로 유지 후 dispose에서 해제
+  late final TapGestureRecognizer _loginRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loginRecognizer = TapGestureRecognizer()
+      ..onTap = () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      };
+  }
+
+  @override
+  void dispose() {
+    _loginRecognizer.dispose(); // 메모리 누수 방지
+    super.dispose();
+  }
+
   /// Microsoft 계정으로 Firebase 로그인 (또는 신규 가입)
   Future<void> _signInWithMicrosoft() async {
     setState(() => _isMsLoading = true);
@@ -24,21 +45,21 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
       // Firebase Auth의 OAuthProvider 사용 (microsoft.com)
       final provider = OAuthProvider('microsoft.com');
 
-      // 원하면 필요한 범위를 추가 (기본 openid/profile/email은 콘솔에 추가하는 것을 권장)
+      // 기본 범위 (openid/profile/email) — 콘솔에도 등록 권장
       provider.addScope('openid');
       provider.addScope('profile');
       provider.addScope('email');
-      // Graph API를 쓰려면 예: provider.addScope('User.Read');
+      // Graph API 예: provider.addScope('User.Read');
 
-      // 어떤 테넌트를 허용할지(개인/조직/모두) 선택: common | consumers | organizations
+      // 허용 테넌트: common | consumers | organizations
       provider.setCustomParameters({'tenant': 'common'});
 
-      // iOS/Android/Web에서 모두 동작하는 통합 API
+      // 통합 signInWithProvider
       final credential = await FirebaseAuth.instance.signInWithProvider(provider);
       final user = credential.user;
 
       if (user != null) {
-        // Firestore에 사용자 문서 생성/업데이트
+        // Firestore 프로필 생성/갱신
         final users = FirebaseFirestore.instance.collection('users');
         final userRef = users.doc(user.uid);
         final snap = await userRef.get();
@@ -49,7 +70,6 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
           'nickname': user.displayName ?? '',
           'photoURL': user.photoURL,
           'provider': 'microsoft',
-          // 서버 시간 기록 (최초/갱신 구분)
           if (!snap.exists) 'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         };
@@ -58,24 +78,21 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
 
         if (!mounted) return;
 
-        // 전화번호 인증/약관 동의 등 추가정보를 수집하려면 가입 상세 화면으로 이동
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Microsoft 계정으로 로그인되었습니다.')),
         );
 
+        // 추가정보 수집 화면으로 이동
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => const SignupDetailScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const SignupDetailScreen()),
         );
       }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       var msg = e.message ?? '로그인 실패';
       if (e.code == 'account-exists-with-different-credential') {
-        msg =
-        '이미 다른 로그인 방식으로 가입된 이메일입니다. 기존 방식으로 로그인 후 계정 연결을 진행해 주세요.';
+        msg = '이미 다른 로그인 방식으로 가입된 이메일입니다. 기존 방식으로 로그인 후 계정 연결을 진행해 주세요.';
       } else if (e.code == 'operation-not-allowed') {
         msg = 'Firebase 콘솔에서 Microsoft 제공자 설정을 확인해 주세요.';
       }
@@ -95,7 +112,7 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 시스템 UI(노치 등)를 피하기 위해 SafeArea 사용함
+      // 시스템 UI(노치 등)를 피하기 위해 SafeArea 사용
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
@@ -248,7 +265,7 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
 
                   const SizedBox(height: 20),
 
-                  // 로그인 이동
+                  // 로그인 이동 (RichText + TapGestureRecognizer)
                   RichText(
                     textAlign: TextAlign.center,
                     text: TextSpan(
@@ -265,15 +282,7 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
                             color: Colors.black,
                             fontWeight: FontWeight.w500,
                           ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const LoginScreen(),
-                                ),
-                              );
-                            },
+                          recognizer: _loginRecognizer,
                         ),
                       ],
                     ),
@@ -281,12 +290,17 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
 
                   const SizedBox(height: 90),
 
-                  // 비회원 진입 (미구현)
+                  // 비회원 진입: GestureDetector로 구현 (요청하신 방식)
                   GestureDetector(
                     onTap: () {
-                      // TODO: 비회원 진입 로직
+                      // 비회원 진입: 홈으로 이동 (라우트 이름은 프로젝트에 맞게)
+                      Navigator.pushReplacementNamed(context, '/home');
+                      // 또는 화면 클래스로 직접 이동하고 싶다면:
+                      // Navigator.of(context).pushReplacement(
+                      //   MaterialPageRoute(builder: (_) => const HomeScreen()),
+                      // );
                     },
-                    behavior: HitTestBehavior.translucent,
+                    behavior: HitTestBehavior.translucent, // 작은 텍스트도 탭 잘 인식
                     child: const Text(
                       "건너뛰기",
                       textAlign: TextAlign.center,

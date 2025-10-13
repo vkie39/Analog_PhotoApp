@@ -134,9 +134,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(4),
                         borderSide: BorderSide(
                           color:
-                              idErrorText != null
-                                  ? Colors.red
-                                  : const Color(0xFFC0C0C0),
+                          idErrorText != null
+                              ? Colors.red
+                              : const Color(0xFFC0C0C0),
                           width: 1.5,
                         ),
                       ),
@@ -144,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(4),
                         borderSide: BorderSide(
                           color:
-                              idErrorText != null ? Colors.red : Colors.black,
+                          idErrorText != null ? Colors.red : Colors.black,
                           width: 1.5,
                         ),
                       ),
@@ -189,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: ButtonStyle(
                       elevation: MaterialStateProperty.all(0),
                       backgroundColor: MaterialStateProperty.resolveWith<Color>(
-                        (Set<MaterialState> states) {
+                            (Set<MaterialState> states) {
                           if (states.contains(MaterialState.disabled)) {
                             return const Color(0xFFE0E0E0);
                           }
@@ -197,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                       ),
                       foregroundColor: MaterialStateProperty.resolveWith<Color>(
-                        (Set<MaterialState> states) {
+                            (Set<MaterialState> states) {
                           if (states.contains(MaterialState.disabled)) {
                             return const Color.fromARGB(255, 82, 82, 82);
                           }
@@ -247,7 +247,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextButton(
                         onPressed: () {
                           Navigator.push(
-                            context, 
+                            context,
                             MaterialPageRoute(
                               builder: (context) => const FindAccountScreen(initialTab: 0),
                             ),
