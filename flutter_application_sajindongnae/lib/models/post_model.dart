@@ -2,7 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PostModel {
   final String postId;
+<<<<<<< HEAD
   final String uId;
+=======
+  final String uid; // ✅ 사용자 ID → uid로 통일
+>>>>>>> f3b10538e18754fbb41904f5e4e2d78f1f407743
   final String nickname;
   final String profileImageUrl;
   late final String category;
@@ -16,7 +20,11 @@ class PostModel {
 
   PostModel({
     required this.postId,
+<<<<<<< HEAD
     required this.uId,
+=======
+    required this.uid, //수정됨
+>>>>>>> f3b10538e18754fbb41904f5e4e2d78f1f407743
     required this.nickname,
     required this.profileImageUrl,
     required this.category,
@@ -28,7 +36,6 @@ class PostModel {
     this.imageUrl,
   });
 
-
   factory PostModel.fromDocument(DocumentSnapshot doc) {
     final map = doc.data() as Map<String, dynamic>; // Firestore 문서 데이터를 Map으로 캐스팅
 
@@ -36,7 +43,11 @@ class PostModel {
       postId: doc.id, // Firestore의 문서 ID (문서 고유 식별자)
 
       // ↓ 필드가 null일 수 있으므로 기본값 처리 (null 대비)
+<<<<<<< HEAD
       uId: map['uId'] ?? '',
+=======
+      uid: map['uid'] ?? '', // userId → uid로 변경
+>>>>>>> f3b10538e18754fbb41904f5e4e2d78f1f407743
       nickname: map['nickname'] ?? '',
       profileImageUrl: map['profileImageUrl'] ?? '',
       category: map['category'] ?? '',
@@ -57,8 +68,4 @@ class PostModel {
       imageUrl: map['imageUrl'] as String?,
     );
   }
-
-
 }
-
-

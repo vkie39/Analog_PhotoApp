@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// Firestore의 posts/{postId}/comments/{commentId} 구조에 매핑됨
 class CommentModel {
   final String commentId;         // 댓글 고유 ID (Firestore 문서 ID)
-  final String userId;            // 댓글 작성자 UID
+  final String uid;            // 댓글 작성자 UID
   final String nickname;          // 작성자 닉네임
   final String profileImageUrl;   // 작성자 프로필 이미지 URL
   final String content;           // 댓글 본문 내용
@@ -12,7 +12,7 @@ class CommentModel {
 
   CommentModel({
     required this.commentId,
-    required this.userId,
+    required this.uid,
     required this.nickname,
     required this.profileImageUrl,
     required this.content,
@@ -27,7 +27,7 @@ class CommentModel {
 
     return CommentModel(
       commentId: doc.id,                                      // 문서 ID를 commentId로 사용
-      userId: data['userId'] ?? '',                           // userId가 null일 경우 빈 문자열로 처리
+      uid: data['uid'] ?? '',                           // uid가 null일 경우 빈 문자열로 처리
       nickname: data['nickname'] ?? '',                       // nickname 기본값 처리
       profileImageUrl: data['profileImageUrl'] ?? '',         // 프로필 이미지 URL 기본값 처리
       content: data['content'] ?? '',                         // 댓글 내용 기본값 처리
@@ -39,7 +39,7 @@ class CommentModel {
   /// - Firestore에 저장 시 timestamp는 Timestamp.fromDate(...)로 명시적으로 변환
   Map<String, dynamic> toMap() {
     return {
-      'userId': userId,
+      'uid': uid,
       'nickname': nickname,
       'profileImageUrl': profileImageUrl,
       'content': content,

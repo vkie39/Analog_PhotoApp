@@ -41,6 +41,7 @@ class MyApp extends StatelessWidget {
       //MaterialApp: Flutter앱의 최상위 위젯 트리, home 속성에 보여줄 첫 화면
       debugShowCheckedModeBanner: false,
       navigatorKey: Globals.navigatorKey,
+<<<<<<< HEAD
       home: const LoginScreen(),
 
       // 화면 연결
@@ -55,6 +56,10 @@ class MyApp extends StatelessWidget {
 
       //home: MainPage(), // 시작 시 보여줄 화면
       /*home: StreamBuilder<User?>(
+=======
+      // home: MainPage(), // 시작 시 보여줄 화면
+      home: StreamBuilder<User?>(
+>>>>>>> f3b10538e18754fbb41904f5e4e2d78f1f407743
         // authStateChanges()를 사용하여 Firebase 인증 상태의 변화를 감지
         stream: FirebaseAuth.instance.authStateChanges(), // 사용자가 로그인/로그아웃할 때마다 user 또는 null 반환
         builder: (context, snapshot) {
@@ -70,10 +75,17 @@ class MyApp extends StatelessWidget {
             return const LoginScreen();
           }
         },
-      ),*/
+      ),
     );
   }
 }
 
+<<<<<<< HEAD
 
+=======
+//MainPage: 하단 탭을 클릭할 때 바뀌는 UI. 
+// 화면 상태를 바꾸려면 StatelessWidget이 아니라 StatefulWidget을 사용해야 함
+class MainPage extends StatefulWidget {
+  const MainPage({super.key});
+>>>>>>> f3b10538e18754fbb41904f5e4e2d78f1f407743
 

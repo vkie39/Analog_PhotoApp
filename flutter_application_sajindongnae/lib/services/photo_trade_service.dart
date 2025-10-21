@@ -25,7 +25,11 @@ class PhotoTradeService {
       id: null,
       imageUrl: imageUrl,
       price: price,
+<<<<<<< HEAD
       userId: user.uid,
+=======
+      uid: user.uid,
+>>>>>>> f3b10538e18754fbb41904f5e4e2d78f1f407743
       nickname: await _getNickname(user.uid),
       tags: tags,
       isSold: false,
@@ -36,9 +40,9 @@ class PhotoTradeService {
   }
 
   /// 특정 사용자의 게시글 목록 가져오기
-  static Stream<List<PhotoTradeModel>> getPostsByUser(String userId) {
+  static Stream<List<PhotoTradeModel>> getPostsByUser(String uid) {
     return _collection
-        .where('userId', isEqualTo: userId)
+        .where('uid', isEqualTo: uid)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
