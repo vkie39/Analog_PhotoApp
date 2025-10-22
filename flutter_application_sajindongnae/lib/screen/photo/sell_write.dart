@@ -5,13 +5,15 @@ import 'package:image_picker/image_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
-
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter_application_sajindongnae/screen/photo/tag_select.dart';
 import 'package:flutter_application_sajindongnae/services/image_service.dart';
 import 'package:flutter_application_sajindongnae/services/permission_service.dart';
 import 'package:flutter_application_sajindongnae/models/tag_model.dart';
 import 'package:flutter_application_sajindongnae/models/location_model.dart';
+import 'package:flutter_application_sajindongnae/services/photo_trade_service.dart';
+import 'package:flutter_application_sajindongnae/models/photo_trade_model.dart';
 
 
 
@@ -171,31 +173,67 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
   }
 
   // 폼 제출 함수 (입력칸 검증 후 업로드 처리)
-  void _submitForm() {
-    if(_selectedImage == null) {
+  Future<void> _submitForm() async {
+  // 1) 사진이 선택되지 않았을 경우
+    if (_selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('사진을 업로드하세요.')),
+        const SnackBar(content: Text('사진을 업로드하세요.')),
       );
       return; // 사진이 선택되지 않았으면 함수 종료
     }
 
-    if(_formKey.currentState == null) return; // Form 위젯을 연결해야 FormState에 접근 가능. null이면 함수 종료
+    // 2) FormState 접근 가능 여부 확인
+    if (_formKey.currentState == null) return; // Form 위젯을 연결해야 FormState에 접근 가능. null이면 함수 종료
 
-    if (_formKey.currentState!.validate()) {                                     // 모든 리턴값이 null이면 true 반환 (검증 통과)
-      // 폼 데이터 가져오기
+   // 3) 폼 유효성 검증 (모든 TextFormField의 validator가 통과해야 true)
+    if (_formKey.currentState!.validate()) { 
+      // 로그인 사용자 정보 가져오기 (Firebase Auth)
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('로그인 후 이용해주세요.')),
+        );
+        return; // 로그인 안 되어 있으면 종료
+      }
+
+      // 4) 입력 데이터 가져오기
       final photoName = photoNameController.text.trim();                         // 사진명
-      final price = int.parse(priceController.text.replaceAll(',', '').trim());  // 가격 (콤마 제거 후 정수로 변환)
-      final description = descriptionController.text.trim();                     // 추가 설명   
+      final price = int.parse(priceController.text.replaceAll(',', '').trim());  // 가격 (콤마 제거 후 정수 변환)
+      final description = descriptionController.text.trim();                     // 추가 설명
       final location = locationController.text.trim();                           // 위치
       final tags = tagList;                                                      // 선택된 태그 리스트
 
-      // 검증 통과 시 실제 업로드 처리 필요(DB연동)
-      
-      print("폼 제출됨");
+      try {
+        // 5) Firestore + Storage 업로드 (사진 업로드 후 문서 생성)
+        await PhotoTradeService().addTrade(
+          imageFile: File(_selectedImage!.path),               // 선택된 이미지 파일
+          title: photoName,                                    // 사진명
+          description: description,                            // 추가 설명
+          price: price,                                        // 가격
+          uid: user.uid,                                       // 작성자 UID
+          nickname: user.displayName ?? '사용자',               // 닉네임
+          profileImageUrl: user.photoURL ?? '',                // 프로필 이미지
+          tags: tags,                                          // 선택된 태그들
+        );
 
+        // 6) 성공 메시지 출력
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('판매글이 등록되었습니다.')),
+        );
+
+        // 7) 작성 완료 후 이전 화면으로 돌아가기
+        Navigator.pop(context);
+      } catch (e, st) {
+        // 8) 오류 발생 시 콘솔 및 사용자 알림
+        debugPrint('업로드 실패: $e\n$st');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('업로드 중 오류가 발생했습니다.')),
+        );
+      }
+      
     } else {
-      // 검증 실패 시 처리
-      print("폼 검증 실패");
+      // 9) 폼 검증 실패 시 처리
+      debugPrint("폼 검증 실패");
     }
   }
 

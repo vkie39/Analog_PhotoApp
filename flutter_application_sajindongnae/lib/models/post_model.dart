@@ -13,7 +13,7 @@ class PostModel {
   late final String content;
   final String? imageUrl;
 
-  // ✅ 변경: likedBy 추가 (좋아요 누른 uid 목록)
+  // 변경: likedBy 추가 (좋아요 누른 uid 목록)
   final List<String> likedBy;
 
   PostModel({
@@ -48,7 +48,7 @@ class PostModel {
       title: map['title'] ?? '',
       content: map['content'] ?? '',
       imageUrl: map['imageUrl'] as String?,
-      // ✅ 변경: likedBy 읽어오기
+      // 변경: likedBy 읽어오기
       likedBy: List<String>.from(map['likedBy'] ?? []),
     );
   }
@@ -66,7 +66,7 @@ class PostModel {
       'title': title,
       'content': content,
       'imageUrl': imageUrl,
-      'likedBy': likedBy, // ✅ 추가
+      'likedBy': likedBy, // 추가
     };
   }
 }

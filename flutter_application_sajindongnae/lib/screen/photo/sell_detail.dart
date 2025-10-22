@@ -3,13 +3,13 @@ import 'dart:math' as dev show log;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/photo_sell.dart';
-import 'package:flutter_application_sajindongnae/models/photo_model.dart';
+import 'package:flutter_application_sajindongnae/models/photo_trade_model.dart';
 
 /// appBar 버튼에서 어떤 메뉴를 선택했는지 구분하기 위한 enum
 enum MoreAction { report, edit, delete }
 
 class SellDetailScreen extends StatefulWidget {
-  final PhotoModel photo;
+  final PhotoTradeModel photo;
   const SellDetailScreen({super.key, required this.photo});
 
   // 임시 유저 정보 
@@ -22,7 +22,7 @@ class SellDetailScreen extends StatefulWidget {
 
 class _SellDetailScreenState extends State<SellDetailScreen> {
   // widget 접근 편의를 위한 getter (안쓰면 widget.photo로 접근해야 함)
-  PhotoModel get photo => widget.photo;
+  PhotoTradeModel get photo => widget.photo;
   String get currentUserUid => widget.currentUserUid;                 // 임시 유저 아이디
   bool isLikedPhoto = false;                                          // 좋아요 상태를 나타내는 변수 (상태가 바뀌는 변수이기 때문에 State 클래스에 선언)
   
@@ -35,7 +35,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final formattedDate = DateFormat('yyyy/MM/dd').format(photo.dateTime);
+    final formattedDate = DateFormat('yyyy/MM/dd').format(photo.createdAt ?? DateTime.now());
     // 현재 로그인된 사용자가 작성한 판매글인지 확인 (uid 비교)
     final isOwner = photo.uid == currentUserUid;
 
