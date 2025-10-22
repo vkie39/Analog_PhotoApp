@@ -36,7 +36,7 @@ class PostModel {
 
     return PostModel(
       postId: doc.id,
-      uid: map['uid'] ?? '',
+      uid: map['uId'] ?? '',
       nickname: map['nickname'] ?? '',
       profileImageUrl: map['profileImageUrl'] ?? '',
       category: map['category'] ?? '',
@@ -53,10 +53,44 @@ class PostModel {
     );
   }
 
+  // factory PostModel.fromJson(Map<String, dynamic> json) {
+  //   return PostModel(
+  //     postId: json['postId'] ?? '',
+  //     uid: json['uid'] ?? '',
+  //     nickname: json['nickname'] ?? '',
+  //     profileImageUrl: json['profileImageUrl'] ?? '',
+  //     category: json['category'],
+  //     likeCount: json['likeCount'] ?? 0,
+  //     commentCount: json['commentCount'] ?? 0,
+  //     timestamp: (json['timestamp'] as Timestamp).toDate(),
+  //     title: json['title'] ?? '',
+  //     content: json['content'],
+  //     imageUrl: json['imageUrl'],
+  //   );
+  // }
+
+  factory PostModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return PostModel(
+      postId: doc.id,
+      uid: data['uId'] ?? '',
+      nickname: data['nickname'] ?? '',
+      profileImageUrl: data['profileImageUrl'] ?? '',
+      title: data['title'] ?? '',
+      content: data['content'] ?? '',
+      imageUrl: data['imageUrl'] ?? '',
+      likeCount: data['likeCount'] ?? 0,
+      commentCount: data['commentCount'] ?? 0,
+      timestamp: (data['createdAt'] as Timestamp).toDate(),
+      category: data['category'] ?? '' // Firestore 문서 필드 확인
+    );
+  }
+
+
   // Firestore 저장용 (추가)
   Map<String, dynamic> toMap() {
     return {
-      'uid': uid,
+      'uId': uid,
       'nickname': nickname,
       'profileImageUrl': profileImageUrl,
       'category': category,

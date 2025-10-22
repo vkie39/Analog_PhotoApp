@@ -43,10 +43,7 @@ class PostService {
         likeCount += 1;
       }
 
-      transaction.update(postRef, {
-        'likedBy': likedBy,
-        'likeCount': likeCount,
-      });
+      transaction.update(postRef, {'likedBy': likedBy, 'likeCount': likeCount});
     });
 
     log("좋아요 토글 완료: $postId");
@@ -58,18 +55,34 @@ class PostService {
         .where('createdAt', isNotEqualTo: null)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => PostModel.fromDocument(doc)).toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => PostModel.fromDocument(doc)).toList(),
+        );
   }
 
   /// 카테고리별 게시글 조회
+  /// 테스트 진행 중.. 
+  // static Stream<List<PostModel>> getPostsByCategory(String category) {
+  //   return _postCollection
+  //       .where('category', isEqualTo: category)
+  //       .orderBy('createdAt', descending: true)
+  //       .snapshots()
+  //       .map(
+  //         (snapshot) =>
+  //             snapshot.docs.map((doc) => PostModel.fromDocument(doc)).toList(),
+  //       );
+  // }
+
+    // 기존 카테고리별 게시글 가져오기
   static Stream<List<PostModel>> getPostsByCategory(String category) {
-    return _postCollection
+    return FirebaseFirestore.instance
+        .collection('posts')
         .where('category', isEqualTo: category)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) =>
-            snapshot.docs.map((doc) => PostModel.fromDocument(doc)).toList());
+            snapshot.docs.map((doc) => PostModel.fromFirestore(doc)).toList());
   }
 
   /// 이미지 업로드 (Storage)
@@ -94,7 +107,9 @@ class PostService {
 
   /// 게시글 수정
   static Future<void> updatePost(
-      String postId, Map<String, dynamic> updatedData) async {
+    String postId,
+    Map<String, dynamic> updatedData,
+  ) async {
     try {
       await _postCollection.doc(postId).update(updatedData);
       log('게시글 수정 완료');
@@ -127,7 +142,21 @@ class PostService {
         .orderBy('likeCount', descending: true)
         .limit(3)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => PostModel.fromDocument(doc)).toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => PostModel.fromDocument(doc)).toList(),
+        );
   }
+  
+  // 마이페이지 유저가 작성한 게시글 보기
+  static Stream<List<PostModel>> getPostsByUser(String uid) {
+    return _firestore
+        .collection('posts')
+        .where('uId', isEqualTo: uid) //uid 키 확인
+        // .orderBy('createdAt', descending: true) // 복합 인덱스 필요하다는데 그냥 멍..
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => PostModel.fromDocument(doc)).toList());
+  }
+
+  
 }
