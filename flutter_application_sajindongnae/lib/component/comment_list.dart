@@ -1,3 +1,10 @@
+
+
+
+// 댓글을 실시간으로 불러와 보여주는 리스트 위젯. post_detail.dart에서 사용
+// 댓글DB의 Model설계를 추가해서 수정할 예정. lib/models에 comment_model? 같은 게 필요함
+// 지금은 임시데이터
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/comment_model.dart';

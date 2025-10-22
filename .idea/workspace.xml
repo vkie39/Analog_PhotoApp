@@ -1,40 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AndroidLayouts">
+    <shared>
+      <config />
+    </shared>
+  </component>
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="dbe5c5ef-6d8d-40ff-9099-696faacbabed" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/photo/watermarked_image.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/Analog_PhotoApp.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/AndroidProjectSystem.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/deploymentTargetSelector.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/kotlinc.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Dart_Packages.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Dart_SDK.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/migrations.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/kotlinc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/android/app/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/android/app/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/android/app/google-services.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/android/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/android/app/src/main/AndroidManifest.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/android/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/android/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/android/gradle.properties" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/android/gradle.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/android/settings.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/android/settings.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/main.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/main.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/models/post_model.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/models/post_model.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/auth/login.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/auth/login.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/auth/register_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/auth/register_screen.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/auth/signup_detail.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/auth/signup_detail.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/auth/signup_start.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/auth/signup_start.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/home.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/home.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/photo/photo_sell.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/photo/photo_sell.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/photo/sell_detail.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/photo/sell_detail.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/photo/sell_write.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/photo/sell_write.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/mypage.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/mypage.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/post/write.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/post/write.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/services/image_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/services/image_service.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/linux/flutter/generated_plugin_registrant.cc" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/linux/flutter/generated_plugin_registrant.cc" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/linux/flutter/generated_plugin_registrant.h" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/linux/flutter/generated_plugin_registrant.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/linux/flutter/generated_plugins.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/linux/flutter/generated_plugins.cmake" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/services/post_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/services/post_service.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/macos/Flutter/GeneratedPluginRegistrant.swift" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/macos/Flutter/GeneratedPluginRegistrant.swift" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/pubspec.lock" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/pubspec.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/pubspec.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/windows/flutter/generated_plugin_registrant.cc" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/windows/flutter/generated_plugin_registrant.cc" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/windows/flutter/generated_plugin_registrant.h" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/windows/flutter/generated_plugin_registrant.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/windows/flutter/generated_plugins.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/windows/flutter/generated_plugins.cmake" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -45,11 +46,28 @@
   <component name="ClangdSettings">
     <option name="formatViaClangd" value="false" />
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[DeviceId(pluginId=LocalEmulator, isTemplate=false, identifier=path=C:\Users\seohyun\.android\avd\Pixel_4.avd)]" />
+  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[DeviceId(pluginId=PhysicalDevice, isTemplate=false, identifier=serial=R59N309HB8Y)]" />
   <component name="ExternalProjectsData">
     <projectState path="$PROJECT_DIR$/flutter_application_sajindongnae/android">
       <ProjectState />
     </projectState>
+  </component>
+  <component name="ExternalProjectsManager">
+    <system id="GRADLE">
+      <state>
+        <projects_view>
+          <tree_state>
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="android" type="f1a62948:ProjectNode" />
+              </path>
+            </expand>
+            <select />
+          </tree_state>
+        </projects_view>
+      </state>
+    </system>
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -88,19 +106,27 @@
     &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
     &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
     &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
     &quot;com.google.services.firebase.aqiPopupShown&quot;: &quot;true&quot;,
     &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;choi-branch&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/projectMoeumZip/grade4/Analog_App/Analog_PhotoApp/Analog_PhotoApp/Analog_PhotoApp&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/projectMoeumZip/grade4/Analog_App/Analog_PhotoApp/Analog_PhotoApp/Analog_PhotoApp/flutter_application_sajindongnae/android/settings.gradle.kts&quot;,
     &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
     &quot;project.structure.proportion&quot;: &quot;0.17&quot;,
     &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settingsdialog.project.gradle&quot;,
     &quot;show.migrate.to.gradle.popup&quot;: &quot;false&quot;
   }
 }</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\projectMoeumZip\grade4\Analog_App\Analog_PhotoApp\Analog_PhotoApp\Analog_PhotoApp\flutter_application_sajindongnae\android\app" />
+    </key>
+  </component>
   <component name="RunManager">
     <configuration name="android.app" type="AndroidRunConfigurationType" factoryName="Android App" activateToolWindowBeforeRun="false">
       <module name="android.app" />
@@ -192,6 +218,22 @@
         <entry key="MAIN">
           <value>
             <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="play_dynamic_filters_status">
+    <option name="appIdToCheckInfo">
+      <map>
+        <entry key="com.example.flutter_application_sajindongnae">
+          <value>
+            <CheckInfo lastCheckTimestamp="1761040978894" />
+          </value>
+        </entry>
+        <entry key="com.example.flutter_application_sajindongnae.test">
+          <value>
+            <CheckInfo lastCheckTimestamp="1761040978895" />
           </value>
         </entry>
       </map>

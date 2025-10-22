@@ -2,13 +2,11 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
 import 'package:flutter_application_sajindongnae/component/search.dart';
 import 'package:flutter_application_sajindongnae/component/post_card.dart';
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
 import 'package:flutter_application_sajindongnae/services/post_service.dart';
 import 'package:flutter_application_sajindongnae/screen/post/write.dart';
-import 'package:flutter/gestures.dart';
 
 
 // 검색 기능을 위한 필드
@@ -50,7 +48,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
     30,
     (index) => PostModel(
       postId: 'post_$index',
-      userId: 'user_$index',
+      uid: 'user_$index',
       nickname: '사용자$index',
       profileImageUrl: 'https://', // 아무 주소 없어서 오류 뜰거지만 괜찮음. 임시임
       category: index % 3 == 0 

@@ -4,8 +4,8 @@ class PhotoTradeModel {
   final String? id;                     // 문서 ID (nullable로 변경해 더 유연하게)
   final String imageUrl;               // Storage 이미지 URL
   final int price;                     // 가격
-  final String userId;                 // 작성자 UID (통일된 이름)
-  final String nickname;          // 작성자 닉네임 (UI 캐싱용)
+  final String uid;                    // 작성자 UID (Firebase 기준으로 통일된 이름)
+  final String nickname;              // 작성자 닉네임 (UI 캐싱용)
   final List<String> tags;            // 태그
   final bool isSold;                  // 판매 완료 여부
   final DateTime? createdAt;          // 생성일
@@ -14,7 +14,7 @@ class PhotoTradeModel {
     this.id,
     required this.imageUrl,
     required this.price,
-    required this.userId,
+    required this.uid,        // 수정됨
     required this.nickname,
     required this.tags,
     required this.isSold,
@@ -33,7 +33,7 @@ class PhotoTradeModel {
       id: docId,
       imageUrl: doc['imageUrl'] ?? '',
       price: doc['price'] ?? 0,
-      userId: doc['userId'] ?? '',
+      uid: doc['uid'] ?? '',                  // userId → uid
       nickname: doc['nickname'] ?? '',
       tags: List<String>.from(doc['tags'] ?? []),
       isSold: doc['isSold'] ?? false,
@@ -46,7 +46,7 @@ class PhotoTradeModel {
     return {
       'imageUrl': imageUrl,
       'price': price,
-      'userId': userId,
+      'uid': uid,                          // userId → uid
       'nickname': nickname,
       'tags': tags,
       'isSold': isSold,
@@ -59,8 +59,8 @@ class PhotoTradeModel {
     String? id,
     String? imageUrl,
     int? price,
-    String? userId,
-    String? userNickname,
+    String? uid,
+    String? nickname,
     List<String>? tags,
     bool? isSold,
     DateTime? createdAt,
@@ -69,8 +69,8 @@ class PhotoTradeModel {
       id: id ?? this.id,
       imageUrl: imageUrl ?? this.imageUrl,
       price: price ?? this.price,
-      userId: userId ?? this.userId,
-      nickname: userNickname ?? this.nickname,
+      uid: uid ?? this.uid,               // 수정됨
+      nickname: nickname ?? this.nickname,
       tags: tags ?? this.tags,
       isSold: isSold ?? this.isSold,
       createdAt: createdAt ?? this.createdAt,

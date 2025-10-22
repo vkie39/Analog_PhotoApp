@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_application_sajindongnae/screen/auth/widgets/id_input.dart';
 import 'package:flutter_application_sajindongnae/screen/auth/widgets/pw_input.dart';
 import 'package:flutter_application_sajindongnae/screen/auth/widgets/phone_auth.dart';
-import 'package:flutter_application_sajindongnae/screen/auth/widgets/email_input.dart';
+// import 'package:flutter_application_sajindongnae/screen/auth/widgets/email_input.dart'; // ← (사용 안 함) 화면에서 직접 Row + 버튼 구현
 import 'package:flutter_application_sajindongnae/screen/auth/widgets/terms_checkbox.dart';
 
 class SignupDetailScreen extends StatefulWidget {
@@ -45,14 +45,17 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
   String? passwordErrorText;
   String? passwordConfirmErrorText;
 
-  String? phoneErrorText; // 전화번호 입력 오류
-  String? authCodeErrorText; // 인증번호 입력 오류
+  String? phoneErrorText;        // 전화번호 입력 오류
+  String? authCodeErrorText;     // 인증번호 입력 오류
 
   String? emailErrorText;
+  bool isCheckingEmail = false;  // ✅ 이메일 중복확인 로딩
 
   bool isLoading = false;
-  bool isCheckingId = false; // 기존 isLoading과 분리
 
+  // 이메일 정규식(Firebase 일반 포맷)
+  final _emailRegex =
+  RegExp(r'^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$');
 
   // ✅ 휴대폰 인증 완료(_isPhoneVerified) 조건을 포함
   bool get isSignupEnabled {
@@ -88,7 +91,6 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
       return;
     }
 
-    setState(() => isCheckingId = true);
     try {
       final unique = await _isIdUnique(id);
       if (unique) {
@@ -112,8 +114,6 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('중복 확인 중 오류가 발생했습니다: $e')),
       );
-    } finally {
-      if (mounted) setState(() => isCheckingId = false);
     }
   }
 
@@ -125,10 +125,48 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
         .where('id_lower', isEqualTo: idLower)
         .limit(1)
         .get();
-
     return snap.docs.isEmpty; // 비어있으면 사용 가능
   }
   // ───────────────────────────────────────────────────────────────
+
+  // ✅ 이메일 형식 + 중복 확인 (Auth 기준)
+  Future<void> _checkEmailDup() async {
+    final email = emailController.text.trim();
+    if (!_emailRegex.hasMatch(email)) {
+      setState(() => emailErrorText = '올바른 이메일 형식을 입력해주세요.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('유효한 이메일을 입력해 주세요.')),
+      );
+      return;
+    }
+
+    setState(() {
+      emailErrorText = null;
+      isCheckingEmail = true;
+    });
+
+    try {
+      final methods = await FirebaseAuth.instance.fetchSignInMethodsForEmail(email);
+      if (methods.isNotEmpty) {
+        // 이미 등록된 이메일 (password든 google.com이든)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('이미 사용 중인 이메일입니다. 가입 방식: ${methods.join(', ')}')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('사용 가능한 이메일입니다.')),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      final msg = switch (e.code) {
+        'invalid-email' => '이메일 형식이 올바르지 않습니다.',
+        _ => e.message ?? '중복 확인 중 오류가 발생했습니다.',
+      };
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    } finally {
+      if (mounted) setState(() => isCheckingEmail = false);
+    }
+  }
 
   Future<void> _registerWithFirebase() async {
     setState(() => isLoading = true);
@@ -144,9 +182,15 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
         throw FirebaseAuthException(code: 'duplicate-id', message: '이미 사용 중인 아이디입니다.');
       }
 
+      // 이메일 형식 최종 확인
+      final email = emailController.text.trim();
+      if (!_emailRegex.hasMatch(email)) {
+        throw FirebaseAuthException(code: 'invalid-email', message: '이메일 형식이 올바르지 않습니다.');
+      }
+
       // 2) 이메일/비밀번호 가입
       final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: emailController.text.trim(),
+        email: email,
         password: passwordController.text.trim(),
       );
 
@@ -158,11 +202,12 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
         'uid': credential.user!.uid,
         'id': id,                           // 사용자 표시용 아이디
         'id_lower': id.toLowerCase(),       // 중복검사용(소문자)
-        'email': emailController.text.trim(),
+        'email': email,
         'nickname': nicknameController.text.trim(),
         'phone': phoneController.text.trim(),
-        'createdAt': DateTime.now(),
-      });
+        'createdAt': FieldValue.serverTimestamp(),
+        'providers': ['password'],
+      }, SetOptions(merge: true));
 
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -170,9 +215,17 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
         Navigator.pop(context);
       }
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? '회원가입 실패')),
-      );
+      if (!mounted) return;
+      final msg = switch (e.code) {
+        'email-already-in-use' => '이미 사용 중인 이메일입니다.',
+        'invalid-email'        => '이메일 형식이 올바르지 않습니다.',
+        'weak-password'        => '비밀번호가 너무 약합니다.',
+        'network-request-failed' => '네트워크 오류입니다. 인터넷 권한/연결을 확인하세요.',
+        'invalid-id'           => e.message ?? '아이디가 유효하지 않습니다.',
+        'duplicate-id'         => e.message ?? '이미 사용 중인 아이디입니다.',
+        _                      => e.message ?? '회원가입 실패',
+      };
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -196,7 +249,6 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
     FocusScope.of(context).unfocus(); // 포커스 제거
     _validatePhoneNumber(phoneController.text); // 전화번호 검증
     setState(() {}); // 에러 표시 갱신
-
     if (phoneErrorText != null) return;
 
     final phone = toE164KR(phoneController.text);
@@ -229,9 +281,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
       },
       verificationFailed: (FirebaseAuthException e) {
         if (mounted) {
-          setState(() {
-            authCodeErrorText = e.message ?? '인증번호 요청 실패';
-          });
+          setState(() { authCodeErrorText = e.message ?? '인증번호 요청 실패'; });
         }
       },
       codeSent: (String verificationId, int? resendToken) {
@@ -286,24 +336,17 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
     }
   }
 
-  // 이메일 형식
-  bool isValidEmail(String email) {
-    final emailRegex = RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
-    return emailRegex.hasMatch(email);
-  }
-
+  // 이메일 형식 검사 (실시간)
   void _validateEmail(String value) {
     String? error;
     if (value.isEmpty) {
       error = '이메일을 입력해주세요.';
-    } else if (!isValidEmail(value)) {
+    } else if (!_emailRegex.hasMatch(value)) {
       error = '올바른 이메일 형식을 입력해주세요.';
     } else {
       error = null;
     }
-    setState(() {
-      emailErrorText = error;
-    });
+    setState(() { emailErrorText = error; });
   }
 
   // 전체 이용 동의 토글
@@ -320,32 +363,20 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
 
   void _toggleAgreeTerms(bool? checked) {
     if (checked == null) return;
-    setState(() {
-      isAgreeTerms = checked;
-      _updateAllAgree();
-    });
+    setState(() { isAgreeTerms = checked; _updateAllAgree(); });
   }
 
   void _toggleAgreePrivacy(bool? checked) {
     if (checked == null) return;
-    setState(() {
-      isAgreePrivacy = checked;
-      _updateAllAgree();
-    });
+    setState(() { isAgreePrivacy = checked; _updateAllAgree(); });
   }
 
   void _toggleAgreeMarketing() {
-    setState(() {
-      isAgreeMarketing = !isAgreeMarketing;
-      _updateAllAgree();
-    });
+    setState(() { isAgreeMarketing = !isAgreeMarketing; _updateAllAgree(); });
   }
 
   void _toggleAgreeSmsEmail() {
-    setState(() {
-      isAgreeSmsEmail = !isAgreeSmsEmail;
-      _updateAllAgree();
-    });
+    setState(() { isAgreeSmsEmail = !isAgreeSmsEmail; _updateAllAgree(); });
   }
 
   void _updateAllAgree() {
@@ -374,9 +405,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
 
     setState(() {
       idErrorText = error;
-      // 형식이 유효하다고 해서 곧바로 중복 미검증 상태를 true로 두진 않음
-      // isIdValid는 실제 중복검사 통과 시에만 true로 변경
-      if (error != null) isIdValid = false;
+      if (error != null) isIdValid = false; // 형식 오류면 중복검사 결과 무효화
     });
   }
 
@@ -385,7 +414,6 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
     String? error;
     final RegExp startsWithNumber = RegExp(r'^[0-9]');
     final RegExp allowedChars = RegExp(r'^[a-zA-Z0-9!*#]+$'); // ! * #
-
     if (value.isEmpty) {
       error = '비밀번호를 입력해주세요.';
     } else if (startsWithNumber.hasMatch(value)) {
@@ -399,15 +427,11 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
     } else {
       error = null;
     }
-
-    setState(() {
-      passwordErrorText = error;
-    });
+    setState(() { passwordErrorText = error; });
   }
 
   void _validatePasswordConfirm(String value) {
     String? error;
-
     if (value.isEmpty) {
       error = '비밀번호를 다시 입력해주세요.';
     } else if (value != passwordController.text) {
@@ -415,10 +439,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
     } else {
       error = null;
     }
-
-    setState(() {
-      passwordConfirmErrorText = error;
-    });
+    setState(() { passwordConfirmErrorText = error; });
   }
 
   @override
@@ -442,9 +463,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
         title: const Text(
@@ -467,11 +486,10 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                   idErrorText: idErrorText,
                   onChanged: (v) {
                     _validateId(v);
-                    // 사용자가 아이디를 수정하면 이전의 중복확인 결과는 무효화
-                    setState(() => isIdValid = false);
+                    setState(() => isIdValid = false); // 수정 시 중복결과 무효화
                   },
                   onCheckDuplicate: _onCheckDuplicateId,
-                  isChecking: isCheckingId, // 중복확인 연결
+                  isChecking: false,
                 ),
 
                 const SizedBox(height: 16),
@@ -488,7 +506,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
 
                 const SizedBox(height: 16),
 
-                // 전화번호 입력 + 인증요청 버튼은 내부 위젯에서 onRequestAuthCode로 연결되어 있다고 가정
+                // 전화번호 입력 + 인증요청 버튼 (내부에서 onRequestAuthCode 사용)
                 PhoneAuthWidget(
                   phoneController: phoneController,
                   phoneErrorText: phoneErrorText,
@@ -499,7 +517,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
 
                 // 인증번호 입력 + 버튼
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start, // 버튼을 TextField 상단에 맞춤
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Column(
@@ -558,7 +576,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                     ),
                     const SizedBox(width: 10),
                     SizedBox(
-                      height: 48, // TextField 높이와 동일
+                      height: 48,
                       width: 88,
                       child: ElevatedButton(
                         onPressed: _isCodeSent && !_isPhoneVerified && !isLoading
@@ -579,8 +597,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                         ),
                         child: isLoading
                             ? const SizedBox(
-                          height: 20,
-                          width: 20,
+                          height: 20, width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                             : Text(
@@ -592,14 +609,38 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                   ],
                 ),
 
-
                 const SizedBox(height: 16),
 
-                // 이메일 입력
-                EmailInputWidget(
-                  emailController: emailController,
-                  emailErrorText: emailErrorText,
-                  onChanged: _validateEmail,
+                // ✅ 이메일 입력 + 중복확인 버튼 (이 화면에서 직접 구현)
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
+                        onChanged: _validateEmail,
+                        decoration: InputDecoration(
+                          labelText: '이메일',
+                          errorText: emailErrorText,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: (isLoading || isCheckingEmail) ? null : _checkEmailDup,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFDBEFC4),
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                      ),
+                      child: isCheckingEmail
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Text('중복 확인'),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 32),
@@ -624,7 +665,6 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                 ElevatedButton(
                   onPressed: isSignupEnabled && !isLoading
                       ? () async {
-                    // 형식 재검증
                     final id = idController.text.trim();
                     _validateId(id);
                     if (idErrorText != null) {
@@ -634,7 +674,7 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                       return;
                     }
 
-                    // 사용자가 중복확인 버튼을 누르지 않았을 수도 있으니, 여기서도 최종 확인
+                    // 아이디 최종 중복확인(사용자가 버튼 안 눌러도 안전)
                     final unique = await _isIdUnique(id);
                     if (!unique) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -667,16 +707,12 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                   ),
                   child: isLoading
                       ? const SizedBox(
-                    height: 20,
-                    width: 20,
+                    height: 20, width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                       : const Text(
                     "가입하기",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                 ),
 
