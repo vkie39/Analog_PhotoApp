@@ -32,18 +32,15 @@ class SettingsScreen extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const ProfileEditScreen()),
               );
             },
-            leading: const Icon(Icons.person),
           ),
           const Divider(),
           ListTile(
             title: const Text("개인정보 관리"),
-            leading: const Icon(Icons.lock),
             onTap: () {},
           ),
           const Divider(),
           ListTile(
             title: const Text("알림 설정"),
-            leading: const Icon(Icons.notifications),
             onTap: () {},
           ),
         ],
