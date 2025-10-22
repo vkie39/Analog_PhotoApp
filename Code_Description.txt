@@ -40,20 +40,18 @@
 
 6. 갤러리 사진 가져오기
  블로그 : https://velog.io/@s_soo100/Flutter%EB%A1%9C-%EC%82%AC%EC%A7%84-%EC%97%85%EB%A1%9C%EB%8D%94-%EB%A7%8C%EB%93%A4%EA%B8%B0
-<<<<<<< HEAD
  블로그 : https://mundroid.tistory.com/2 (photo picker 설명)
-=======
->>>>>>> origin/main
+
 
 7. floatingButton 애니메이셔 적용
  유투브 : https://www.youtube.com/watch?v=GxlIaQjHixY
  GPT : https://chatgpt.com/c/684c5dc7-b248-8004-9f03-634269324a2b
 
-<<<<<<< HEAD
+8. 채팅 화면 flutter와 firebase realtime으로 구현하는 코드
+ 블로그 : https://parksh3641.tistory.com/entry/Flutter-%ED%94%8C%EB%9F%AC%ED%84%B0-%ED%8C%8C%EC%9D%B4%EC%96%B4%EB%B2%A0%EC%9D%B4%EC%8A%A4-%EC%B1%84%ED%8C%85-%EC%95%B1-%EA%B5%AC%ED%98%84%ED%95%98%EA%B8%B0-Firestore-Database 
 
 
-=======
->>>>>>> origin/main
+
 [출처 임시]
  홈 아이콘 : https://www.flaticon.com/kr/free-icon/home_1946488?term=%ED%99%88&page=1&position=8&origin=search&related_id=1946488
  커뮤니티 아이콘 : https://www.flaticon.com/kr/free-icon/public_5450236?term=%EC%BB%A4%EB%AE%A4%EB%8B%88%ED%8B%B0&page=1&position=9&origin=search&related_id=5450236

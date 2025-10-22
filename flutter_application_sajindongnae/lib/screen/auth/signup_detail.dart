@@ -9,6 +9,7 @@ import 'package:flutter_application_sajindongnae/screen/auth/widgets/phone_auth.
 // import 'package:flutter_application_sajindongnae/screen/auth/widgets/email_input.dart'; // ← (사용 안 함) 화면에서 직접 Row + 버튼 구현
 import 'package:flutter_application_sajindongnae/screen/auth/widgets/terms_checkbox.dart';
 
+
 class SignupDetailScreen extends StatefulWidget {
   const SignupDetailScreen({super.key});
 

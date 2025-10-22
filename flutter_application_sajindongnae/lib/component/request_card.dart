@@ -28,6 +28,8 @@ class RequestCard extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height:4),
 
