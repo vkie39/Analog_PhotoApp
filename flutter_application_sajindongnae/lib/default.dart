@@ -6,7 +6,7 @@ import 'package:flutter_application_sajindongnae/screen/auth/Find_account.dart';
 import 'screen/post/list.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/photo_sell.dart';
 import 'package:flutter_application_sajindongnae/screen/chat/chat_list.dart';
-import 'package:flutter_application_sajindongnae/screen/mypage.dart';
+import 'package:flutter_application_sajindongnae/screen/mypage/mypage.dart';
 import 'package:flutter_application_sajindongnae/screen/home.dart';
 import 'component/bottom_nav.dart';
 
