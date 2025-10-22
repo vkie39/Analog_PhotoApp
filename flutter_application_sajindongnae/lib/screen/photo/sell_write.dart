@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/location_select.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
@@ -34,7 +35,9 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
   bool _cropping = false;
   late ImageService _imageService;
 
-  
+  // 선택된 위치
+  LatLng? pos;
+
   // 선택된 태그
   SelectedTagState _selectedTagState = SelectedTagState();      // 선택된 태그 상태 관리 모델 (붕어빵 하나. 초기값은 빈 상태)
   
@@ -44,6 +47,7 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
     ..._selectedTagState.singleTags.values,                    // 단일 선택 태그들 -> ...은 스프레드 연산자로 컬렉션을 펼쳐 다른 컬렉션에 삽입할 때 사용함(단일 태그와 다중 태그를 합치는 역할)
     ..._selectedTagState.multiTags.values.expand((set) => set) // 다중 선택 태그들 (expand는 Iterable의 메서드로 Set을 펼쳐서 리스트로 변환)
   ];
+
 
   void _removeTag(String tag) {
     // 1) 현 상태의 복사본 만들기 (맵과 Set 모두 불변이므로 수정하려면 복사본 필요)
@@ -90,9 +94,16 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
 
   // 태그 선택 화면으로 이동하고 선택된 태그 리스트를 받아오는 함수
   Future<void> _openTagSelector(BuildContext context) async {   // 비동기 함수. 그래서 future로 선언 (이후에 값이 돌아온다는 의미)
-    final result = await Navigator.push<SelectedTagState>(      // result는 TagSelectionScreen에서 선택된 태그 리스트, SelectedTagState 타입(반환 타입). Navigator.push는 Future를 반환하므로 await 필요
-      context,  
-      MaterialPageRoute(builder: (context) => TagSelectionScreen(initialState: _selectedTagState)), // 현재 선택된 태그 리스트를 tag_select.dart에 전달
+    final result = await Navigator.push<SelectedTagState>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TagSelectionScreen(
+          initialState: _selectedTagState,  // 현재 선택 상태 전달
+          forceMultiSelect: false,          // 섹션 규칙 그대로 (기본값)
+          title: '태그 선택',
+          showAppBar: true,
+        ),
+      ),
     );
 
     // TagSelectionScreen에서 선택된 태그를 받아와서 상태 업데이트
@@ -103,18 +114,25 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
     }
   }
 
-
+  
   // 위치 선택 화면으로 이동하고 선택된 위치를 받아오는 함수
-  Future<void> _openLocationSelector(BuildContext context) async {   
+  Future<void> _openLocationSelector(BuildContext context) async { 
     final result = await Navigator.push<LocationPickResult>(      
       context,  
-      MaterialPageRoute(builder: (context) => LocationSelectScreen()), 
+      MaterialPageRoute(
+        builder: (context) => LocationSelectScreen(
+          initialPosition: pos, 
+          initialAddress: locationController.text.isEmpty
+                          ? locationController.text : null,
+        )
+      ), 
     );
 
     // LocationSelectScreen 선택된 위치를 받아와서 상태 업데이트
     if (result != null) {                  
       setState(() {
         locationController.text = result.address;        // 선택된 상태 업데이트
+        pos = result.position;
       });
     }
   }

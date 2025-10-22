@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "500751955287",
+    "firebase_url": "https://flutterappsajindongnae-default-rtdb.firebaseio.com",
     "project_id": "flutterappsajindongnae",
     "storage_bucket": "flutterappsajindongnae.firebasestorage.app"
   },
@@ -13,6 +14,14 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "500751955287-424gejclm5q0458idp19ujq2oh7pnjg1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.flutter_application_sajindongnae",
+            "certificate_hash": "8e4c7d31ee5ad6a53fd423a92ec5399358b3689b"
+          }
+        },
         {
           "client_id": "500751955287-ljq5l5jg4h1dkevds133lv47raj5im0f.apps.googleusercontent.com",
           "client_type": 1,

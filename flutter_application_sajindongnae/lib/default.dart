@@ -11,6 +11,7 @@ import 'package:flutter_application_sajindongnae/screen/home.dart';
 import 'component/bottom_nav.dart';
 
 
+
 // MainPage: 하단 탭을 클릭할 때 바뀌는 UI. 
 // MaterialApp에서 MainPage를 분리하여 하단바 클릭시 MainPage만 리빌드 되도록 함
 

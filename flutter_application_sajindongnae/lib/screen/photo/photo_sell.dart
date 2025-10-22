@@ -3,6 +3,7 @@ import 'package:flutter_application_sajindongnae/component/search.dart';
 import 'package:flutter_application_sajindongnae/models/photo_model.dart';
 import 'package:flutter_application_sajindongnae/models/request_model.dart';
 import 'package:flutter_application_sajindongnae/component/request_card.dart';
+import 'package:flutter_application_sajindongnae/models/tag_model.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/request_detail.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/sell_detail.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/sell_write.dart';
@@ -10,6 +11,8 @@ import 'package:flutter_application_sajindongnae/screen/photo/request_write.dart
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_application_sajindongnae/screen/photo/tag_select.dart';
+
 
 
 class PhotoSellScreen extends StatefulWidget {
@@ -22,8 +25,9 @@ class PhotoSellScreen extends StatefulWidget {
 class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProviderStateMixin {
   final searchController = TextEditingController(); // 검색창 내용을 컨트롤하기 위함
 
-  List<String> tags = ['여름 방학','졸업 작품', '사진 동네', '바다', '감성 사진']; // 태그 저장 리스트 정의
-  List<String> _selectedTags = []; 
+  List<String> tags = []; // 용도 : 화면에 보여줄 태그 리스트 (tag_select.dart에서 받아 옴)
+  List<String> _selectedTags = []; // 용도: 화면에 보여줄 선택된 태그 리스트 (색상 변경용)
+  SelectedTagState _searchTagState = SelectedTagState(); // 태그 선택 상태 관리용, 용도 : tag_select.dart와 데이터를 주고 받는 용
 
   final List<String> tabs = ['판매', '구매']; // 탭 이름 정의
   late TabController _tabController;
@@ -64,7 +68,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
       profileImageUrl: "https://example.com/2.png",
       category: "행사",
       dateTime: DateTime.now().subtract(const Duration(hours: 1)),
-      title: "동아리 행사 사진 부탁드립니다아",
+      title: "동아리 행사 사진 부탁드립니다아dkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkoooooooooooooooooooooooooooooooook",
       description: "대학 축제 사진 구합니다",
       price: 1000,
       location: "강남구",
@@ -126,17 +130,40 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                   height: 44,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    itemCount: tags.isEmpty ? 1 : tags.length + 1,
-                    separatorBuilder: (context, index) => const SizedBox(width: 10),
-                    itemBuilder: (context, index) {
+                    itemCount: tags.isEmpty ? 1 : tags.length + 1,                         
+                    separatorBuilder: (context, index) => const SizedBox(width: 10),  
+                    itemBuilder: (context, index) { 
                       const double tagPaddingH = 16;
                       const double tagPaddingV = 10;
                       final double tagFontSize = isSmallScreen ? 12 : 14;
                       const double tagBorderRadius = 16;
-                      if (tags.isEmpty || index == tags.length) {
+                      if (tags.isEmpty || index == tags.length) { // 태그가 없거나 마지막 인덱스 뒤에 '+ 태그 추가' 버튼 표시
                         return GestureDetector(
-                          onTap: () {
+                          onTap: () async{
                             print('태그 추가 버튼 클릭');
+                            final result = await Navigator.push<SelectedTagState>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TagSelectionScreen(
+                                  initialState: _searchTagState,
+                                  forceMultiSelect: true,         // 모든 섹션 다중 선택 강제
+                                  title: '검색 태그 선택',
+                                  showAppBar: true,               // 바텀시트로 쓰고 싶으면 false로 하고 content만 분리 해도 됨
+                                ),
+                              ),
+                            );
+                            if (result != null) {
+                              setState(() {
+                                _searchTagState = result;
+                                // 화면에 보일 태그 문자열 리스트
+                                tags = [
+                                  ...result.multiTags.values.expand((s) => s),
+                                ];
+                                _selectedTags = List.from(tags); // tag_select에서 선택한 태그들을 모두 '선택됨'으로 설정한다
+                              });
+
+                              // TODO: 여기서 Firestore 쿼리 실행
+                            }
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: tagPaddingH, vertical: tagPaddingV),
@@ -302,7 +329,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen> with SingleTickerProv
                           },
                         );
                       },
-                    )
+                    ),
                   ],
                 ),
 

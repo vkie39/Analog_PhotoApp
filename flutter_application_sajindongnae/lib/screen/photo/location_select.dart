@@ -1,3 +1,5 @@
+import 'dart:developer' as dev;
+
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -11,7 +13,9 @@ import 'package:flutter_application_sajindongnae/component/search.dart';
 
 
 class LocationSelectScreen extends StatefulWidget{
-  const LocationSelectScreen({super.key});
+  final LatLng? initialPosition; // 이미 선택된 위치가 있다면 받아와서 표시해줌
+  final String ? initialAddress; 
+  const LocationSelectScreen({super.key, this.initialPosition, this.initialAddress});
   
   @override
   State<LocationSelectScreen> createState() => LocationSelectScreenState();  
@@ -23,6 +27,8 @@ class LocationSelectScreenState extends State<LocationSelectScreen>{
   final _searchController = TextEditingController();   // 검색창 컨트롤러
   GoogleMapController? _mapController;                 // 구글맵 생성 컨트롤러
   CameraPosition? _initialCamera;                      // 지도 초기 위치 설정용 
+  bool _initialized = false;                           // 지도를 처음 켤 때만 초기 위치를 세팅해주도록 하는 bool
+
   Marker? _selectedMarker;                             // 마커 
   String? _selectedAddress;                            // sell_write로 넘겨줄 주소
   LatLng? _selectedLatLng;                             // 위경도값
@@ -43,25 +49,42 @@ class LocationSelectScreenState extends State<LocationSelectScreen>{
   }
 
   Future<void> _setInitialCameraToCurrentLocation() async{
+
+    // 이전에 선택한 위치가 있으면 그 위치로 초기화
+    if(widget.initialPosition != null){
+      final pos = widget.initialPosition!;
+      final addr = widget.initialAddress ?? await _getAddressFromLatLng(pos);
+
+      _selectedLatLng = pos;
+      _selectedAddress = addr;
+
+      _initialCamera = CameraPosition(target: pos, zoom: 14.0);
+      _setMarker(pos, title: '선택한 위치', snippet: addr ?? '');
+
+      if (mounted) setState(() {});
+      return;
+    }
+
+    // 이전 선택이 없으면 현재 위치로 초기화
+    CameraPosition target;
     try{
+      dev.log('현재 위치 찾는중');
       final pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high, distanceFilter: 0,  // 애뮬레이터 위치는 미국임
         )
-      );
-
-      if(!mounted || _mapController == null) return;
-        await _mapController!.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: LatLng(pos.latitude, pos.longitude), zoom:14.0),
-        ),
-      );
+      ).timeout(const Duration(seconds: 8));
+      target = CameraPosition(target: LatLng(pos.latitude, pos.longitude), zoom:14.0);
     }
     catch(e){
-      _initialCamera = CameraPosition( target: LatLng(37.4665, 126.9326), zoom: 14.0);
-    }
+      target = CameraPosition(target: LatLng(37.4665, 126.9326), zoom:14.0);
 
-    if(_mapController != null){
-      await _mapController!.animateCamera(CameraUpdate.newCameraPosition(_initialCamera!));
     }
+    if(!mounted) return;
+    setState(() {
+      _initialCamera = target;    
+    });
+  
   }
 
 
@@ -96,18 +119,20 @@ class LocationSelectScreenState extends State<LocationSelectScreen>{
               ),
             ),
             Expanded(
-              child: GoogleMap(
-                initialCameraPosition: const CameraPosition( target: LatLng(37.4665, 126.9326), zoom: 14.0),
-                onMapCreated: (c) { _mapController = c; _setInitialCameraToCurrentLocation();},  // 지도 위젯이 만들어질 때 생성되는 컨트롤러를 _mapController로 사용
-                myLocationButtonEnabled: true,            // 버튼 클릭시 내 위치로 카메라 이동
-                myLocationEnabled: true,                 // 지도 위에 내 위치 표시
-                zoomControlsEnabled: false,               // 줌 버튼(없어도 제스쳐로 줌 가능)
-                markers: {
-                    if(_selectedMarker != null) _selectedMarker!,  // setSate에서 생성되는 마커
-                },
-                // 지도 탭하면 마커 갱신
-                onTap: _onMapTap,
-              ),
+              child: _initialCamera == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : GoogleMap(
+                      initialCameraPosition: _initialCamera!,
+                      onMapCreated: (c) => _mapController = c,  // animateCamera 불필요    
+                      myLocationButtonEnabled: true,            // 버튼 클릭시 내 위치로 카메라 이동
+                      myLocationEnabled: true,                  // 지도 위에 내 위치 표시
+                      zoomControlsEnabled: false,               // 줌 버튼(없어도 제스쳐로 줌 가능)
+                      markers: {
+                          if(_selectedMarker != null) _selectedMarker!,  // setSate에서 생성되는 마커
+                      },
+                      // 지도 탭하면 마커 갱신
+                      onTap: _onMapTap,
+                    ),
             ),
             
           ],

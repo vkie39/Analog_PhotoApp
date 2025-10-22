@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_application_sajindongnae/default.dart';
 import 'package:flutter_application_sajindongnae/screen/auth/Find_account.dart';
 
 import 'screen/post/list.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/photo_sell.dart';
+import 'package:flutter_application_sajindongnae/screen/post/list.dart';
 import 'package:flutter_application_sajindongnae/screen/chat/chat_list.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage.dart';
+
 
 // import 'package:flutter_application_sajindongnae/screen/auth/login_screen.dart';
 
@@ -17,11 +20,16 @@ import 'package:flutter_application_sajindongnae/screen/auth/Pwfound.dart'; // �
 
 import 'package:flutter_application_sajindongnae/screen/home.dart';
 import 'component/bottom_nav.dart'; // bottom_nav.dart에서 UI 분리한 하단바
+import 'package:flutter_application_sajindongnae/default.dart';
 
 void main() async {
+
   // 앱 실행 전 firebase 초기화, 앱 루트 위젯으로 MyApp 실행
   WidgetsFlutterBinding.ensureInitialized(); // 바인딩/플러그인 초기화를 보장하여 비동기 작업을 안전하게 수행
   await Firebase.initializeApp();            // Firebase 전역 초기화 await로 초기화가 끝나기전에 다음으로 넘어가지 않도록 함
+  final o = Firebase.app().options;
+  print('🔥 projectId=${o.projectId}, appId=${o.appId}, apiKey=${o.apiKey}');
+
   runApp(const MyApp());                     // MyApp 클래스부터 어플 시작. runApp은 flutter프레임워크에 루트위젯을 전달하고, 위젯 트리를 화면에 렌더링함
 }
 
@@ -50,6 +58,7 @@ class MyApp extends StatelessWidget {
         '/find_account': (context) => const FindAccountScreen(),
         '/find_id':(context) => const IdfoundScreen(),
         '/find_password':(context) => const PwfoundScreen(),
+        '/home' : (context) => const Default(),
       },
 
       //home: MainPage(), // 시작 시 보여줄 화면

@@ -139,7 +139,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
             // 사진
             SizedBox(
               width: double.infinity,
-              child: Image.asset(photo.imageUrl, fit: BoxFit.cover),
+              child: Image.asset(photo.imageUrl, fit: BoxFit.contain),
             ),
 
             const SizedBox(height: 10),

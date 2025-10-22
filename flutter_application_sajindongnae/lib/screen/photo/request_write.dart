@@ -50,6 +50,7 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
 
   @override
   void dispose() {
+    _miniMapController?.dispose();
     requestTitleController.dispose();
     priceController.dispose();
     descriptionController.dispose();
@@ -62,7 +63,13 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
   Future<void> _openLocationSelector(BuildContext context) async {   
     final result = await Navigator.push<LocationPickResult>(      
       context,  
-      MaterialPageRoute(builder: (context) => LocationSelectScreen()), 
+      MaterialPageRoute(
+        builder: (context) => LocationSelectScreen(
+          initialPosition: pickedPos, 
+          initialAddress: locationController.text.isEmpty
+                          ? locationController.text : null,
+        )
+      ), 
     );
 
     // LocationSelectScreen 선택된 위치를 받아와서 상태 업데이트

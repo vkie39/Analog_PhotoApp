@@ -146,10 +146,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       } else if (value == 'delete') {
                         showDialog(
                           context: context,
-                          builder: (context) {
+                          builder: (dialogContext) {
                             return AlertDialog(
                               backgroundColor: Colors.white,
-
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -171,8 +170,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                               actions: [
                                 TextButton(
                                   onPressed: () {
-                                    Navigator.pop(context);
-
+                                    Navigator.pop(dialogContext);
                                   },
                                   child: const Text(
                                     '취소',
@@ -184,7 +182,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                                 ),
                                 TextButton(
                                   onPressed: () async {
-                                    Navigator.of(context).pop();
+                                    Navigator.of(dialogContext).pop();
                                     await PostService.deletePostWithImage(_post);
                                     Navigator.pop(context);
 

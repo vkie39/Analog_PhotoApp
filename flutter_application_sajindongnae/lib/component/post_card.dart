@@ -4,8 +4,9 @@ import 'package:flutter_application_sajindongnae/screen/post/post_detail.dart';
 
 class PostCard extends StatelessWidget {
   final PostModel post;
+  final VoidCallback? onTap;
 
-  const PostCard({super.key, required this.post});
+  const PostCard({super.key, required this.post, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -29,13 +30,8 @@ class PostCard extends StatelessWidget {
     final double imageBorderRadius = 8;
     final double iconSize = 30;
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => PostDetailScreen(post: post)),
-        );
-      },
+    return InkWell(
+      onTap: onTap,
       child: Padding(
         padding: EdgeInsets.symmetric(
           horizontal: horizontalPadding,

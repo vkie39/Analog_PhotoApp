@@ -8,6 +8,7 @@ import 'package:flutter_application_sajindongnae/component/post_card.dart';
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
 import 'package:flutter_application_sajindongnae/services/post_service.dart';
 import 'package:flutter_application_sajindongnae/screen/post/write.dart';
+import 'package:flutter_application_sajindongnae/screen/post/post_detail.dart';
 import 'package:flutter/gestures.dart';
 
 
@@ -29,6 +30,7 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
 
   final List<String> tabs = ['자유', '카메라추천', '피드백']; // 탭 이름 정의
   late TabController _tabController;                       // 탭 전환과 인텍스 관리용 컨트롤러. late는 당장 초기화 안해도  nullable되는 것을 방지(나중에 값 넣을거라고 알려주는 타입)
+
 
   @override
   void initState(){ // 탭바 초기화. 위젯이 생성될 때 한 번만 호출되는 생명주기 메서드
@@ -136,7 +138,15 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
                           padding: EdgeInsets.symmetric(vertical: 15),
                           itemCount: filteredList.length,
                           itemBuilder: (context, index) {
-                            return PostCard(post: filteredList[index]);
+                            final p = filteredList[index];
+                            return PostCard(
+                              post: p, 
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => PostDetailScreen(post: p)),
+                                );
+                              });
                           },
                         );
                       },

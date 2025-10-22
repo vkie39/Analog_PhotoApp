@@ -13,6 +13,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_application_sajindongnae/models/request_model.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/location_select.dart';
 import 'package:flutter_application_sajindongnae/models/location_model.dart';
+import 'package:flutter_application_sajindongnae/screen/chat/chat_detail.dart';
 
 
 enum MoreAction { report, edit, delete }
@@ -335,6 +336,13 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
   }
   
   @override
+  void dispose(){
+    super.dispose();
+    _requestDetailMapController?.dispose();
+
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isOwner = request.uid == 'user001'; // TODO : 실제로는 current Uid와 비교해야 함 (FirebaseAuth.instance.currentUser?.uid)
     // => final isOwner = request.uid == _myUid;
@@ -567,6 +575,7 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
               onPressed: () {
                 dev.log('수락하기 버튼 클릭됨');
                 // TODO : 수락하기 로직 추가 (의뢰자와의 1:1채팅 페이지로 이동 등)
+                Navigator.push( context, MaterialPageRoute(builder: (_)=> ChatDetailScreen(request: request)),);
               },
               style: ButtonStyle(
                 backgroundColor: WidgetStateProperty.resolveWith<Color>(

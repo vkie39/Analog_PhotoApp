@@ -1,8 +1,9 @@
-// 선택된 태그 상태 관리 모델
-// 선택된 태그를 읽기전용으로 보존하는 역할
-// sell_write, buy_write, tag_select 등에서 사용
-
 import 'package:flutter/material.dart';
+
+/* 선택된 태그 상태 관리 모델
+* 선택된 태그를 읽기전용으로 보존하는 역할
+* sell_write, buy_write, tag_select 등에서 사용
+*/
 
 class SelectedTagState{   
   final Map<String, String> singleTags;              // 섹션 id를 통해 태그에 접근

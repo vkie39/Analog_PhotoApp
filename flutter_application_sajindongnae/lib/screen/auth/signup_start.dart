@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter_application_sajindongnae/screen/auth/login.dart';
 import 'signup_detail.dart';
+import 'package:flutter_application_sajindongnae/default.dart';
 
 class SignupStartScreen extends StatefulWidget {
   const SignupStartScreen({super.key});
@@ -285,6 +286,10 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
                   GestureDetector(
                     onTap: () {
                       // TODO: 비회원 진입 로직
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const Default()),
+                        (route) => false,
+                      );
                     },
                     behavior: HitTestBehavior.translucent,
                     child: const Text(

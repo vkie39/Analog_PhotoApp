@@ -9,6 +9,7 @@ import 'package:flutter_application_sajindongnae/screen/auth/widgets/phone_auth.
 import 'package:flutter_application_sajindongnae/screen/auth/widgets/email_input.dart';
 import 'package:flutter_application_sajindongnae/screen/auth/widgets/terms_checkbox.dart';
 
+
 class SignupDetailScreen extends StatefulWidget {
   const SignupDetailScreen({super.key});
 
