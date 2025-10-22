@@ -92,6 +92,55 @@ class PhotoTradeService {
     });
   }
 
+  // 판매글 수정 (이미지 변경 가능)
+  Future<void> updateTrade({
+    required String tradeId,
+    String? title,
+    String? description,
+    int? price,
+    List<String>? tags,
+    File? newImageFile, // 새 이미지 파일 있을 경우
+    required String uid,
+  }) async {
+    try {
+      final doc = await _ref.doc(tradeId).get();
+      if (!doc.exists) throw Exception("해당 판매글이 존재하지 않습니다.");
+
+      final data = doc.data() as Map<String, dynamic>;
+      String imageUrl = data['imageUrl'];
+
+      // 새 이미지가 있을 경우 Storage 업데이트
+      if (newImageFile != null) {
+        final oldImageRef = FirebaseStorage.instance.refFromURL(imageUrl);
+        await oldImageRef.delete();
+
+        final newImageRef = FirebaseStorage.instance
+            .ref()
+            .child('photo_trades/$uid/$tradeId.jpg');
+
+        await newImageRef.putFile(newImageFile);
+        imageUrl = await newImageRef.getDownloadURL();
+      }
+
+      // Firestore 필드 업데이트
+      final updateData = {
+        if (title != null) 'title': title,
+        if (description != null) 'description': description,
+        if (price != null) 'price': price,
+        if (tags != null) 'tags': tags,
+        'imageUrl': imageUrl,
+        'updatedAt': DateTime.now(),
+      };
+
+      await _ref.doc(tradeId).update(updateData);
+      print("updateTrade 성공: $tradeId");
+    } catch (e) {
+      print("updateTrade 실패: $e");
+      rethrow;
+    }
+  }
+
+
   // 판매글 삭제 (Storage 포함)
   Future<void> deleteTrade(String id, String uid) async {
     try {
