@@ -5,14 +5,16 @@ class PostModel {
   final String uId;
   final String nickname;
   final String profileImageUrl;
-  late final String category;
+  final String category;
   final int likeCount;
   final int commentCount;
   final DateTime timestamp;
   late final String title;
   late final String content;
-
   final String? imageUrl;
+
+  // 변경: likedBy 추가 (좋아요 누른 uid 목록)
+  final List<String> likedBy;
 
   PostModel({
     required this.postId,
@@ -26,11 +28,12 @@ class PostModel {
     required this.title,
     required this.content,
     this.imageUrl,
+    this.likedBy = const [], // 기본값: 빈 리스트
   });
 
 
   factory PostModel.fromDocument(DocumentSnapshot doc) {
-    final map = doc.data() as Map<String, dynamic>; // Firestore 문서 데이터를 Map으로 캐스팅
+    final map = doc.data() as Map<String, dynamic>;
 
     return PostModel(
       postId: doc.id, // Firestore의 문서 ID (문서 고유 식별자)
@@ -42,22 +45,32 @@ class PostModel {
       category: map['category'] ?? '',
       likeCount: map['likeCount'] ?? 0,
       commentCount: map['commentCount'] ?? 0,
-
-      // createdAt이 null이거나 Timestamp가 아닐 경우 예외 발생 방지
-      //    → 안전하게 타입 체크 후 변환, 없으면 현재 시각으로 대체
       timestamp: map['createdAt'] != null && map['createdAt'] is Timestamp
           ? (map['createdAt'] as Timestamp).toDate()
-          : DateTime.now(), // ← createdAt이 없거나 잘못된 경우 기본값 설정
-
-      // ↓ 기본값 처리
+          : DateTime.now(),
       title: map['title'] ?? '',
       content: map['content'] ?? '',
-
-      // ↓ 선택 필드: null 허용
       imageUrl: map['imageUrl'] as String?,
+      // 변경: likedBy 읽어오기
+      likedBy: List<String>.from(map['likedBy'] ?? []),
     );
   }
 
-
+  // Firestore 저장용 (추가)
+  Map<String, dynamic> toMap() {
+    return {
+      'uid': uId,
+      'nickname': nickname,
+      'profileImageUrl': profileImageUrl,
+      'category': category,
+      'likeCount': likeCount,
+      'commentCount': commentCount,
+      'createdAt': Timestamp.fromDate(timestamp),
+      'title': title,
+      'content': content,
+      'imageUrl': imageUrl,
+      'likedBy': likedBy, // 추가
+    };
+  }
 }
 

@@ -1,6 +1,9 @@
+import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-
+import 'package:firebase_auth/firebase_auth.dart'; 
+import '../../services/request_service.dart';
+import '../../models/request_model.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/location_select.dart';
 import 'package:flutter_application_sajindongnae/component/search.dart';
 import 'package:flutter_application_sajindongnae/services/permission_service.dart';
@@ -20,6 +23,7 @@ class RequestWriteScreen extends StatefulWidget {
 }
 
 class RequestWriteScreenScreenState extends State<RequestWriteScreen> with SingleTickerProviderStateMixin {                
+  
   
   // 입력칸 컨트롤러
   final TextEditingController requestTitleController = TextEditingController();  
@@ -115,27 +119,59 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
     return null; 
   }
 
-  // 폼 제출 함수 (입력칸 검증 후 업로드 처리)
-  void _submitForm() {
- 
-    if(_formKey.currentState == null) return; // Form 위젯을 연결해야 FormState에 접근 가능. null이면 함수 종료
+  // 폼 제출 함수 수정
+  Future<void> _submitForm() async {
+  if (_formKey.currentState == null) return;
 
-    if (_formKey.currentState!.validate()) {                                     // 모든 리턴값이 null이면 true 반환 (검증 통과)
-      // 폼 데이터 가져오기
-      final photoName = requestTitleController.text.trim();                      // 사진명
-      final price = int.parse(priceController.text.replaceAll(',', '').trim());  // 가격 (콤마 제거 후 정수로 변환)
-      final description = descriptionController.text.trim();                     // 추가 설명   
-      final location = locationController.text.trim();                           // 위치
-
-      // 검증 통과 시 실제 업로드 처리 필요(DB연동)
-      
-      print("폼 제출됨");
-
-    } else {
-      // 검증 실패 시 처리
-      print("폼 검증 실패");
+  if (_formKey.currentState!.validate()) {
+    if (pickedPos == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("위치를 선택해주세요.")),
+      );
+      return;
     }
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("로그인 후 이용해주세요.")),
+      );
+      return;
+    }
+
+    final photoName = requestTitleController.text.trim();
+    final price =
+        int.parse(priceController.text.replaceAll(',', '').trim());
+    final description = descriptionController.text.trim();
+    final location = locationController.text.trim();
+
+    final request = RequestModel(
+      requestId: const Uuid().v4(),
+      uid: user.uid,
+      nickname: user.displayName ?? '사용자',
+      profileImageUrl: user.photoURL ?? '',
+      category: null,
+      dateTime: DateTime.now(),
+      title: photoName,
+      description: description,
+      price: price,
+      location: location,
+      position: pickedPos!,
+      bookmarkedBy: [],
+      isFree: _feeTypeIsSelected[0],
+    );
+
+    await RequestService().addRequest(request);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("의뢰글이 등록되었습니다.")),
+    );
+
+    Navigator.pop(context);
+  } else {
+    print("폼 검증 실패");
   }
+}
 
   // 유료-무료 선택했을 때 호출
   void onPressedPrice(int index){

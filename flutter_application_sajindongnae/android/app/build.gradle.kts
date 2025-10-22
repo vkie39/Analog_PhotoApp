@@ -30,8 +30,22 @@ android {
         jvmTarget = "17"
     }
 
+
     // (선택) NDK가 필요 없다면 명시 제거 가능
     // ndkVersion = "27.0.12077973"
+    // min-branch에 있었어서 남겨놨는데 
+    defaultConfig {
+        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        applicationId = "com.example.flutter_application_sajindongnae"
+        // You can update the following values to match your application needs.
+        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        // minSdk = flutter.minSdkVersion
+        minSdk = 24                      
+        targetSdk = 35
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+    }
+    // 여기까지
 
     buildTypes {
         release {

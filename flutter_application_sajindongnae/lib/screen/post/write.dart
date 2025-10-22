@@ -13,7 +13,9 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:firebase_storage/firebase_storage.dart';
-
+import 'package:firebase_auth/firebase_auth.dart'; // 변경: 로그인 유저 uid 사용
+// 선택: 닉네임을 users 컬렉션에서 가져오고 싶으면 아래도 추가
+// import 'package:flutter_application_sajindongnae/services/user_service.dart';
 import 'package:flutter_application_sajindongnae/component/action_button.dart';
 import 'package:flutter_application_sajindongnae/component/expandable_fab.dart';
 import 'package:flutter_application_sajindongnae/main.dart';
@@ -22,17 +24,19 @@ import 'package:flutter_application_sajindongnae/models/post_model.dart';
 import 'package:flutter_application_sajindongnae/services/post_service.dart';
 
 
-
 class WriteScreen extends StatefulWidget {
   final String category;
-
+  
   const WriteScreen({super.key, required this.category});
+  
 
   @override
   State<WriteScreen> createState() => _WriteScreenState();
 }
 
 class _WriteScreenState extends State<WriteScreen> {
+  // 🔥 로그인한 사용자 가져오기
+  final User? user = FirebaseAuth.instance.currentUser;
   final List<String> categoryList = ['자유', '카메라추천', '피드백'];
   late String selectedCategory;
   late ImageService _imageService;
@@ -141,7 +145,7 @@ void submitPost() async {
     }
 
     String? imageUrl;
-
+    
     // 이미지 업로드 전 경로 및 파일 존재 여부 확인
     if (_resultImage != null) {
       try {
@@ -151,7 +155,6 @@ void submitPost() async {
         final file = File(path);
         final fileExists = file.existsSync();
         print('[DEBUG] File exists: $fileExists');
-
 
         if (!fileExists) {
           throw Exception('파일이 존재하지 않음: $path');
@@ -168,18 +171,33 @@ void submitPost() async {
       }
     }
 
-    final newPost = PostModel(
-      postId: const Uuid().v4(),
-      uId: '임시지밥ID', // 로그인된 사용자 ID로 수정 필요
-      nickname: '스폰지밥',
-      profileImageUrl: '',
-      category: category,
-      likeCount: 0,
-      commentCount: 0,
-      timestamp: DateTime.now(),
-      title: title,
-      content: content,
-      imageUrl: imageUrl,
+  final newPost = PostModel(
+    postId: const Uuid().v4(),
+    uId: user?.uid ?? 'unknown',                  // 로그인된 사용자 UID
+    nickname: user?.email ?? '익명',              // 닉네임 대신 이메일 (DB에서 따로 가져와도 됨)
+    profileImageUrl: '',
+    category: category,
+    likeCount: 0,
+    commentCount: 0,
+    timestamp: DateTime.now(),
+    title: title,
+    content: content,
+    imageUrl: imageUrl,
+  );
+
+  try {
+    print('🔥 업로드 시도');
+    await PostService.createPost(newPost);
+    print('✅ Post created!');
+    if (mounted) {
+      Navigator.pop(context, true); // 작성 완료 후 페이지 닫기
+    } else {
+      print('❗ 위젯이 이미 dispose됨');
+    }
+  } catch (e) {
+    print('❌ 예외 발생: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('게시글 등록에 실패했어요. 다시 시도해주세요.')),
     );
 
     try {
@@ -475,6 +493,7 @@ void submitPost() async {
                             ],
                           ),
                         ),
+                        
                       ],
                     ],
                   ),

@@ -13,34 +13,34 @@ import 'package:flutter/gestures.dart';
 
 
 // 검색 기능을 위한 필드
-String searchKeyword = '';          // 입력된 단어 저장
-List<PostModel> searchResults = []; // 검색 결과 게시글 저장용. 지금 사용x 인듯
-List<PostModel> allPosts = [];      // 전체 게시글 저장용. 지금 사용x 인듯 -> 확실해지면 지우기
+String searchKeyword = '';
+List<PostModel> searchResults = [];
+List<PostModel> allPosts = []; // 전체 게시글 저장용
 
 
-class ListScreen extends StatefulWidget { // 게시글 목록이 변하기 때문에 StatefulWidget
-  const ListScreen({super.key});          // 생성자
+class ListScreen extends StatefulWidget {
+  const ListScreen({super.key});
 
   @override
-  State<ListScreen> createState() => _ListScreenState();   // 상태 관리를 위한 _ListScreenState(State 객체) 생성
+  State<ListScreen> createState() => _ListScreenState();
 }
 
-class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateMixin{  // 탭 이벤트 발생시 화면 전환을 부드럽게 하기 위해 SingleTickerProviderStateMixin 사용
-  final searchController = TextEditingController();        // 검색창 내용을 컨트롤하기 위함(입력값을 읽거나 지움)
+class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateMixin{ 
+  final searchController = TextEditingController(); // 검색창 내용을 컨트롤하기 위함
 
   final List<String> tabs = ['자유', '카메라추천', '피드백']; // 탭 이름 정의
-  late TabController _tabController;                       // 탭 전환과 인텍스 관리용 컨트롤러. late는 당장 초기화 안해도  nullable되는 것을 방지(나중에 값 넣을거라고 알려주는 타입)
+  late TabController _tabController; // late는 당장 초기화 안해도  nullable되는 것을 방지(나중에 값 넣을거라고 알려주는 타입)
 
 
   @override
-  void initState(){ // 탭바 초기화. 위젯이 생성될 때 한 번만 호출되는 생명주기 메서드
+  void initState(){ // 탭바 초기화
     super.initState();
-    _tabController = TabController(length: tabs.length, vsync: this); // SingleTickerProviderStateMixin 로 this를 받아올 수 있음. 애니메이션을 위해 사용
+    _tabController = TabController(length: tabs.length, vsync: this); // SingleTickerProviderStateMixin 로 this를 받아올 수 있음. 애니메이션을 위해 사용용
 
   }
 
   @override
-  void dispose() { // 위젯 제거될 때 메모리 정리를 위해 호출
+  void dispose() { // 위젯 제거될 때 메모리 정리를 위해 호출출
     _tabController.dispose();
     super.dispose();
   }
@@ -80,7 +80,6 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
         elevation: 0,                    // 그림자
         title: SearchBarWidget(          // Appbar의 title자리에 search.dart에서 정의한 검색창 배치
           controller: searchController,  // 위에서 정의한 검색창 컨트롤러
-
           onChanged: (value){
             // 이후에 Firestore 쿼리 또는 리스트 필터링 로직 추가 필요함
             // 검색어 업데이트
@@ -91,40 +90,66 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
         ),
       ),
 
-      body: Listener(                                    // 하위 위젯의 포인터 이벤트를 감지하는 위젯
-        behavior: HitTestBehavior.translucent,           // 클릭 이벤트가 있는(탭바 등)을 눌러도 키보드 내리고 하위 위젯의 클릭 이벤트도 처리
-        onPointerDown: (_) {                             // 포커스된 입력창의 포커스 제거, 키보드 내림
-          FocusManager.instance.primaryFocus?.unfocus(); // FocusManager 클래스의 instance라는 싱글톤 객체를 통해 primaryFocus사용. 현재 포커스를 가진 위젯의 FocusNode를 가리킴 
+      body: Listener(
+        behavior: HitTestBehavior.translucent, // 클릭 이벤트가 있는(탭바 등)을 눌러도 키보드 내림
+        onPointerDown: (_) {
+          FocusManager.instance.primaryFocus?.unfocus();
         },
-
-        child: Container(                                // AppBar 아래 컨테이너 만들어서 배경색 지정. 탭바뷰 만듦
+        /*onTap: () {
+          FocusScope.of(context).unfocus(); // 키보드 내리기
+        },
+        behavior: HitTestBehavior.opaque, */
+        child: Container( 
           color: Colors.white,
-          child: Column(                                 // 탭바와 탭바뷰를 만들기 위한 Column
-            children: [                                  // 탭바와 탭바뷰를 만들 children
+          child: Column(
+            children: [
               TabBar(
-                controller: _tabController,              // 위에서 length 지정한 컨트롤러             
-                labelColor: Colors.black,              // 선택시 스타일 지정
+                controller: _tabController,
+                labelColor: Colors.black,
                 unselectedLabelColor: Colors.grey,
-                indicatorColor: Colors.black,          // 문자열을 사용하면 오류가 나기 때문에 map을 통해 tabs(자유, 카메라추천..)를 List<String> -> Iterable<Tab>으로 변환
-                tabs: tabs.map((label) => Tab(text: label)).toList() // map의 결과는 Iterable. TabBar가 List를 사용하기 때문에 toList로 형변환이 필요
+                indicatorColor: Colors.black,
+                tabs: tabs.map((label) => Tab(text: label)).toList() // map의 결과는 Iterable임. 위젯은 List를 보통 써서 toList로 형변환이 필요요
+                /*indicator: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.black,
+                      width: 2.5,
+                    ),
+                  ),
+                ),
+                indicatorSize: TabBarIndicatorSize.tab, */
               ),
             
-              Expanded(                                  // 남은 공간을 모두 차지하도록 하는 위젯
 
+              Expanded(                                  // 남은 공간을 모두 차지하도록 하는 위젯
                 child: TabBarView(
                   controller: _tabController,
+                  /*
+                  children: tabs.map((category) {
+                    final filteredList = postList
+                        .where((post) => post.category == category) // postList를 하나씩 post로 받아와서 필터링링
+                        .toList();
+                    return ListView.builder(
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                      itemCount: filteredList.length, // filteredList에 몇개의 요소가 있는지 확인하고, 이 수를 기준으로 itemBuilder호출출
+                      itemBuilder: (context, index){ // index는 ListView.builder내부에서 자동으로 0부터 itemCount-1까지 넣어줌
+                        return PostCard(post: filteredList[index]);
+                      },
+                    );
+                  }).toList(),  
+                  */ 
                   children: tabs.map((category) {
                     return StreamBuilder<List<PostModel>>(
-                      stream: PostService.getPostsByCategory(category),             // ← Firestore에서 데이터 스트림 가져오기
-                      builder: (context, snapshot) {                                // 데이터가 변경될 때 자동 호출, UI업데이트, snapshot엔 현재 데이터 상태, 로딩여부 등이 있음
-                        if (snapshot.connectionState == ConnectionState.waiting) {  // 데이터 받아오는 중이면 로딩표시
+                      stream: PostService.getPostsByCategory(category), // ← Firestore에서 데이터 스트림 가져오기
+                      builder: (context, snapshot) { // 데이터가 변경될 때 자동 호출, UI업데이트, snapshot엔 현재 데이터 상태, 로딩여부 등이 있음
+                        if (snapshot.connectionState == ConnectionState.waiting) { // 데이터 받아오는 중이면 로딩표시시
                           return Center(child: CircularProgressIndicator());
                         }
-                        if (!snapshot.hasData || snapshot.data!.isEmpty) {          // 게시글이 없을 경우 안내문구 출력
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) { // 게시글이 없을 경우 안내문구구 출력
                           return Center(child: Text('게시글이 없습니다.'));
                         }
                         // 검색기능을 위해 추가된 부분
-                        final List<PostModel> rawList = snapshot.data!;              // 스트림에서 받은 카테고리별 원본 게시글 목록
+                        final List<PostModel> rawList = snapshot.data!;
 
 
                         final filteredList = rawList.where((post){
