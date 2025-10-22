@@ -4,16 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/photo_sell.dart';
 import 'package:flutter_application_sajindongnae/models/photo_trade_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';                        
 
 /// appBar 버튼에서 어떤 메뉴를 선택했는지 구분하기 위한 enum
 enum MoreAction { report, edit, delete }
 
 class SellDetailScreen extends StatefulWidget {
   final PhotoTradeModel photo;
-  const SellDetailScreen({super.key, required this.photo});
+  SellDetailScreen({super.key, required this.photo});
 
-  // 임시 유저 정보 
-  final String currentUserUid = 'dummy_uid';
+  // 실제 유저 정보로 변경
+  final String currentUserUid = FirebaseAuth.instance.currentUser?.uid ?? 'uid';
 
   @override
   State<SellDetailScreen> createState() => _SellDetailScreenState();

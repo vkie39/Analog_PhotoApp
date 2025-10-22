@@ -14,6 +14,7 @@ import 'package:flutter_application_sajindongnae/models/tag_model.dart';
 import 'package:flutter_application_sajindongnae/models/location_model.dart';
 import 'package:flutter_application_sajindongnae/services/photo_trade_service.dart';
 import 'package:flutter_application_sajindongnae/models/photo_trade_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 
 
@@ -184,6 +185,24 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
 
     // 2) FormState 접근 가능 여부 확인
     if (_formKey.currentState == null) return; // Form 위젯을 연결해야 FormState에 접근 가능. null이면 함수 종료
+    
+    // 현재 로그인된 유저 정보 가져오기
+     final user = FirebaseAuth.instance.currentUser;
+
+    if(_formKey.currentState!.validate()){
+      
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('로그인 후 이용해주세요.')),
+        );
+        return; // 로그인 안 되어 있으면 종료
+      }
+    }
+
+    // Firestore users 컬렉션에서 현재 로그인된 유저 닉네임 가져오기
+    final uid = user!.uid;
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final nickname = userDoc.data()?['nickname'] ?? '사용자'; // 닉네임이 없으면 '사용자'로 기본값 설정
 
    // 3) 폼 유효성 검증 (모든 TextFormField의 validator가 통과해야 true)
     if (_formKey.currentState!.validate()) { 
