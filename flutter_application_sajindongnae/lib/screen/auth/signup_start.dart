@@ -3,10 +3,10 @@ import 'package:flutter/gestures.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:flutter_application_sajindongnae/screen/auth/login.dart';
 import 'signup_detail.dart';
-import 'package:flutter_application_sajindongnae/default.dart';
 
 class SignupStartScreen extends StatefulWidget {
   const SignupStartScreen({super.key});
@@ -17,58 +17,130 @@ class SignupStartScreen extends StatefulWidget {
 
 class _SignupStartScreenState extends State<SignupStartScreen> {
   bool _isMsLoading = false;
+  bool _isGoogleLoading = false;
 
-  /// Microsoft 계정으로 Firebase 로그인 (또는 신규 가입)
+  late final TapGestureRecognizer _loginRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loginRecognizer = TapGestureRecognizer()
+      ..onTap = () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      };
+  }
+
+  @override
+  void dispose() {
+    _loginRecognizer.dispose();
+    super.dispose();
+  }
+
+  /// Firestore 사용자 문서 upsert
+  Future<void> _upsertUser(User user, {required String provider}) async {
+    final users = FirebaseFirestore.instance.collection('users');
+    final ref = users.doc(user.uid);
+    final snap = await ref.get();
+    final data = {
+      'uid': user.uid,
+      'email': user.email,
+      'nickname': user.displayName ?? '',
+      'photoURL': user.photoURL,
+      'provider': provider,
+      if (!snap.exists) 'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    await ref.set(data, SetOptions(merge: true));
+  }
+
+  /// Google 계정으로 로그인/가입
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isGoogleLoading = true);
+    try {
+      // 1) 구글 계정 선택
+      final GoogleSignInAccount? gUser = await GoogleSignIn().signIn();
+      if (gUser == null) {
+        // 사용자가 취소
+        return;
+      }
+
+      // 2) 토큰 가져오기
+      final gAuth = await gUser.authentication;
+
+      // 3) Firebase Auth 크레덴셜 생성
+      final credential = GoogleAuthProvider.credential(
+        accessToken: gAuth.accessToken,
+        idToken: gAuth.idToken,
+      );
+
+      // 4) Firebase 로그인
+      final result =
+      await FirebaseAuth.instance.signInWithCredential(credential);
+
+      // 5) Firestore upsert
+      final user = result.user;
+      if (user != null) {
+        await _upsertUser(user, provider: 'google');
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google 계정으로 로그인되었습니다.')),
+        );
+
+        // 추가 정보 수집 화면으로
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const SignupDetailScreen()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      var msg = e.message ?? '로그인 실패';
+      if (e.code == 'account-exists-with-different-credential') {
+        msg =
+        '이미 다른 로그인 방식으로 가입된 이메일입니다. 기존 방식으로 로그인 후 계정 연결을 진행해 주세요.';
+      } else if (e.code == 'operation-not-allowed') {
+        msg = 'Firebase 콘솔에서 Google 제공자 설정을 확인해 주세요.';
+      }
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Google 로그인 실패: $msg')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Google 로그인 중 오류: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
+    }
+  }
+
+  /// Microsoft 계정으로 로그인/가입
   Future<void> _signInWithMicrosoft() async {
     setState(() => _isMsLoading = true);
     try {
-      // Firebase Auth의 OAuthProvider 사용 (microsoft.com)
       final provider = OAuthProvider('microsoft.com');
-
-      // 원하면 필요한 범위를 추가 (기본 openid/profile/email은 콘솔에 추가하는 것을 권장)
       provider.addScope('openid');
       provider.addScope('profile');
       provider.addScope('email');
-      // Graph API를 쓰려면 예: provider.addScope('User.Read');
-
-      // 어떤 테넌트를 허용할지(개인/조직/모두) 선택: common | consumers | organizations
       provider.setCustomParameters({'tenant': 'common'});
 
-      // iOS/Android/Web에서 모두 동작하는 통합 API
       final credential = await FirebaseAuth.instance.signInWithProvider(provider);
       final user = credential.user;
 
       if (user != null) {
-        // Firestore에 사용자 문서 생성/업데이트
-        final users = FirebaseFirestore.instance.collection('users');
-        final userRef = users.doc(user.uid);
-        final snap = await userRef.get();
-
-        final dataToMerge = {
-          'uid': user.uid,
-          'email': user.email,
-          'nickname': user.displayName ?? '',
-          'photoURL': user.photoURL,
-          'provider': 'microsoft',
-          // 서버 시간 기록 (최초/갱신 구분)
-          if (!snap.exists) 'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        };
-
-        await userRef.set(dataToMerge, SetOptions(merge: true));
+        await _upsertUser(user, provider: 'microsoft');
 
         if (!mounted) return;
-
-        // 전화번호 인증/약관 동의 등 추가정보를 수집하려면 가입 상세 화면으로 이동
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Microsoft 계정으로 로그인되었습니다.')),
         );
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => const SignupDetailScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const SignupDetailScreen()),
         );
       }
     } on FirebaseAuthException catch (e) {
@@ -80,9 +152,8 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
       } else if (e.code == 'operation-not-allowed') {
         msg = 'Firebase 콘솔에서 Microsoft 제공자 설정을 확인해 주세요.';
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Microsoft 로그인 실패: $msg')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Microsoft 로그인 실패: $msg')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -96,12 +167,10 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 시스템 UI(노치 등)를 피하기 위해 SafeArea 사용함
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            // 키보드 대응 및 오버플로 방지
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
               child: Column(
@@ -159,7 +228,7 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
 
                   const SizedBox(height: 25),
 
-                  // 구분선
+                  // OR 구분선
                   const Row(
                     children: [
                       Expanded(child: Divider()),
@@ -180,11 +249,9 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
 
                   const SizedBox(height: 25),
 
-                  // Google (미구현 상태 - 주석 참고)
+                  // Google
                   OutlinedButton(
-                    onPressed: () {
-                      // TODO: 구글 로그인 연결
-                    },
+                    onPressed: _isGoogleLoading ? null : _signInWithGoogle,
                     style: OutlinedButton.styleFrom(
                       backgroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
@@ -194,11 +261,18 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
+                          if (_isGoogleLoading)
+                            const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          if (_isGoogleLoading) const SizedBox(width: 8),
+                          const Text(
                             "Google로 시작하기",
                             style: TextStyle(
                               color: Colors.black,
@@ -212,7 +286,7 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
 
                   const SizedBox(height: 7),
 
-                  // Microsoft 로그인
+                  // Microsoft
                   OutlinedButton(
                     onPressed: _isMsLoading ? null : _signInWithMicrosoft,
                     style: OutlinedButton.styleFrom(
@@ -249,7 +323,7 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
 
                   const SizedBox(height: 20),
 
-                  // 로그인 이동
+                  // 하단 링크
                   RichText(
                     textAlign: TextAlign.center,
                     text: TextSpan(
@@ -266,15 +340,7 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
                             color: Colors.black,
                             fontWeight: FontWeight.w500,
                           ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const LoginScreen(),
-                                ),
-                              );
-                            },
+                          recognizer: _loginRecognizer,
                         ),
                       ],
                     ),
@@ -282,14 +348,10 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
 
                   const SizedBox(height: 90),
 
-                  // 비회원 진입 (미구현)
+                  // 비회원 진입
                   GestureDetector(
                     onTap: () {
-                      // TODO: 비회원 진입 로직
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => const Default()),
-                        (route) => false,
-                      );
+                      Navigator.pushReplacementNamed(context, '/home');
                     },
                     behavior: HitTestBehavior.translucent,
                     child: const Text(

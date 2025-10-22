@@ -41,13 +41,13 @@ class PostService {
   /// 전체 게시글 조회 (최신순 정렬)
   static Stream<List<PostModel>> getAllPosts() {
     return _postCollection
-        //createdAt이 null인 문서 필터링
+    //createdAt이 null인 문서 필터링
         .where('createdAt', isNotEqualTo: null)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
-            .map((doc) => PostModel.fromDocument(doc))
-            .toList());
+        .map((doc) => PostModel.fromDocument(doc))
+        .toList());
   }
 
   /// 카테고리별 게시글 조회
@@ -57,8 +57,8 @@ class PostService {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
-            .map((doc) => PostModel.fromDocument(doc))
-            .toList());
+        .map((doc) => PostModel.fromDocument(doc))
+        .toList());
   }
 
   /// 이미지 업로드 (Storage)
@@ -84,46 +84,46 @@ class PostService {
 
   //게시글 수정
   static Future<void> updatePost(String postId, Map<String, dynamic> updatedData) async {
-  try {
-    await _postCollection.doc(postId).update(updatedData);
-    log('게시글 수정 완료');
-    
-  } catch (e) {
-    log('게시글 수정 실패: $e');
-    rethrow;
+    try {
+      await _postCollection.doc(postId).update(updatedData);
+      log('게시글 수정 완료');
+
+    } catch (e) {
+      log('게시글 수정 실패: $e');
+      rethrow;
+    }
   }
-}
 
 
-  
+
   // 게시글 삭제 기능
   static Future<void> deletePostWithImage(PostModel post) async {
-  try {
-    // 1. 이미지가 있다면 Storage에서 삭제
-    if (post.imageUrl != null && post.imageUrl!.isNotEmpty) {
-      final ref = FirebaseStorage.instance.refFromURL(post.imageUrl!);
-      await ref.delete();
-      log('✅ 이미지 삭제 완료');
+    try {
+      // 1. 이미지가 있다면 Storage에서 삭제
+      if (post.imageUrl != null && post.imageUrl!.isNotEmpty) {
+        final ref = FirebaseStorage.instance.refFromURL(post.imageUrl!);
+        await ref.delete();
+        log('✅ 이미지 삭제 완료');
+      }
+
+      // 2. Firestore 문서 삭제
+      await _postCollection.doc(post.postId).delete();
+      log('✅ 게시글 삭제 완료');
+
+    } catch (e) {
+      log('게시글/이미지 삭제 실패: $e');
+      rethrow;
     }
-
-    // 2. Firestore 문서 삭제
-    await _postCollection.doc(post.postId).delete();
-    log('✅ 게시글 삭제 완료');
-
-  } catch (e) {
-    log('게시글/이미지 삭제 실패: $e');
-    rethrow;
   }
-}
 
   /// 좋아요 수 기준 상위 3개 게시글 스트림
   static Stream<List<PostModel>> getBestPostsStream() {
-  return _postCollection
-      .orderBy('likeCount', descending: true)
-      .limit(3)
-      .snapshots()
-      .map((snapshot) =>
-          snapshot.docs.map((doc) => PostModel.fromDocument(doc)).toList());
+    return _postCollection
+        .orderBy('likeCount', descending: true)
+        .limit(3)
+        .snapshots()
+        .map((snapshot) =>
+        snapshot.docs.map((doc) => PostModel.fromDocument(doc)).toList());
   }
 
 
