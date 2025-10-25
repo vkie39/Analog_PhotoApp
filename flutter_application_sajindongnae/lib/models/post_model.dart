@@ -37,7 +37,7 @@ class PostModel {
 
     return PostModel(
       postId: doc.id,
-      uid: map['uId'] ?? '',
+      uId: map['uId'] ?? '',
       nickname: map['nickname'] ?? '',
       profileImageUrl: map['profileImageUrl'] ?? '',
       category: map['category'] ?? '',
@@ -92,7 +92,7 @@ class PostModel {
   Map<String, dynamic> toMap() {
     return {
 
-      'uId': uid,
+      'uId': uId,
       'nickname': nickname,
       'profileImageUrl': profileImageUrl,
       'category': category,

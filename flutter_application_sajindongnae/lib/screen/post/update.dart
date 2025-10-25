@@ -102,7 +102,7 @@ class UpdateScreenState extends State<UpdateScreen> {
 
       final updatedPost = PostModel(
         postId: widget.existingPost!.postId,
-        uid: widget.existingPost!.uid,
+        uId: widget.existingPost!.uId,
         nickname: widget.existingPost!.nickname,
         profileImageUrl: widget.existingPost!.profileImageUrl,
         category: category,

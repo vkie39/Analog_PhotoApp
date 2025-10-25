@@ -12,6 +12,8 @@ class PostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     print(MediaQuery.of(context).size.width);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth <= 360;
 
     // 픽셀 기반 세부 조정
     final double imageSize = isSmallScreen ? 60 : 80;

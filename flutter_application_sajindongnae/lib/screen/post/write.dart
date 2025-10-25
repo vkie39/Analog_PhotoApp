@@ -217,6 +217,37 @@ void submitPost() async {
     }
   }
 
+  // 사진 경로를 받아서 어플의 임시 디렉토리 경로를 반환하는 함수
+  Future<String> _toTempFilePath(String pickedPath) async{                     // 갤러리나 카메라에서 가져온 사진 경로를 받음
+    final bytes = await XFile(pickedPath).readAsBytes();                       // 원본을 XFile로 감싸서 전체 바이트를 읽어옴
+    final ext = path.extension(pickedPath).isNotEmpty ? path.extension(pickedPath) : '.jpg';
+    final dir = await getTemporaryDirectory();                                 // 앱 전용 임시 디렉토리
+    final f = File('${dir.path}/${DateTime.now().millisecondsSinceEpoch}$ext');// 임시 디렉토리에 새로운 파일 만듦
+    await f.writeAsBytes(bytes, flush: true);                                  // 읽어온 바이트를 만든 파일에 기록. flush는 버퍼링된 내용을 바로 사용할 수 있도록 보장
+    return f.path;
+  }
+
+   // 찍거나 가져온 사진 편집(크롭,회전)하는 함수
+  Future<void> _cropImage(String imagePath) async {
+    if(_cropping) return;  // 크롭 동작을 동시에 여러개 하지 못하도록 막음
+    _cropping = true;
+    try{
+      // 경로 복사
+      final normalizedPath = await _toTempFilePath(imagePath);           // 앱의 임시 디렉토리로 경로 복사 -> 좀 더 안전한 접근
+      final croppedFile = await _imageService.cropImage(normalizedPath); // 크롭 결과
+
+      if (croppedFile != null) {
+        if (!mounted) return;  // 크롭 처리하는 동안 화면이 없어지지 않았는지 확인
+        setState(() {
+          _resultImage = XFile(croppedFile.path);
+          _isPictureUploaded = true;
+        });
+      }
+    } catch (e, st){
+      debugPrint('crop error : $e\n$st');
+      Fluttertoast.showToast(msg: '편집 중 오류 발생');
+    }finally{_cropping = false;}
+  }
 
 
   // image_service에서 pickImageFromGallery와 pickImageFromCamera로
@@ -263,42 +294,6 @@ void submitPost() async {
       Fluttertoast.showToast(msg: '파일 선택이 취소되었습니다.');
     }
   }
-
-
-
-  // 찍거나 가져온 사진 편집(크롭,회전)하는 함수
-  Future<void> _cropImage(String imagePath) async {
-    if(_cropping) return;  // 크롭 동작을 동시에 여러개 하지 못하도록 막음
-    _cropping = true;
-    try{
-      // 경로 복사
-      final normalizedPath = await _toTempFilePath(imagePath);           // 앱의 임시 디렉토리로 경로 복사 -> 좀 더 안전한 접근
-      final croppedFile = await _imageService.cropImage(normalizedPath); // 크롭 결과
-
-      if (croppedFile != null) {
-        if (!mounted) return;  // 크롭 처리하는 동안 화면이 없어지지 않았는지 확인
-        setState(() {
-          _resultImage = XFile(croppedFile.path);
-          _isPictureUploaded = true;
-        });
-      }
-    } catch (e, st){
-      debugPrint('crop error : $e\n$st');
-      Fluttertoast.showToast(msg: '편집 중 오류 발생');
-    }finally{_cropping = false;}
-  }
-
-
-  // 사진 경로를 받아서 어플의 임시 디렉토리 경로를 반환하는 함수
-  Future<String> _toTempFilePath(String pickedPath) async{                     // 갤러리나 카메라에서 가져온 사진 경로를 받음
-    final bytes = await XFile(pickedPath).readAsBytes();                       // 원본을 XFile로 감싸서 전체 바이트를 읽어옴
-    final ext = path.extension(pickedPath).isNotEmpty ? path.extension(pickedPath) : '.jpg';
-    final dir = await getTemporaryDirectory();                                 // 앱 전용 임시 디렉토리
-    final f = File('${dir.path}/${DateTime.now().millisecondsSinceEpoch}$ext');// 임시 디렉토리에 새로운 파일 만듦
-    await f.writeAsBytes(bytes, flush: true);                                  // 읽어온 바이트를 만든 파일에 기록. flush는 버퍼링된 내용을 바로 사용할 수 있도록 보장
-    return f.path;
-  }
-
 
   @override
   Widget build(BuildContext context) {
@@ -531,4 +526,5 @@ void submitPost() async {
       ),
     );
   }
+}
 }

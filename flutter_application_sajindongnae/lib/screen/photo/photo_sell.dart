@@ -25,7 +25,7 @@ class PhotoSellScreen extends StatefulWidget {
 class _PhotoSellScreenState extends State<PhotoSellScreen>
     with SingleTickerProviderStateMixin {
   final searchController = TextEditingController();
-  final List<String> tags = ['여름 방학', '졸업 작품', '사진 동네', '바다', '감성 사진'];
+  List<String> tags = []; 
   List<String> _selectedTags = [];
 
 /*
@@ -83,6 +83,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen>
   */
   SelectedTagState _searchTagState = SelectedTagState(); // 태그 선택 상태 관리용, 용도 : tag_select.dart와 데이터를 주고 받는 용               
   final List<String> tabs = ['판매', '구매'];
+  final RequestService _requestService = RequestService();
   late TabController _tabController;
 
   // [수정] PhotoTradeService 추가
@@ -322,7 +323,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen>
                         );
                       },
                     ),
-
+                
                     // [기존 유지] 구매(의뢰) 탭: Firestore 실시간 데이터
                     StreamBuilder<List<RequestModel>>(
                       stream: _requestService.getRequests(),

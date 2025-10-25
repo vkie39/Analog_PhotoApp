@@ -16,7 +16,7 @@ android {
     // 권장: minSdk 23 이상 (전화 인증/Play Integrity 경로)
     defaultConfig {
         applicationId = "com.example.flutter_application_sajindongnae"
-        minSdk = 23           // ← 24여도 되지만 23 권장
+        minSdk = flutter.minSdkVersion           // ← 24여도 되지만 23 권장
         targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
