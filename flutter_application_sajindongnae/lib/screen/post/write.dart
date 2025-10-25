@@ -64,9 +64,8 @@ class _WriteScreenState extends State<WriteScreen> {
     super.initState();
     selectedCategory = widget.category;
     _imageService = ImageService();
-
-
   }
+
 /*
 void submitPost() async {
   // firestore에 저장
@@ -127,8 +126,9 @@ void submitPost() async {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('게시글 등록에 실패했어요. 다시 시도해주세요.')));
   }
 }
-
 */
+
+  // ✅ 수정된 submitPost(): 함수 중첩 제거
   void submitPost() async {
     // firestore에 저장
     final title = titleController.text.trim(); // 제목
@@ -171,33 +171,18 @@ void submitPost() async {
       }
     }
 
-  final newPost = PostModel(
-    postId: const Uuid().v4(),
-    uId: user?.uid ?? 'unknown',                  // 로그인된 사용자 UID
-    nickname: user?.email ?? '익명',              // 닉네임 대신 이메일 (DB에서 따로 가져와도 됨)
-    profileImageUrl: '',
-    category: category,
-    likeCount: 0,
-    commentCount: 0,
-    timestamp: DateTime.now(),
-    title: title,
-    content: content,
-    imageUrl: imageUrl,
-  );
-
-  try {
-    print('🔥 업로드 시도');
-    await PostService.createPost(newPost);
-    print('✅ Post created!');
-    if (mounted) {
-      Navigator.pop(context, true); // 작성 완료 후 페이지 닫기
-    } else {
-      print('❗ 위젯이 이미 dispose됨');
-    }
-  } catch (e) {
-    print('❌ 예외 발생: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('게시글 등록에 실패했어요. 다시 시도해주세요.')),
+    final newPost = PostModel(
+      postId: const Uuid().v4(),
+      uId: user?.uid ?? 'unknown',                  // 로그인된 사용자 UID
+      nickname: user?.email ?? '익명',              // 닉네임 대신 이메일 (DB에서 따로 가져와도 됨)
+      profileImageUrl: '',
+      category: category,
+      likeCount: 0,
+      commentCount: 0,
+      timestamp: DateTime.now(),
+      title: title,
+      content: content,
+      imageUrl: imageUrl,
     );
 
     try {
@@ -217,64 +202,54 @@ void submitPost() async {
     }
   }
 
+  // ✅ submitPost 밖으로 이동
   // 사진 경로를 받아서 어플의 임시 디렉토리 경로를 반환하는 함수
-  Future<String> _toTempFilePath(String pickedPath) async{                     // 갤러리나 카메라에서 가져온 사진 경로를 받음
-    final bytes = await XFile(pickedPath).readAsBytes();                       // 원본을 XFile로 감싸서 전체 바이트를 읽어옴
+  Future<String> _toTempFilePath(String pickedPath) async {
+    final bytes = await XFile(pickedPath).readAsBytes();
     final ext = path.extension(pickedPath).isNotEmpty ? path.extension(pickedPath) : '.jpg';
-    final dir = await getTemporaryDirectory();                                 // 앱 전용 임시 디렉토리
-    final f = File('${dir.path}/${DateTime.now().millisecondsSinceEpoch}$ext');// 임시 디렉토리에 새로운 파일 만듦
-    await f.writeAsBytes(bytes, flush: true);                                  // 읽어온 바이트를 만든 파일에 기록. flush는 버퍼링된 내용을 바로 사용할 수 있도록 보장
+    final dir = await getTemporaryDirectory();
+    final f = File('${dir.path}/${DateTime.now().millisecondsSinceEpoch}$ext');
+    await f.writeAsBytes(bytes, flush: true);
     return f.path;
   }
 
-   // 찍거나 가져온 사진 편집(크롭,회전)하는 함수
+  // 찍거나 가져온 사진 편집(크롭,회전)하는 함수
   Future<void> _cropImage(String imagePath) async {
-    if(_cropping) return;  // 크롭 동작을 동시에 여러개 하지 못하도록 막음
+    if (_cropping) return;
     _cropping = true;
-    try{
-      // 경로 복사
-      final normalizedPath = await _toTempFilePath(imagePath);           // 앱의 임시 디렉토리로 경로 복사 -> 좀 더 안전한 접근
-      final croppedFile = await _imageService.cropImage(normalizedPath); // 크롭 결과
+    try {
+      final normalizedPath = await _toTempFilePath(imagePath);
+      final croppedFile = await _imageService.cropImage(normalizedPath);
 
       if (croppedFile != null) {
-        if (!mounted) return;  // 크롭 처리하는 동안 화면이 없어지지 않았는지 확인
+        if (!mounted) return;
         setState(() {
           _resultImage = XFile(croppedFile.path);
           _isPictureUploaded = true;
         });
       }
-    } catch (e, st){
+    } catch (e, st) {
       debugPrint('crop error : $e\n$st');
       Fluttertoast.showToast(msg: '편집 중 오류 발생');
-    }finally{_cropping = false;}
+    } finally {
+      _cropping = false;
+    }
   }
-
-
-  // image_service에서 pickImageFromGallery와 pickImageFromCamera로
-  // 이미지를 가져오면 null여부 확인 후 setState로 화면에 반영
 
   Future<void> _pickImageFromGallery(BuildContext context) async {
     _originalImage = await pickImageFromGallery(context);
     if (_originalImage != null) {
       await _cropImage(_originalImage!.path);
-      // 크롭 없이 바로 이미지 삽입할 거면 주석처리된 내용으로 하기
-      //setState(() {
-      //  _cropedImage = _originalImage; // 크롭, 압축 없이 바로 사용
-      //  _isPictureUploaded = true;
-      //});
-
     } else {
       Fluttertoast.showToast(msg: '사진 선택이 취소되었습니다.');
     }
   }
 
-
   Future<void> _pickImageFromCamera(BuildContext context) async {
-    _originalImage = await pickImageFromCamera(context); // 카메라에서 이미지 촬영
+    _originalImage = await pickImageFromCamera(context);
     if (_originalImage != null) {
       setState(() {
-        _resultImage = _originalImage; // 크롭, 압축 없이 바로 사용
-
+        _resultImage = _originalImage;
         _isPictureUploaded = true;
       });
     } else {
@@ -287,7 +262,6 @@ void submitPost() async {
     if (file != null) {
       setState(() {
         _resultImage = file;
-
         _isPictureUploaded = true;
       });
     } else {
@@ -326,7 +300,7 @@ void submitPost() async {
               child: const Text(
                 '등록',
                 style: TextStyle(
-                  color: Colors.green, // 완료 텍스트 색상 (예시로 연두 계열)
+                  color: Colors.green,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -336,10 +310,9 @@ void submitPost() async {
         body: Container(
           color: const Color.fromARGB(255, 255, 255, 255),
           child: SingleChildScrollView(
-            // 스크롤뷰로 만듦듦
             padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, // 왼쪽 정렬
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 5),
@@ -353,11 +326,9 @@ void submitPost() async {
                     child: DropdownButton2<String>(
                       isExpanded: true,
                       value: selectedCategory,
-                      items:
-                      categoryList.map((String value) {
-                        // 드롭 다운 항목 생성
+                      items: categoryList.map((String value) {
                         return DropdownMenuItem<String>(
-                          value: value, // value는 실제값, text는 유저에게 보여지는 라벨벨
+                          value: value,
                           child: Text(
                             value,
                             style: const TextStyle(
@@ -396,9 +367,7 @@ void submitPost() async {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
                   child: Column(
@@ -419,14 +388,13 @@ void submitPost() async {
                       const Divider(
                         color: Color.fromARGB(255, 173, 173, 173),
                         thickness: 1,
-                        height: 24, // 위/아래 간격 조절
+                        height: 24,
                       ),
                       GestureDetector(
                         behavior: HitTestBehavior.translucent,
-                        onTap: (){
+                        onTap: () {
                           FocusScope.of(context).requestFocus(contentFocusNode);
                         },
-
                         child: Column(
                           children: [
                             TextField(
@@ -442,12 +410,10 @@ void submitPost() async {
                               maxLines: null,
                               keyboardType: TextInputType.multiline,
                             ),
-                            SizedBox(height: _resultImage != null? 10:300)
-
+                            SizedBox(height: _resultImage != null ? 10 : 300),
                           ],
                         ),
                       ),
-
                       if (_resultImage != null) ...[
                         const SizedBox(height: 0),
                         Padding(
@@ -488,12 +454,10 @@ void submitPost() async {
                             ],
                           ),
                         ),
-                        
                       ],
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 24),
               ],
             ),
@@ -503,20 +467,19 @@ void submitPost() async {
           distance: 100.0,
           children: [
             ActionButton(
-              onPressed: () async{
+              onPressed: () async {
                 await _pickImageFromCamera(context);
-
               },
               icon: Icons.camera_alt,
             ),
             ActionButton(
-              onPressed: () async{
+              onPressed: () async {
                 await _pickImageFromGallery(context);
               },
               icon: Icons.photo_library,
             ),
             ActionButton(
-              onPressed:() async{
+              onPressed: () async {
                 await _pickImageFromFileSystem(context);
               },
               icon: Icons.insert_drive_file,
@@ -526,5 +489,4 @@ void submitPost() async {
       ),
     );
   }
-}
 }
