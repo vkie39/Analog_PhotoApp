@@ -318,6 +318,7 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
 
   // 현재 로그인한 사용자 uid
   String? get _myUid => FirebaseAuth.instance.currentUser?.uid; 
+  
 
 
   // widget 접근 편의를 위한 getter (안쓰면 widget.photo로 접근해야 함)
@@ -344,8 +345,7 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isOwner = request.uid == 'user001'; // TODO : 실제로는 current Uid와 비교해야 함 (FirebaseAuth.instance.currentUser?.uid)
-    // => final isOwner = request.uid == _myUid;
+    final isOwner = request.uid == _myUid;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -506,7 +506,13 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                   children: [
                     Icon(Icons.location_on, color: const Color.fromARGB(255, 133, 133, 133),),
                     SizedBox(width: 5,),
-                    Text(request.location!, style: const TextStyle(fontSize: 15, color: Color.fromARGB(255, 133, 133, 133)))
+                    Expanded(
+                      child :Text(request.location!, 
+                         style: const TextStyle(fontSize: 15, color: Color.fromARGB(255, 133, 133, 133)),
+                         softWrap: true,
+                         overflow: TextOverflow.visible,
+                        ),
+                    ),
                   ],
                 ),
               ),

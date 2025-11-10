@@ -36,6 +36,15 @@ class PhotoTradeService {
     return PhotoTradeModel.fromSnapshot(doc);
   }
 
+  // 단일 판매글 조회 (Future -> stream 함경민 수정)
+  Stream<PhotoTradeModel?> streamGetTradeById(String id)  {
+    return _ref.doc(id).snapshots().map((doc){
+      if (!doc.exists) return null;
+      return PhotoTradeModel.fromSnapshot(doc);
+    });
+  }
+
+
   // 판매글 등록 (Storage 업로드 포함)
   Future<void> addTrade({
     required File imageFile,
@@ -45,7 +54,8 @@ class PhotoTradeService {
     required String uid,
     required String nickname,
     required String profileImageUrl,
-    List<String>? tags,
+    List<String>? tags, 
+    required String location,
   }) async {
     try {
       final tradeId = const Uuid().v4();
@@ -74,6 +84,7 @@ class PhotoTradeService {
         tags: tags ?? [],
         createdAt: DateTime.now(),
         category: '판매',
+        location: location
       );
 
       await _ref.doc(tradeId).set(newTrade.toMap());
