@@ -1,7 +1,8 @@
-import 'dart:math' as dev show log;
-
+//import 'dart:math' as dev show log;
+import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/photo_sell.dart';
 import 'package:flutter_application_sajindongnae/models/photo_trade_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';                        
@@ -27,6 +28,20 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
   String get currentUserUid => widget.currentUserUid;                 // 임시 유저 아이디
   bool isLikedPhoto = false;                                          // 좋아요 상태를 나타내는 변수 (상태가 바뀌는 변수이기 때문에 State 클래스에 선언)
   
+  @override
+  void initState() {
+    super.initState();
+    final uid = currentUserUid;
+    // 수정
+    if (photo.likedBy?.contains(uid) ?? false) {
+      isLikedPhoto = true;
+
+    // 기존 코드
+    // if (photo.likedBy != null && photo.likedBy.contains(uid)) {
+    //   isLikedPhoto = true;
+    }
+  }
+
   // 태그 리스트
   List<String> get tags => (photo.category ?? '')                     // null이면 빈 문자열 반환
                              .split(',')                              // 쉼표로 분리
@@ -62,15 +77,18 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
             onSelected: (MoreAction action) async{
               switch (action) {
                 case MoreAction.report:
-                  dev.log('신고하기 선택됨' as num);
+                  dev.log('신고하기 선택됨');
+                  // dev.log('신고하기 선택됨' as num);
                   // 신고하기 로직 추가
                   break;
                 case MoreAction.edit:
-                  dev.log('수정하기 선택됨' as num);
+                  dev.log('수정하기 선택됨');
+                  // dev.log('수정하기 선택됨' as num);
                   // 수정하기 로직 추가
                   break;
                 case MoreAction.delete:
-                  dev.log('삭제하기 선택됨' as num);
+                  dev.log('삭제하기 선택됨');
+                  // dev.log('삭제하기 선택됨' as num);
                   // 삭제 확인 다이얼로그 표시
                   final shouldDelete = await showDialog<bool>(
                     context: context,
@@ -95,7 +113,8 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                   );
                   // 사용자가 삭제를 확인했을 때 삭제 로직 실행
                   if (shouldDelete == true) {
-                    dev.log('삭제 로직 실행됨' as num);
+                    dev.log('삭제 로직 실행됨');
+                    // dev.log('삭제 로직 실행됨' as num);
                     // 실제 삭제 로직 추가
                     Navigator.of(context).pop(); // 삭제 후 이전 화면으로 돌아감
                   }
@@ -140,7 +159,15 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
             // 사진
             SizedBox(
               width: double.infinity,
-              child: Image.asset(photo.imageUrl, fit: BoxFit.contain),
+              child: Image.network(
+                photo.imageUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Center(
+                    child: Text('이미지를 불러올 수 없습니다.'),
+                  );
+                },
+              ),
             ),
 
             const SizedBox(height: 10),
@@ -199,7 +226,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
               ),
 
             // 장소
-            if (photo.location != null)
+            if (photo.location != null && photo.location.trim().isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: Row(
@@ -207,12 +234,15 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                     const Icon(Icons.location_on, size: 16, color: Colors.grey),
                     const SizedBox(width: 4),
                     Text(
-                      photo.location!,
+                      photo.location,
                       style: const TextStyle(color: Colors.grey),
                     ),
                   ],
                 ),
               ),
+
+
+
 
             // 내용
             if (photo.description != null)
@@ -245,12 +275,31 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                             ? const Color.fromARGB(255, 102, 204, 105)         // 좋아요 눌렀을 때 색상
                             : const Color.fromARGB(255, 161, 161, 161),        // 좋아요 안눌렀을 때 색상
                         ) ,
-                        onPressed: () {
-                          dev.log('좋아요 버튼 클릭됨' as num);
+
+                        // 수정 중... ㅇㅅㅇ
+                        onPressed: () async {
+                          dev.log('좋아요 버튼 클릭됨');
                           setState(() {
                             isLikedPhoto = !isLikedPhoto;                        // 좋아요 상태 토글(업데이트)
                           });
+
+                          final uid = currentUserUid;
+                          final docRef = FirebaseFirestore.instance.collection('photos').doc(photo.id);
+
+                          try {
+                            if (isLikedPhoto) {
+                              await docRef.update({'likedBy': FieldValue.arrayUnion([uid])});
+                            } else {
+                              await docRef.update({'likedBy': FieldValue.arrayRemove([uid])});
+                            }
+                          } catch (e) {
+                            dev.log('좋아요 업데이트 실패: $e');
+                            // 실패하면 UI 롤백
+                            // setState(() {
+                            //   isLikedPhoto = !isLikedPhoto;
+                            // });
                           // TODO : DB에 좋아요 상태 업데이트 로직 추가
+                          }
                         },
                       ),
                       const SizedBox(width: 4),
@@ -261,7 +310,8 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                   // 구매 버튼
                   ElevatedButton(
                     onPressed: () {
-                      dev.log('구매하기 버튼 클릭됨' as num);
+                      dev.log('구매하기 버튼 클릭됨');
+                      // dev.log('구매하기 버튼 클릭됨' as num);
                       // TODO : 구매하기 로직 추가 (결제 페이지로 이동 등)
                     },
                     style: ButtonStyle(

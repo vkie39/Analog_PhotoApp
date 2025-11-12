@@ -41,6 +41,10 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
   // 선택된 위치
   LatLng? pos;
 
+  String _selectedLocation = ''; 
+  LatLng? _selectedPosition;
+
+
   // 선택된 태그
   SelectedTagState _selectedTagState = SelectedTagState();      // 선택된 태그 상태 관리 모델 (붕어빵 하나. 초기값은 빈 상태)
   
@@ -241,6 +245,7 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
       final tags = tagList;                                                      // 선택된 태그 리스트
 
       try {
+        print("🔥 위치 값: $_selectedLocation");
         // 5) Firestore + Storage 업로드 (사진 업로드 후 문서 생성)
         await PhotoTradeService().addTrade(
           imageFile: File(_selectedImage!.path),               // 선택된 이미지 파일
@@ -251,6 +256,8 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
           nickname: user.displayName ?? '사용자',               // 닉네임
           profileImageUrl: user.photoURL ?? '',                // 프로필 이미지
           tags: tags,                                          // 선택된 태그들
+          location: _selectedLocation,                         // 위치
+          position: _selectedPosition!,
         );
 
         // 6) 성공 메시지 출력

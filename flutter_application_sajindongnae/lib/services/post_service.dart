@@ -9,6 +9,7 @@ class PostService {
   static final _firestore = FirebaseFirestore.instance;
   static final _auth = FirebaseAuth.instance;
   static final _postCollection = _firestore.collection('posts');
+  final _ref = FirebaseFirestore.instance.collection('posts');
 
   /// 게시글 업로드
    static Future<void> createPost(PostModel post) async {
@@ -22,36 +23,59 @@ class PostService {
     }
   }
 
-  ///좋아요 토글 (중복 방지: likedBy 배열 기반)
+  // ///좋아요 토글 (중복 방지: likedBy 배열 기반)
+  // static Future<void> toggleLike(String postId) async {
+  //   final user = _auth.currentUser;
+  //   if (user == null) throw Exception("로그인이 필요합니다.");
+  //   final uid = user.uid;
+
+  //   final postRef = _postCollection.doc(postId);
+
+  //   await _firestore.runTransaction((transaction) async {
+  //     final snapshot = await transaction.get(postRef);
+  //     if (!snapshot.exists) return;
+
+  //     final data = snapshot.data() as Map<String, dynamic>;
+  //     final likedBy = List<String>.from(data['likedBy'] ?? []);
+  //     int likeCount = data['likeCount'] ?? 0;
+
+  //     if (likedBy.contains(uid)) {
+  //       // 이미 눌렀으면 취소
+  //       likedBy.remove(uid);
+  //       likeCount = likeCount > 0 ? likeCount - 1 : 0;
+  //     } else {
+  //       // 새로 좋아요 추가
+  //       likedBy.add(uid);
+  //       likeCount += 1;
+  //     }
+
+  //     transaction.update(postRef, {'likedBy': likedBy, 'likeCount': likeCount});
+  //   });
+
+  //   log("좋아요 토글 완료: $postId");
+  // }
+
+  // 좋아요가 안 눌려서.. 수정 중
+  // 좋아요가 눌리는 게시글도 있고 안 되는 게시글도 있는데 뭐가 문제임? 
   static Future<void> toggleLike(String postId) async {
-    final user = _auth.currentUser;
-    if (user == null) throw Exception("로그인이 필요합니다.");
-    final uid = user.uid;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
 
-    final postRef = _postCollection.doc(postId);
+    final docRef = FirebaseFirestore.instance.collection('posts').doc(postId);
+    final snapshot = await docRef.get();
+    final likedBy = List<String>.from(snapshot['likedBy'] ?? []);
 
-    await _firestore.runTransaction((transaction) async {
-      final snapshot = await transaction.get(postRef);
-      if (!snapshot.exists) return;
-
-      final data = snapshot.data() as Map<String, dynamic>;
-      final likedBy = List<String>.from(data['likedBy'] ?? []);
-      int likeCount = data['likeCount'] ?? 0;
-
-      if (likedBy.contains(uid)) {
-        // 이미 눌렀으면 취소
-        likedBy.remove(uid);
-        likeCount = likeCount > 0 ? likeCount - 1 : 0;
-      } else {
-        // 새로 좋아요 추가
-        likedBy.add(uid);
-        likeCount += 1;
-      }
-
-      transaction.update(postRef, {'likedBy': likedBy, 'likeCount': likeCount});
-    });
-
-    log("좋아요 토글 완료: $postId");
+    if (likedBy.contains(uid)) {
+      await docRef.update({
+        'likedBy': FieldValue.arrayRemove([uid]),
+        'likeCount': FieldValue.increment(-1),
+      });
+    } else {
+      await docRef.update({
+        'likedBy': FieldValue.arrayUnion([uid]),
+        'likeCount': FieldValue.increment(1),
+      });
+    }
   }
 
   /// 전체 게시글 조회 (최신순)
@@ -159,7 +183,7 @@ class PostService {
         );
   }
   
-  // 마이페이지 유저가 작성한 게시글 보기
+  // 유저가 작성한 게시글 보기 (마이페이지용)
   static Stream<List<PostModel>> getPostsByUser(String uid) {
     return _firestore
         .collection('posts')
@@ -168,4 +192,14 @@ class PostService {
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => PostModel.fromDocument(doc)).toList());
   }
+
+  // 유저가 누른 좋아요 게시글 보기 (마이페이지용)
+  Stream<List<PostModel>> getLikedPosts(String uid) {
+  return _ref
+      .where('likedBy', arrayContains: uid)
+      .snapshots()
+      .map((s) =>
+          s.docs.map((d) => PostModel.fromDocument(d)).toList());
+}
+
 }

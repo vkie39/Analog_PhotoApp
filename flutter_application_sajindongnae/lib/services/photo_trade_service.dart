@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/photo_trade_model.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart'; 
 
 class PhotoTradeService {
   final CollectionReference _ref =
@@ -22,7 +23,7 @@ class PhotoTradeService {
   Stream<List<PhotoTradeModel>> getUserTrades(String uid) {
     return _ref
         .where('uid', isEqualTo: uid)
-        .orderBy('createdAt', descending: true)
+        // .orderBy('createdAt', descending: true) // 복합 인덱스 필요
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => PhotoTradeModel.fromSnapshot(doc))
@@ -45,6 +46,8 @@ class PhotoTradeService {
     required String uid,
     required String nickname,
     required String profileImageUrl,
+    required String location,
+    required LatLng position,
     List<String>? tags,
   }) async {
     try {
@@ -74,6 +77,8 @@ class PhotoTradeService {
         tags: tags ?? [],
         createdAt: DateTime.now(),
         category: '판매',
+        location: location,
+        position: position,
       );
 
       await _ref.doc(tradeId).set(newTrade.toMap());
@@ -160,5 +165,15 @@ class PhotoTradeService {
       print("deleteTrade 실패: $e");
       rethrow;
     }
+  }
+
+  // 좋아요 내역 (마이페이지용)
+  Stream<List<PhotoTradeModel>> getLikedTrades(String uid) {
+    return _ref
+        .where('likedBy', arrayContains: uid)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => PhotoTradeModel.fromSnapshot(doc))
+            .toList());
   }
 }

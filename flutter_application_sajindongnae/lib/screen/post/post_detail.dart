@@ -21,20 +21,21 @@ class PostDetailScreen extends StatefulWidget {
 
 class _PostDetailScreenState extends State<PostDetailScreen> {
   final TextEditingController _commentController = TextEditingController();
-  bool isLiked = false; // 좋아요 상태
-  int likeCount = 0; // 좋아요 수
+  
+  // bool isLiked = false; // 좋아요 상태
+  // int likeCount = 0; // 좋아요 수
 
-  @override
-  void initState() {
-    super.initState();
-    likeCount = widget.post.likeCount;
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   likeCount = widget.post.likeCount;
 
-    // ✅ HEAD 브랜치에서 있던 좋아요 초기화 로직 유지
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null && widget.post.likedBy.contains(uid)) {
-      isLiked = true;
-    }
-  }
+  //   // ✅ HEAD 브랜치에서 있던 좋아요 초기화 로직 유지
+  //   final uid = FirebaseAuth.instance.currentUser?.uid;
+  //   if (uid != null && widget.post.likedBy.contains(uid)) {
+  //     isLiked = true;
+  //   }
+  // }
 
   @override
   void dispose() {
@@ -44,27 +45,27 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   // ✅ HEAD 브랜치에서 개선된 likedBy 기반 좋아요 토글 로직 반영
   void _toggleLike(PostModel post) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final alreadyLiked = post.likedBy.contains(uid);
+
     try {
       await PostService.toggleLike(post.postId);
 
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) return;
-
       setState(() {
-        if (post.likedBy.contains(uid)) {
+        if (alreadyLiked) {
           post.likedBy.remove(uid);
-          likeCount -= 1;
-          isLiked = false;
         } else {
           post.likedBy.add(uid);
-          likeCount += 1;
-          isLiked = true;
         }
       });
     } catch (e) {
       log('좋아요 토글 실패: $e');
+      // 실패 시 SnackBar 띄우거나 UI 롤백 가능
     }
   }
+
 
   // 댓글 등록
   void _submitComment(PostModel post) async {
@@ -111,10 +112,16 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         }
 
         final post = PostModel.fromDocument(snapshot.data!);
+        // 코드 오류 있어서 추가함
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        final isLiked = uid != null && post.likedBy.contains(uid);
+        final likeCount = post.likedBy.length;
+
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => FocusScope.of(context).unfocus(),
           child: Scaffold(
+            backgroundColor: Colors.white,
             appBar: AppBar(
               title: Text('${post.category} 게시판'),
               centerTitle: true,
