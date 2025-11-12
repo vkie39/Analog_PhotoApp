@@ -20,7 +20,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       requesterProfileImageUrl: 'assets/icons/parrot.png',
       accepterId:'user22',
       dateTime: DateTime.now().subtract(const Duration(hours: 1)),
-      lastChat: '사진 너무 마음에 들어여 짱'
+      lastChat: '감사링 복받으셈'
     ),
     chatModel(
       requestId: '2',

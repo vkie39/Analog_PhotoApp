@@ -10,6 +10,9 @@ import 'package:flutter_application_sajindongnae/models/comment_model.dart';
 import 'package:flutter_application_sajindongnae/services/comment_service.dart';
 import 'package:flutter_application_sajindongnae/services/post_service.dart';
 import 'dart:developer';
+import 'dart:developer' as dev;
+
+enum MoreAction { report, edit, delete }
 
 class PostDetailScreen extends StatefulWidget {
   final PostModel post; // 게시글 객체 받아옴
@@ -21,21 +24,22 @@ class PostDetailScreen extends StatefulWidget {
 
 class _PostDetailScreenState extends State<PostDetailScreen> {
   final TextEditingController _commentController = TextEditingController();
-  
-  // bool isLiked = false; // 좋아요 상태
-  // int likeCount = 0; // 좋아요 수
+  bool isLiked = false; // 좋아요 상태
+  int likeCount = 0; // 좋아요 수
+  final uid = FirebaseAuth.instance.currentUser?.uid;
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   likeCount = widget.post.likeCount;
+  @override
+  void initState() {
+    super.initState();
+    likeCount = widget.post.likeCount;
 
-  //   // ✅ HEAD 브랜치에서 있던 좋아요 초기화 로직 유지
-  //   final uid = FirebaseAuth.instance.currentUser?.uid;
-  //   if (uid != null && widget.post.likedBy.contains(uid)) {
-  //     isLiked = true;
-  //   }
-  // }
+    // ✅ HEAD 브랜치에서 있던 좋아요 초기화 로직 유지
+    if (uid != null && widget.post.likedBy.contains(uid)) {
+      isLiked = true;
+    }
+
+
+  }
 
   @override
   void dispose() {
@@ -45,27 +49,27 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   // ✅ HEAD 브랜치에서 개선된 likedBy 기반 좋아요 토글 로직 반영
   void _toggleLike(PostModel post) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-
-    final alreadyLiked = post.likedBy.contains(uid);
-
     try {
       await PostService.toggleLike(post.postId);
 
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return;
+
       setState(() {
-        if (alreadyLiked) {
+        if (post.likedBy.contains(uid)) {
           post.likedBy.remove(uid);
+          likeCount -= 1;
+          isLiked = false;
         } else {
           post.likedBy.add(uid);
+          likeCount += 1;
+          isLiked = true;
         }
       });
     } catch (e) {
       log('좋아요 토글 실패: $e');
-      // 실패 시 SnackBar 띄우거나 UI 롤백 가능
     }
   }
-
 
   // 댓글 등록
   void _submitComment(PostModel post) async {
@@ -111,103 +115,115 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           );
         }
 
+        final isOwner = widget.post.uId == uid;
         final post = PostModel.fromDocument(snapshot.data!);
-        // 코드 오류 있어서 추가함
-        final uid = FirebaseAuth.instance.currentUser?.uid;
-        final isLiked = uid != null && post.likedBy.contains(uid);
-        final likeCount = post.likedBy.length;
-
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => FocusScope.of(context).unfocus(),
           child: Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: const Color(0xFFFFFFFF),
             appBar: AppBar(
               title: Text('${post.category} 게시판'),
               centerTitle: true,
               backgroundColor: Colors.white,
-              surfaceTintColor: Colors.transparent,
               foregroundColor: Colors.black,
-              elevation: 0,
+              elevation: 0.5,
+              
               actions: [
-                // ✅ main 브랜치에서 추가된 게시글 수정/삭제 기능 유지
-                PopupMenuButton<String>(
-                  onSelected: (value) async {
-                    if (value == 'edit') {
-                      final updatedPost =
-                          await Navigator.of(context).push<PostModel>(
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              UpdateScreen(existingPost: post),
-                        ),
-                      );
-                      if (updatedPost != null) {
-                        // 자동 갱신이 있으니 여기선 setState 불필요
-                      }
-                    } else if (value == 'delete') {
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          return AlertDialog(
-                            backgroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
+                PopupMenuButton<MoreAction>(
+                  icon: const Icon(Icons.more_vert),  // 점 3개 아이콘 명시
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  color: Colors.white,              // 메뉴 배경색   
+                  elevation: 6,                       // 그림자 깊이
+                  position: PopupMenuPosition.under,  // 메뉴가 버튼 아래에 나타나도록 설정
+
+                  // 메뉴 항목 선택 시 처리
+                  onSelected: (MoreAction action) async{
+                    switch (action) {
+                      case MoreAction.report:
+                        dev.log('신고하기 선택됨');
+                        // 신고하기 로직 추가
+                        break;
+                      case MoreAction.edit:
+                        dev.log('수정하기 선택됨');
+                        // 수정하기 로직 추가
+                        final updatedPost =
+                                await Navigator.of(context).push<PostModel>(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    UpdateScreen(existingPost: post),
+                              ),
+                            );
+                            if (updatedPost != null) {
+                              // 자동 갱신이 있으니 여기선 setState 불필요
+                            }
+                        break;
+                      case MoreAction.delete:
+                        dev.log('삭제하기 선택됨');
+                        // 삭제 확인 다이얼로그 표시
+                        final shouldDelete = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            shape: RoundedRectangleBorder(                            // 모서리 둥글게
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            title: const Text('게시글 삭제',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                    color: Colors.black87)),
-                            content: const Text('정말 이 게시글을 삭제하시겠어요?',
-                                style: TextStyle(
-                                    fontSize: 15, color: Colors.black54)),
+                            backgroundColor: Colors.white,                          // 배경색
+                            title: const Text('정말로 이 판매글을 삭제하시겠습니까?'),     // 제목
+                            content: const Text('삭제 후에는 복구할 수 없습니다.'),       // 내용
                             actions: [
                               TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('취소',
-                                    style: TextStyle(
-                                        color: Colors.grey, fontSize: 14)),
+                                onPressed: () => Navigator.of(context).pop(false),
+                                child: const Text('취소', style: TextStyle(color: Colors.black)),
                               ),
                               TextButton(
-                                onPressed: () async {
-                                  Navigator.of(context).pop();
-                                  await PostService.deletePostWithImage(post);
-                                  Navigator.pop(context);
-                                },
-                                child: const Text('삭제',
-                                    style: TextStyle(
-                                        color: Colors.red,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14)),
+                                onPressed: () => Navigator.of(context).pop(true),
+                                child: const Text('삭제', style: TextStyle(color: Colors.red)),
                               ),
                             ],
-                          );
-                        },
-                      );
+                          ),
+                        );
+                        // 사용자가 삭제를 확인했을 때 삭제 로직 실행
+                        if (shouldDelete == true) {
+                          dev.log('삭제 로직 실행됨');
+                          await PostService.deletePostWithImage(post);
+                          Navigator.of(context).pop(); // 삭제 후 이전 화면으로 돌아감
+                        }
+                        break;
                     }
                   },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Text('수정하기',
-                          style: TextStyle(
-                              fontSize: 14, color: Colors.black87)),
-                    ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Text('삭제하기',
-                          style: TextStyle(
-                              fontSize: 14, color: Colors.black87)),
-                    ),
-                  ],
-                  color: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  icon: const Icon(Icons.more_vert_rounded,
-                      color: Colors.black),
+
+                  // 메뉴 항목. 작성자와 비작성자에 따라 다르게 표시
+                  itemBuilder: (BuildContext context) {
+                    if (isOwner) {
+                      return const [
+                        PopupMenuItem<MoreAction>(
+                          value: MoreAction.edit,
+                          child: Text('수정하기'),
+                        ),
+                        PopupMenuDivider(height: 5,), // 구분선
+
+                        PopupMenuItem<MoreAction>(
+                          value: MoreAction.delete,
+                          child: Text('삭제하기'),
+                        ),
+                      ];
+                    }
+                    else {
+                        return const [
+                          PopupMenuItem<MoreAction>(
+                            value: MoreAction.report,
+                            child: Text('신고하기'),
+                          ),
+                        ];
+                    }
+                  },
                 ),
               ],
+
+
+
             ),
             body: ListView(
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
