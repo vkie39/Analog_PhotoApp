@@ -317,21 +317,15 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
   static const String _googleApiKey =
       'AIzaSyD08a7ITr6A8IgDYt4zDcmeXHvyYKhZrdE'; // TODO: 여긴 나중에 보안을 위해 수정해야 함
 
-  // 내용 수정 필요할 수도 있음 11/12 확인 카톡 보내기 --------------------------------------------------------------------------------
-  late bool isLiked;
-  late int likeCount;
-
   // 현재 로그인한 사용자 uid
   String? get _myUid => FirebaseAuth.instance.currentUser?.uid;
 
   // widget 접근 편의를 위한 getter (안쓰면 widget.photo로 접근해야 함)
   RequestModel get request => widget.request;
-
-  // 내용 수정 필요할 수도 있음 현재 좋아요 기능을 위해 북마크 관련 코드는 주석처리한 상태입니다 ----------------------------------------------
-  // // 북마크 상태를 나타내는 변수 (상태가 바뀌는 변수이기 때문에 State 클래스에 선언)
-  // bool isMarkedRequest =
-  //     false; // TODO : DB와 연동하여 좋아요를 누른 사용자이면 카운트하지 말고 처음부터 좋아요 표시가 되어있어야 함
-  // int markCount = 0;
+  // 북마크 상태를 나타내는 변수 (상태가 바뀌는 변수이기 때문에 State 클래스에 선언)
+  bool isMarkedRequest =
+      false; // TODO : DB와 연동하여 좋아요를 누른 사용자이면 카운트하지 말고 처음부터 좋아요 표시가 되어있어야 함
+  int markCount = 0;
 
   GoogleMapController? _requestDetailMapController;
   Set<Circle> circles = {};
@@ -339,21 +333,49 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
   @override
   void initState() {
     super.initState();
-
-    // 현재 로그인한 사용자가 좋아요 눌렀는지 확인
-    final myUid = FirebaseAuth.instance.currentUser?.uid;
-    isLiked = myUid != null && request.likedBy.contains(myUid);
-
-    // 좋아요 개수 초기화
-    likeCount = request.likeCount;
+    _loadBookmarkState();
+    //markCount = request.markCount;  // TODO : 의뢰글의 실제 mark 수를 연동해야 함
   }
 
-  // 북마크 기능 -> 좋아요 기능으로 변경을 위해 주석 처리함 (11/12 변동 가능성)
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   //markCount = request.markCount;  // TODO : 의뢰글의 실제 mark 수를 연동해야 함
-  // }
+  Future<void> _loadBookmarkState() async {
+    if (_myUid == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('requests')
+        .doc(request.requestId)
+        .get();
+
+    if (doc.exists) {
+      final data = doc.data()!;
+      final bookmarkedBy = (data['bookmarkedBy'] as List?)?.cast<String>() ?? [];
+      setState(() {
+        isMarkedRequest = bookmarkedBy.contains(_myUid);
+      });
+    }
+  }
+
+  Future<void> _toggleBookmark() async {
+    if (_myUid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('로그인이 필요합니다.')),
+      );
+      return;
+    }
+
+    final docRef = FirebaseFirestore.instance
+        .collection('requests')
+        .doc(request.requestId);
+
+    setState(() {
+      isMarkedRequest = !isMarkedRequest;
+    });
+
+    await docRef.update({
+      'bookmarkedBy': isMarkedRequest
+          ? FieldValue.arrayUnion([_myUid])
+          : FieldValue.arrayRemove([_myUid]),
+    });
+  }
 
   @override
   void dispose() {
@@ -363,10 +385,7 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isOwner =
-        request.uid ==
-        'user001'; // TODO : 실제로는 current Uid와 비교해야 함 (FirebaseAuth.instance.currentUser?.uid)
-    // => final isOwner = request.uid == _myUid;
+    final isOwner = request.uid == _myUid;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -561,11 +580,15 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                     color: const Color.fromARGB(255, 133, 133, 133),
                   ),
                   SizedBox(width: 5),
-                  Text(
-                    request.location!,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Color.fromARGB(255, 133, 133, 133),
+                  Expanded(
+                    child: Text(
+                      request.location!,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Color.fromARGB(255, 133, 133, 133),
+                      ),
+                      softWrap: true,
+                      overflow: TextOverflow.visible,
                     ),
                   ),
                 ],
@@ -594,66 +617,61 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
         ),
       ),
 
-      // 북마크(현재 좋아요로 수정된 상태) + 가격 + 수락버튼
+      // 북마크 + 가격 + 수락버튼
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 18),
         child: Row(
           mainAxisAlignment:
               MainAxisAlignment.spaceBetween, // 시작과 끝에 위젯을 배치하고 가운데 공간 확보
           children: [
-            // 북마크 (현재 좋아요로 수정된 상태  북마크 모양 UI -> 좋아요 연동 )
+            // 북마크
             Row(
               children: [
                 // 북마크 아이콘
                 IconButton(
                   icon: Icon(
-                    //isMarkedRequest
-                    isLiked ? Icons.bookmark : Icons.bookmark_border,
+                    isMarkedRequest ? Icons.bookmark : Icons.bookmark_border,
                     size: 30,
-                    color:
-                        // isMarkedRequest
-                        isLiked
-                            ? const Color.fromARGB(
-                              255,
-                              102,
-                              204,
-                              105,
-                            ) // 좋아요 눌렀을 때 색상
-                            : const Color.fromARGB(
-                              255,
-                              161,
-                              161,
-                              161,
-                            ), // 좋아요 안눌렀을 때 색상
+                    color: isMarkedRequest
+                        ? const Color.fromARGB(255, 102, 204, 105)
+                        : const Color.fromARGB(255, 161, 161, 161),
                   ),
+                  onPressed: () async {
+                    dev.log('북마크 버튼 클릭됨');
 
-                  onPressed: () async { 
-                    if (_myUid == null) return;
-                    //dev.log('북마크 버튼 클릭됨');
+                    if (_myUid == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('로그인이 필요합니다.')),
+                      );
+                      return;
+                    }
 
-                    setState(() {
-                      //isMarkedRequest = !isMarkedRequest; // 좋아요 상태 토글(업데이트)
-                      //markCount += isMarkedRequest ? 1 : -1;
-
-                      isLiked = !isLiked;
-                      likeCount += isLiked ? 1 : -1;
-                    });
-                    // TODO : DB에 좋아요 상태 업데이트 로직 추가 (11/12 수정 필요할 수 있음)
                     final docRef = FirebaseFirestore.instance
                         .collection('requests')
                         .doc(request.requestId);
 
-                    await docRef.update({
-                      'likedBy' : isLiked
-                        ? FieldValue.arrayUnion([_myUid])
-                        : FieldValue.arrayRemove([_myUid]),
-                      'likeCount' : FieldValue.increment(isLiked ? 1 : -1),
+                    setState(() {
+                      isMarkedRequest = !isMarkedRequest; // UI는 먼저 토글
                     });
+
+                    try {
+                      await docRef.update({
+                        'bookmarkedBy': isMarkedRequest
+                            ? FieldValue.arrayUnion([_myUid]) // 북마크 추가
+                            : FieldValue.arrayRemove([_myUid]), // 북마크 제거
+                      });
+                      dev.log('북마크 업데이트 성공');
+                    } catch (e) {
+                      dev.log('북마크 업데이트 실패: $e');
+                      // 실패하면 UI 롤백
+                      setState(() {
+                        isMarkedRequest = !isMarkedRequest;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('북마크 업데이트에 실패했습니다.')),
+                      );
+                    }
                   },
-                ),
-                Text(
-                  likeCount == 0 ? '' : ' $likeCount',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(width: 4),
@@ -663,6 +681,7 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                 ),
               ],
             ),
+
 
             // 구매 버튼
             ElevatedButton(

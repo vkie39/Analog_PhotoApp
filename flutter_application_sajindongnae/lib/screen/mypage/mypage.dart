@@ -16,16 +16,13 @@ class MyPageScreen extends StatefulWidget {
 }
 
 class _MyPageScreenState extends State<MyPageScreen> {
-  User? user = FirebaseAuth.instance.currentUser; // 로그인 사용자 정보 ..
+  User? user = FirebaseAuth.instance.currentUser; // 로그인 사용자 정보
 
-  String? nickname; // 백엔드 닉네임 (실명X)
-  String? profileImageUrl; // 백엔드 프로필 이미지 URL
-
-  int? point; // 백엔드 포인트
-
-  int? sellPhotoCount; // 백엔드 판매사진 갯수
-  int? buyPhotoCount; // 백엔드 구매사진 갯수
-  int? postCount; // 백엔드 작성한 게시글 갯수
+  String? nickname;              // DB 닉네임
+  String? profileImageUrl;       // DB 프로필 이미지 URL
+  int? sellPhotoCount;           // 판매 사진 수
+  int? buyPhotoCount;            // 구매 사진 수
+  int? postCount;                // 게시글 수
 
   StreamSubscription? _sellPhotoListener;
   StreamSubscription? _buyPhotoListener;
@@ -34,142 +31,194 @@ class _MyPageScreenState extends State<MyPageScreen> {
   @override
   void initState() {
     super.initState();
-    _listenToSellPhotoCount(); // 실시간 판매글 수 추가
-    _listenToBuyPhotoCount(); // 실시간 구매글 수 추가
-    _listenToPostCount(); // 실시간 게시글 수 추가
-    _fetchUserProfile(); // 기존 임시 데이터 불러오기 // 백엔드 연동할 경우 삭제해도 상관 X
 
-    print(FirebaseAuth.instance.currentUser);
-  }
-
-  // 백엔드 임시 설정 ----------------------------------------------------------
-  // 백엔드 연동할 경우 삭제해도 상관 X
-  void _fetchUserProfile() async {
-    // Firestore에서 닉네임, 프로필 이미지 URL 가져와야합니다람쥐
-    // 임시값으로 UI 확인을 위해 코드 작성만 한 상태입니다람쥐
-    setState(() {
-      nickname = "리락쿠마";
-      // nickname = null;
-
-      profileImageUrl = null;
-
-      // point = 5000;
-      point = null;
-
-      // sellPhotoCount = 12;
-      // buyPhotoCount = 8;
-      // postCount = 5;
+    // 프레임 이후에 비동기 초기화(안전)
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await migrateUserDocToUid();   // 과거 문서ID 정규화(있으면)
+      await _ensurePointField();     // point 필드 없으면 생성
+      await _fetchUserProfile();     // 닉네임/프로필 로드
+      await _loadCounts();           // 판매/구매/게시글 수 로드
     });
   }
 
-  // 백엔드 설정 ----------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────────────
+  // Firestore: users/{uid} 문서가 없거나 point가 없으면 보정
+  Future<void> _ensurePointField() async {
+    final u = FirebaseAuth.instance.currentUser;
+    if (u == null) return;
 
-  // 실시간 판매 사진 수
-  void _listenToSellPhotoCount() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    final ref = FirebaseFirestore.instance.doc('users/${u.uid}');
+    await FirebaseFirestore.instance.runTransaction((tx) async {
+      final snap = await tx.get(ref);
 
-    try {
-      _sellPhotoListener?.cancel();
+      if (!snap.exists) {
+        debugPrint('👉 users/${u.uid} 문서가 없어 새로 생성합니다.');
+        tx.set(ref, {
+          'uid': u.uid,
+          'email': u.email,
+          'point': {
+            'balance': 0,
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+        }, SetOptions(merge: true));
+        return;
+      }
 
-      _sellPhotoListener = FirebaseFirestore.instance
-          .collection('photo_trades')
-          .where('sellerId', isEqualTo: user.uid)
-          .snapshots()
-          .listen(
-            (snapshot) {
-              setState(() {
-                sellPhotoCount = snapshot.docs.length;
-              });
-            },
-            onError: (error) {
-              debugPrint("Firestore snapshot error (sellPhotoCount): $error");
-              setState(() {
-                sellPhotoCount = null;
-              });
-            },
-          );
-    } catch (e) {
-      debugPrint("Firestore connection failed (sellPhotoCount): $e");
-      setState(() {
-        sellPhotoCount = null;
-      });
-    }
+      final data = snap.data() as Map<String, dynamic>?;
+      final hasPoint = (data?['point'] is Map) &&
+          ((data!['point'] as Map).containsKey('balance'));
+
+      if (!hasPoint) {
+        debugPrint('👉 point.balance 없음 → 0으로 초기화');
+        tx.update(ref, {
+          'point': {
+            'balance': 0,
+            'updatedAt': FieldValue.serverTimestamp(),
+          }
+        });
+      }
+    });
   }
 
-  // 실시간 구매 사진 수
-  void _listenToBuyPhotoCount() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+  // ─────────────────────────────────────────────────────────────────────
+  // 과거: users 문서 ID가 uid가 아닌 경우 uid 문서로 복사
+  Future<void> migrateUserDocToUid() async {
+    final u = FirebaseAuth.instance.currentUser;
+    if (u == null) return;
 
-    try {
-      _buyPhotoListener?.cancel();
-
-      _buyPhotoListener = FirebaseFirestore.instance
-          .collection('photo_trades')
-          .where('buyerId', isEqualTo: user.uid)
-          .snapshots()
-          .listen(
-            (snapshot) {
-              setState(() {
-                buyPhotoCount = snapshot.docs.length;
-              });
-            },
-            onError: (error) {
-              debugPrint("Firestore snapshot error (buyPhotoCount): $error");
-              setState(() {
-                buyPhotoCount = null;
-              });
-            },
-          );
-    } catch (e) {
-      debugPrint("Firestore connection failed (buyPhotoCount): $e");
-      setState(() {
-        buyPhotoCount = null;
-      });
+    final uidDoc = await FirebaseFirestore.instance.doc('users/${u.uid}').get();
+    if (uidDoc.exists) {
+      // 이미 uid 문서가 있으면 스킵
+      return;
     }
+
+    // 필드 uid 로 기존 문서를 찾아 복사
+    final qs = await FirebaseFirestore.instance
+        .collection('users')
+        .where('uid', isEqualTo: u.uid)
+        .limit(1)
+        .get();
+
+    if (qs.docs.isEmpty) return;
+
+    final oldDoc = qs.docs.first;
+    final data = oldDoc.data();
+    final newDocRef =
+    FirebaseFirestore.instance.collection('users').doc(u.uid);
+
+    debugPrint('👉 기존(users/${oldDoc.id}) → users/${u.uid} 로 마이그레이션');
+    await newDocRef.set(data, SetOptions(merge: true));
+    // 필요하면 옛 문서 삭제:
+    // await oldDoc.reference.delete();
   }
 
-  void _listenToPostCount() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    try {
-      _postListener?.cancel();
-
-      _postListener = FirebaseFirestore.instance
-          .collection('posts')
-          .where('userId', isEqualTo: user.uid) // ← 로그인 사용자 기준 필터
-          .snapshots()
-          .listen(
-            (snapshot) {
-              setState(() {
-                postCount = snapshot.docs.length;
-              });
-            },
-            onError: (error) {
-              // 🔹 Firestore 권한이 없거나 구조가 다를 경우 에러 발생
-              debugPrint("Firestore snapshot error: $error");
-              setState(() {
-                postCount = null; // or 0
-              });
-            },
-          );
-    } catch (e) {
-      debugPrint("Firestore connection failed: $e");
-      setState(() {
-        postCount = null; // 안전하게 초기화
-      });
-    }
+  // ─────────────────────────────────────────────────────────────────────
+  /// 포인트 잔액 실시간 스트림 (없으면 0)
+  Stream<int> _watchPointBalance() {
+    final u = FirebaseAuth.instance.currentUser;
+    if (u == null) return Stream<int>.value(0);
+    final doc = FirebaseFirestore.instance.doc('users/${u.uid}');
+    return doc.snapshots().map((s) {
+      final data = s.data();
+      debugPrint('📘 Firestore users/${u.uid} data: $data'); // 값 확인 로그
+      final point = (data?['point'] as Map<String, dynamic>?);
+      final dynamic raw = point?['balance'];
+      if (raw is int) return raw;
+      if (raw is num) return raw.toInt();
+      return 0;
+    });
   }
 
-  // ---------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────────────
+  // 프로필 로드: users/{uid} 에서 닉네임/프로필 이미지
+  Future<void> _fetchUserProfile() async {
+    final u = FirebaseAuth.instance.currentUser;
+    if (u == null) return;
+
+    final doc =
+    await FirebaseFirestore.instance.doc('users/${u.uid}').get();
+    final data = doc.data();
+
+    setState(() {
+      nickname = (data?['nickname'] as String?) ?? '닉네임 없음';
+      profileImageUrl = data?['profileImageUrl'] as String?;
+    });
+
+    debugPrint('✅ 프로필 로드: nickname=$nickname, profileImageUrl=$profileImageUrl');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // 카운트 로드: posts / photo_trades 에서 uid기준 집계
+  Future<void> _loadCounts() async {
+    final u = FirebaseAuth.instance.currentUser;
+    if (u == null) return;
+
+    int posts = 0;
+    int sells = 0;
+    int buys  = 0;
+
+    // 1) 게시글 수: posts 컬렉션 (authorId 또는 uid 어느쪽이든 존재하는 필드로 카운트)
+    try {
+      final postsColl = FirebaseFirestore.instance.collection('posts');
+
+      // 우선 authorId
+      var agg = await postsColl
+          .where('authorId', isEqualTo: u.uid)
+          .count()
+          .get();
+      posts = agg.count ?? 0;
+
+      // authorId가 없다면 uid 필드 시도
+      if (posts == 0) {
+        agg = await postsColl.where('uid', isEqualTo: u.uid).count().get();
+        posts = agg.count ?? 0;
+      }
+    } catch (e) {
+      debugPrint('⚠️ posts 카운트 실패: $e');
+    }
+
+    // 2) 판매/구매 사진 수: photo_trades 컬렉션 가정
+    //    필드명은 프로젝트에 따라 sellerUid/buyerUid 또는 sellerId/buyerId일 수 있으므로 둘 다 시도
+    try {
+      final trades = FirebaseFirestore.instance.collection('photo_trades');
+
+      // 판매(내가 판매자)
+      try {
+        var agg = await trades.where('sellerUid', isEqualTo: u.uid).count().get();
+        sells = agg.count ?? 0;
+      } catch (_) {
+        final agg = await trades.where('sellerId', isEqualTo: u.uid).count().get();
+        sells = agg.count ?? 0;
+      }
+
+      // 구매(내가 구매자)
+      try {
+        var agg = await trades.where('buyerUid', isEqualTo: u.uid).count().get();
+        buys = agg.count ?? 0;
+      } catch (_) {
+        final agg = await trades.where('buyerId', isEqualTo: u.uid).count().get();
+        buys = agg.count ?? 0;
+      }
+    } catch (e) {
+      debugPrint('⚠️ photo_trades 카운트 실패: $e');
+    }
+
+    setState(() {
+      postCount = posts;
+      sellPhotoCount = sells;
+      buyPhotoCount = buys;
+    });
+
+    debugPrint('✅ 카운트 로드: posts=$posts, sells=$sells, buys=$buys');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      // 앱바 설정
+
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -183,19 +232,15 @@ class _MyPageScreenState extends State<MyPageScreen> {
           ),
         ),
         actions: [
-          // 알림 아이콘
           Transform.translate(
             offset: const Offset(8, 0),
             child: IconButton(
               icon: const Icon(Icons.notifications),
               iconSize: 30,
               color: Colors.black,
-              onPressed: () {
-                print("알림 클릭됨");
-              },
+              onPressed: () {},
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: IconButton(
@@ -216,27 +261,22 @@ class _MyPageScreenState extends State<MyPageScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 프로필 -------------------------------------------------------------
+          // ── 프로필 ─────────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.only(
-              top: 8.0,
-              left: 24.0,
-              right: 16.0,
-              bottom: 8.0,
+              top: 8.0, left: 24.0, right: 16.0, bottom: 8.0,
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CircleAvatar(
                   radius: 36,
-                  backgroundImage:
-                      profileImageUrl != null
-                          ? NetworkImage(profileImageUrl!)
-                          : AssetImage('assets/images/default_profile.png')
-                              as ImageProvider,
+                  backgroundImage: profileImageUrl != null
+                      ? NetworkImage(profileImageUrl!)
+                      : const AssetImage('assets/images/default_profile.png')
+                  as ImageProvider,
                 ),
                 const SizedBox(width: 16),
-
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Column(
@@ -248,10 +288,9 @@ class _MyPageScreenState extends State<MyPageScreen> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color:
-                              nickname == null
-                                  ? const Color.fromARGB(255, 156, 156, 156)
-                                  : Colors.black,
+                          color: nickname == null
+                              ? const Color.fromARGB(255, 156, 156, 156)
+                              : Colors.black,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -263,13 +302,20 @@ class _MyPageScreenState extends State<MyPageScreen> {
                             height: 20,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            '${point ?? 0}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
-                            ),
+                          // ▶ 포인트: Firestore 실시간 값 표시
+                          StreamBuilder<int>(
+                            stream: _watchPointBalance(),
+                            builder: (context, snapshot) {
+                              final balance = snapshot.data ?? 0;
+                              return Text(
+                                '$balance',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -279,14 +325,14 @@ class _MyPageScreenState extends State<MyPageScreen> {
               ],
             ),
           ),
-          // 칸 나누기 ----------------------------------------------------------
+
           const Divider(
             color: Color.fromARGB(255, 240, 240, 240),
             thickness: 8,
             height: 16,
           ),
 
-          // 판매사진 / 구매사진 / 게시글 ------------------------------------------
+          // ── 판매/구매/게시글 카운트 ─────────────────────────────────────
           Container(
             color: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -322,7 +368,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
             height: 16,
           ),
 
-          // 메뉴 목록 ----------------------------------------------------------
+          // ── 메뉴 목록 ──────────────────────────────────────────────────
           const SizedBox(height: 4),
           Expanded(
             child: Container(
@@ -340,9 +386,11 @@ class _MyPageScreenState extends State<MyPageScreen> {
                       );
                     },
                   ),
+                  _buildMenuDivider(),
+
                   _buildMenuItem('포인트 내역', onTap: () {}),
                   _buildMenuDivider(),
-                  _buildMenuDivider(),
+                  
                   _buildMenuItem(
                     '1:1 문의',
                     onTap: () {
@@ -378,6 +426,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────
   // 판매/구매/게시글 버튼 생성
   Expanded _buildContentButton(
     BuildContext context, {
@@ -413,6 +462,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────
   // 메뉴 항목 생성
   Widget _buildMenuItem(String title, {VoidCallback? onTap}) {
     return ListTile(

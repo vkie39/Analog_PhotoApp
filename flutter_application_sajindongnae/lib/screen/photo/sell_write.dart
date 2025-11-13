@@ -255,9 +255,9 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
           uid: user.uid,                                       // 작성자 UID
           nickname: user.displayName ?? '사용자',               // 닉네임
           profileImageUrl: user.photoURL ?? '',                // 프로필 이미지
-          tags: tags,                                          // 선택된 태그들
-          location: _selectedLocation,                         // 위치
+          tags: tags,                                          // 선택된 태그들                      
           position: _selectedPosition!,
+          location: location,
         );
 
         // 6) 성공 메시지 출력
@@ -304,6 +304,8 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
       setState(() {
         _selectedImage = _originalImage; // 크롭, 압축 없이 바로 사용
       });
+      // 크롭 하고 싶으면 setState() 지우고 주석 처리된 내용으로 하기
+      // await _cropImage(_originalImage!.path);
     } else {
       Fluttertoast.showToast(msg: '사진 촬영이 취소되었습니다.');
     }
@@ -315,6 +317,8 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
       setState(() {
         _selectedImage = file;
       });
+      // 크롭 하고 싶으면 setState() 지우고 주석 처리된 내용으로 하기
+      // await _cropImage(_originalImage!.path);
     } else {
       Fluttertoast.showToast(msg: '파일 선택이 취소되었습니다.');
     }
