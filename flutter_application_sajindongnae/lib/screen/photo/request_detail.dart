@@ -28,10 +28,11 @@ class RequestDetailScreen extends StatefulWidget {
 }
 
 class RequestDetailScreenState extends State<RequestDetailScreen> {
-  static const String _googleApiKey = 'AIzaSyD08a7ITr6A8IgDYt4zDcmeXHvyYKhZrdE'; // TODO: 여긴 나중에 보안을 위해 수정해야 함
-  
+  static const String _googleApiKey =
+      'AIzaSyD08a7ITr6A8IgDYt4zDcmeXHvyYKhZrdE'; // TODO: 여긴 나중에 보안을 위해 수정해야 함
+
   // 현재 로그인한 사용자 uid
-  String? get _myUid => FirebaseAuth.instance.currentUser?.uid; 
+  String? get _myUid => FirebaseAuth.instance.currentUser?.uid;
 
   // widget 접근 편의를 위한 getter
   RequestModel get request => widget.request;
@@ -44,12 +45,65 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
   Set<Circle> circles = {};
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
+    _loadBookmarkState();
   }
-  
+
+  // Firestore에서 북마크 상태를 불러옴
+  Future<void> _loadBookmarkState() async {
+    if (_myUid == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('requests')
+        .doc(request.requestId)
+        .get();
+
+    if (doc.exists) {
+      final data = doc.data()!;
+      final bookmarkedBy = (data['bookmarkedBy'] as List?)?.cast<String>() ?? [];
+      setState(() {
+        isMarkedRequest = bookmarkedBy.contains(_myUid);
+      });
+    }
+  }
+
+  // 북마크 상태를 토글하고 Firestore에 반영
+  Future<void> _toggleBookmark() async {
+    if (_myUid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('로그인이 필요합니다.')),
+      );
+      return;
+    }
+
+    final docRef =
+        FirebaseFirestore.instance.collection('requests').doc(request.requestId);
+
+    setState(() {
+      isMarkedRequest = !isMarkedRequest;
+    });
+
+    try {
+      await docRef.update({
+        'bookmarkedBy': isMarkedRequest
+            ? FieldValue.arrayUnion([_myUid])
+            : FieldValue.arrayRemove([_myUid]),
+      });
+      dev.log('북마크 업데이트 성공');
+    } catch (e) {
+      dev.log('북마크 업데이트 실패: $e');
+      setState(() {
+        isMarkedRequest = !isMarkedRequest;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('북마크 업데이트에 실패했습니다.')),
+      );
+    }
+  }
+
   @override
-  void dispose(){
+  void dispose() {
     super.dispose();
     _requestDetailMapController?.dispose();
   }
@@ -63,7 +117,8 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
       backgroundColor: Colors.white,
 
       appBar: AppBar(
-        title: const Text('의뢰글', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+        title: const Text('의뢰글',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
         centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -74,15 +129,14 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
         // uid를 확인하여 isOwner일 경우 '수정하기', '삭제하기' 버튼을 보여줌. isOwner가 아니면 '신고하기'
         actions: [
           PopupMenuButton<MoreAction>(
-            icon: const Icon(Icons.more_vert),  // 점 3개 아이콘 명시
+            icon: const Icon(Icons.more_vert),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
             ),
-            color: Colors.white,              
-            elevation: 6,                       
-            position: PopupMenuPosition.under,  
+            color: Colors.white,
+            elevation: 6,
+            position: PopupMenuPosition.under,
 
-            // 메뉴 항목. 작성자와 비작성자에 따라 다르게 표시
             itemBuilder: (BuildContext context) {
               if (isOwner) {
                 return const [
@@ -90,7 +144,7 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                     value: MoreAction.edit,
                     child: Text('수정하기'),
                   ),
-                  PopupMenuDivider(height: 5), 
+                  PopupMenuDivider(height: 5),
                   PopupMenuItem<MoreAction>(
                     value: MoreAction.delete,
                     child: Text('삭제하기'),
@@ -106,8 +160,7 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
               }
             },
 
-            // 메뉴 항목 선택 시 처리
-            onSelected: (MoreAction action) async{
+            onSelected: (MoreAction action) async {
               switch (action) {
                 case MoreAction.report:
                   dev.log('신고하기 선택됨');
@@ -120,27 +173,29 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                   final shouldDelete = await showDialog<bool>(
                     context: context,
                     builder: (context) => AlertDialog(
-                      shape: RoundedRectangleBorder(                            
+                      shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      backgroundColor: Colors.white,                          
-                      title: const Text('정말로 이 의뢰글을 삭제하시겠습니까?'),     
-                      content: const Text('삭제 후에는 복구할 수 없습니다.'),       
+                      backgroundColor: Colors.white,
+                      title: const Text('정말로 이 의뢰글을 삭제하시겠습니까?'),
+                      content: const Text('삭제 후에는 복구할 수 없습니다.'),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(false),
-                          child: const Text('취소', style: TextStyle(color: Colors.black)),
+                          child: const Text('취소',
+                              style: TextStyle(color: Colors.black)),
                         ),
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(true),
-                          child: const Text('삭제', style: TextStyle(color: Colors.red)),
+                          child: const Text('삭제',
+                              style: TextStyle(color: Colors.red)),
                         ),
                       ],
                     ),
                   );
                   if (shouldDelete == true) {
                     dev.log('삭제 로직 실행됨');
-                    Navigator.of(context).pop(); 
+                    Navigator.of(context).pop();
                   }
                   break;
               }
@@ -152,27 +207,23 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
       // 의뢰글 작성자 정보와 작성 내용
       body: Padding(
         padding: const EdgeInsets.all(1.0),
-        child: ListView( // 스크롤 가능
+        child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
           children: [
             Row(
               children: [
-                // 프로필 이미지
                 CircleAvatar(
-                  backgroundImage: NetworkImage(request.profileImageUrl), 
+                  backgroundImage: NetworkImage(request.profileImageUrl),
                   radius: 20,
                 ),
                 const SizedBox(width: 10),
 
-                // 의뢰 정보 (의뢰자 닉네임, 의뢰글 작성 시간)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 닉네임
-                    Text(request.nickname, 
+                    Text(request.nickname,
                         style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 14)),
-                    // 작성 시간
                     Text(
                       _getFormattedTime(request.dateTime),
                       style: const TextStyle(color: Colors.grey, fontSize: 12),
@@ -183,7 +234,11 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
               ],
             ),
 
-            const Divider(height: 32, thickness: 0.5, color: Color.fromARGB(255, 180, 180, 180)),
+            const Divider(
+              height: 32,
+              thickness: 0.5,
+              color: Color.fromARGB(255, 180, 180, 180),
+            ),
             const SizedBox(height: 10),
 
             Padding(
@@ -191,32 +246,46 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 의뢰글 제목
-                  Text(request.title!, style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
+                  Text(request.title!,
+                      style: const TextStyle(
+                          fontSize: 25, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
-                  // 의뢰글 내용
-                  Text(request.description!, style: const TextStyle(fontSize: 18)),                    
+                  Text(request.description!,
+                      style: const TextStyle(fontSize: 18)),
                 ],
               ),
             ),
             const SizedBox(height: 10),
-            const Divider(height: 32, thickness: 0.5, color: Color.fromARGB(255, 180, 180, 180)),
+            const Divider(
+              height: 32,
+              thickness: 0.5,
+              color: Color.fromARGB(255, 180, 180, 180),
+            ),
             const SizedBox(height: 10),
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
-              child:Row(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                // 위치 아이콘 및 텍스트 
                 children: [
-                  const Icon(Icons.location_on, color: Color.fromARGB(255, 133, 133, 133)),
+                  const Icon(Icons.location_on,
+                      color: Color.fromARGB(255, 133, 133, 133)),
                   const SizedBox(width: 5),
-                  Text(request.location!, style: const TextStyle(fontSize: 15, color: Color.fromARGB(255, 133, 133, 133)))
+                  Expanded(
+                    child: Text(
+                      request.location!,
+                      style: const TextStyle(
+                          fontSize: 15,
+                          color: Color.fromARGB(255, 133, 133, 133)),
+                      softWrap: true,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 20), 
+            const SizedBox(height: 20),
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: SizedBox(
@@ -230,7 +299,7 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                   '&maptype=roadmap'
                   '&markers=color:green%7C${request.position.latitude},${request.position.longitude}'
                   '&key=$_googleApiKey',
-                  fit:BoxFit.cover,
+                  fit: BoxFit.cover,
                 ),
               ),
             ),
@@ -242,46 +311,40 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 18),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // 북마크
             Row(
               children: [
-                // 북마크 아이콘
                 IconButton(
-                  icon:Icon(
-                    isMarkedRequest? Icons.bookmark : Icons.bookmark_border, 
+                  icon: Icon(
+                    isMarkedRequest ? Icons.bookmark : Icons.bookmark_border,
                     size: 30,
                     color: isMarkedRequest
-                      ? const Color.fromARGB(255, 102, 204, 105)
-                      : const Color.fromARGB(255, 161, 161, 161),
-                  ) ,
-                  onPressed: () {
-                    dev.log('북마크 버튼 클릭됨');
-                    setState(() {
-                      isMarkedRequest = !isMarkedRequest; 
-                    });
-                    // TODO : DB에 좋아요 상태 업데이트 로직 추가
-                  },
+                        ? const Color.fromARGB(255, 102, 204, 105)
+                        : const Color.fromARGB(255, 161, 161, 161),
+                  ),
+                  onPressed: _toggleBookmark,
                 ),
                 const SizedBox(width: 4),
-                Text(request.price == 0 ?  '무료 의뢰' : '${request.price}원',style: const TextStyle()),
+                Text(
+                  request.price == 0 ? '무료 의뢰' : '${request.price}원',
+                  style: const TextStyle(),
+                ),
               ],
             ),
 
-            // [수정됨] 구매(수락) 버튼
             ElevatedButton(
               onPressed: () async {
                 dev.log('수락하기 버튼 클릭됨');
 
-                // [추가됨] 로그인 사용자 확인
+                // 로그인 사용자 확인
                 final currentUid = FirebaseAuth.instance.currentUser?.uid;
                 if (currentUid == null) {
                   dev.log('로그인이 필요합니다.');
                   return;
                 }
 
-                // [추가됨] Firestore 및 채팅방 생성 로직
+                // Firestore 및 채팅방 생성 로직
                 final db = FirebaseFirestore.instance;
                 final requesterUid = request.uid;
 
@@ -310,7 +373,7 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                   dev.log('기존 채팅방 존재: $chatRoomId');
                 }
 
-                // [추가됨] 채팅 상세 화면으로 이동
+                // 채팅 상세 화면으로 이동
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -327,13 +390,14 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                     return const Color(0xFFDDECC7);
                   },
                 ),
-                shape: WidgetStateProperty .all<RoundedRectangleBorder>(
+                shape: WidgetStateProperty.all<RoundedRectangleBorder>(
                   RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10.0),
                   ),
                 ),
               ),
-              child: const Text('수락하기', style: TextStyle(color: Colors.black)),
+              child:
+                  const Text('수락하기', style: TextStyle(color: Colors.black)),
             ),
           ],
         ),
@@ -345,7 +409,7 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
 // 작성 시간 포맷 함수
 String _getFormattedTime(DateTime time) {
   return '${time.year}/${_twoDigits(time.month)}/${_twoDigits(time.day)} '
-         '${_twoDigits(time.hour)}:${_twoDigits(time.minute)}';
+      '${_twoDigits(time.hour)}:${_twoDigits(time.minute)}';
 }
 
-String _twoDigits(int n) => n.toString().padLeft(2, '0'); 
+String _twoDigits(int n) => n.toString().padLeft(2, '0');
