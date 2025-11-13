@@ -415,7 +415,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
           ),
 
           // ── 메뉴 목록 ──────────────────────────────────────────────────
-
           const SizedBox(height: 4),
           Expanded(
             child: Container(
