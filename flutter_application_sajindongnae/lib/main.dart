@@ -53,6 +53,7 @@ class MyApp extends StatelessWidget {
         '/find_id': (context) => const IdfoundScreen(),
         '/find_password': (context) => const PwfoundScreen(),
         '/home': (context) => const Default(), // 로그인 성공 후 이동
+        '/mypage': (_) => MyPageScreen(),
       },
     );
   }

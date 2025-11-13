@@ -49,12 +49,19 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   // ✅ HEAD 브랜치에서 개선된 likedBy 기반 좋아요 토글 로직 반영
   void _toggleLike(PostModel post) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('로그인이 필요합니다.')),
+      );
+      return;
+    }
+
     try {
+      // Firestore 좋아요 토글
       await PostService.toggleLike(post.postId);
 
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) return;
-
+      // UI 업데이트
       setState(() {
         if (post.likedBy.contains(uid)) {
           post.likedBy.remove(uid);
@@ -66,10 +73,17 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           isLiked = true;
         }
       });
-    } catch (e) {
-      log('좋아요 토글 실패: $e');
+    } catch (e, stack) {
+      // 에러 잡기
+      dev.log('좋아요 토글 실패: $e', stackTrace: stack);
+
+      // 사용자 안내
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('좋아요 업데이트에 실패했습니다. 잠시 후 다시 시도해주세요.')),
+      );
     }
   }
+
 
   // 댓글 등록
   void _submitComment(PostModel post) async {

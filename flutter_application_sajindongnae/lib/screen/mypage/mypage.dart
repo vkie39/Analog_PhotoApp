@@ -266,65 +266,110 @@ class _MyPageScreenState extends State<MyPageScreen> {
             padding: const EdgeInsets.only(
               top: 8.0, left: 24.0, right: 16.0, bottom: 8.0,
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 36,
-                  backgroundImage: profileImageUrl != null
-                      ? NetworkImage(profileImageUrl!)
-                      : const AssetImage('assets/images/default_profile.png')
-                  as ImageProvider,
-                ),
-                const SizedBox(width: 16),
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Column(
+            child: StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(user!.uid)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData || snapshot.data == null) {
+                  // 로딩 시 기본 UI
+                  return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        nickname ?? '이름을 설정해주세요',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: nickname == null
-                              ? const Color.fromARGB(255, 156, 156, 156)
-                              : Colors.black,
+                      const CircleAvatar(
+                        radius: 36,
+                        backgroundImage: AssetImage('assets/images/default_profile.png'),
+                      ),
+                      const SizedBox(width: 16),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Text(
+                              '이름을 설정해주세요',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color.fromARGB(255, 156, 156, 156),
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Row(
+                    ],
+                  );
+                }
+
+                final data = snapshot.data!.data() as Map<String, dynamic>?;
+
+                final nickname = data?['nickname'] ?? '이름을 설정해주세요';
+                final profileImageUrl = data?['profileImageUrl'];
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 36,
+                      backgroundImage: profileImageUrl != null
+                          ? NetworkImage(profileImageUrl)
+                          : const AssetImage('assets/images/default_profile.png') as ImageProvider,
+                    ),
+                    const SizedBox(width: 16),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Image.asset(
-                            'assets/images/point.jpg',
-                            width: 20,
-                            height: 20,
+                          Text(
+                            nickname,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: nickname == '이름을 설정해주세요'
+                                  ? const Color.fromARGB(255, 156, 156, 156)
+                                  : Colors.black,
+                            ),
                           ),
-                          const SizedBox(width: 4),
-                          // ▶ 포인트: Firestore 실시간 값 표시
-                          StreamBuilder<int>(
-                            stream: _watchPointBalance(),
-                            builder: (context, snapshot) {
-                              final balance = snapshot.data ?? 0;
-                              return Text(
-                                '$balance',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black87,
-                                ),
-                              );
-                            },
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Image.asset(
+                                'assets/images/point.jpg',
+                                width: 20,
+                                height: 20,
+                              ),
+                              const SizedBox(width: 4),
+                              // 포인트는 기존 StreamBuilder 유지
+                              StreamBuilder<int>(
+                                stream: _watchPointBalance(),
+                                builder: (context, snapshot) {
+                                  final balance = snapshot.data ?? 0;
+                                  return Text(
+                                    '$balance',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black87,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-              ],
+                    ),
+                  ],
+                );
+              },
             ),
           ),
+
 
           const Divider(
             color: Color.fromARGB(255, 240, 240, 240),
@@ -388,6 +433,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
                       );
                     },
                   ),
+                  _buildMenuDivider(),
+                  
                   _buildMenuItem('포인트 내역', onTap: () {}),
                   _buildMenuDivider(),
 
