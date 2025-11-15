@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_sajindongnae/component/expandable_fab.dart';
 import 'package:flutter_application_sajindongnae/component/action_button.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; //파이어 베이스 연동
 
 /// 사진동네 관리자 페이지
 /// - 계정 관리
@@ -97,8 +98,16 @@ class _AdminActions {
 /// 각 탭 UI
 /// ----------------------
 
+//StreamBuilder + ListView.builder를 통해 계정이 보여짐
 class _AccountManageTab extends StatelessWidget {
   const _AccountManageTab();
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> _userStream() {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .orderBy('createdAt', descending: true) // 있으면 사용, 없으면 지워도 됨
+        .snapshots();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,33 +115,69 @@ class _AccountManageTab extends StatelessWidget {
       children: [
         const _SearchBar(hintText: '닉네임, 이메일로 검색'),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount: 10, // TODO: 실제 계정 데이터 개수로 변경
-            itemBuilder: (context, index) {
-              return _AdminCard(
-                title: 'user_$index 닉네임',
-                subtitle: 'email$index@example.com',
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _ChipLabel(
-                      label: index % 2 == 0 ? '일반회원' : '정지회원',
-                      color: index % 2 == 0
-                          ? Colors.green.withOpacity(0.1)
-                          : Colors.red.withOpacity(0.08),
-                      textColor:
-                      index % 2 == 0 ? Colors.green[700]! : Colors.red[700]!,
+          child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: _userStream(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('계정 목록을 불러오는 중 오류가 발생했어요 😢'));
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(child: Text('등록된 계정이 없습니다.'));
+              }
+
+              final docs = snapshot.data!.docs;
+
+              return ListView.builder(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: docs.length,
+                itemBuilder: (context, index) {
+                  final doc = docs[index];
+                  final data = doc.data();
+
+                  final uid = doc.id;
+                  final nickname = data['nickname'] ?? '닉네임 없음';
+                  final email = data['email'] ?? '';
+                  final status = data['status'] ?? 'normal'; // normal / banned 등
+                  final bool isBanned = status == 'banned';
+
+                  return _AdminCard(
+                    title: nickname,
+                    subtitle: email.isNotEmpty
+                        ? '$email\n(uid: $uid)'
+                        : 'uid: $uid',
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _ChipLabel(
+                          label: isBanned ? '정지회원' : '일반회원',
+                          color: isBanned
+                              ? Colors.red.withOpacity(0.08)
+                              : Colors.green.withOpacity(0.1),
+                          textColor: isBanned
+                              ? Colors.red[700]!
+                              : Colors.green[700]!,
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.more_vert, size: 20),
+                          onPressed: () {
+                            // 예시: 정지/해제 토글
+                            FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(uid)
+                                .update({
+                              'status': isBanned ? 'normal' : 'banned',
+                            });
+                          },
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.more_vert, size: 20),
-                      onPressed: () {
-                        // TODO: 계정 상세/정지/해제 액션
-                      },
-                    ),
-                  ],
-                ),
+                  );
+                },
               );
             },
           ),
@@ -141,6 +186,7 @@ class _AccountManageTab extends StatelessWidget {
     );
   }
 }
+
 
 class _PostManageTab extends StatelessWidget {
   const _PostManageTab();
