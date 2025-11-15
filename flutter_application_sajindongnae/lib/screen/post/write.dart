@@ -99,7 +99,7 @@ void submitPost() async {
   // 제목, 내용 다 있으면 저장장
   final newPost = PostModel(
     postId: const Uuid().v4(),
-    uId: '임시유저ID', // 로그인된 사용자 ID로 수정 필요
+    uid: '임시유저ID', // 로그인된 사용자 ID로 수정 필요
     nickname: '용용선생',
     profileImageUrl: '', // 프로필 이미지 URL
     category: category,
@@ -173,7 +173,7 @@ void submitPost() async {
 
     final newPost = PostModel(
       postId: const Uuid().v4(),
-      uId: user?.uid ?? 'unknown',                  // 로그인된 사용자 UID
+      uid: user?.uid ?? 'unknown',                  // 로그인된 사용자 UID
       nickname: user?.email ?? '익명',              // 닉네임 대신 이메일 (DB에서 따로 가져와도 됨)
       profileImageUrl: '',
       category: category,

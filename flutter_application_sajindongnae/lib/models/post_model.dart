@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PostModel {
   final String postId;
-  final String uId;
+  final String uid;
   final String nickname;
   final String profileImageUrl;
   final String category;
@@ -18,7 +18,7 @@ class PostModel {
 
   PostModel({
     required this.postId,
-    required this.uId,
+    required this.uid,
     required this.nickname,
     required this.profileImageUrl,
     required this.category,
@@ -37,7 +37,7 @@ class PostModel {
 
     return PostModel(
       postId: doc.id,
-      uId: map['uId'] ?? '',
+      uid: map['uid'] ?? '',
       nickname: map['nickname'] ?? '',
       profileImageUrl: map['profileImageUrl'] ?? '',
       category: map['category'] ?? '',
@@ -74,7 +74,7 @@ class PostModel {
     final data = doc.data() as Map<String, dynamic>;
     return PostModel(
       postId: doc.id,
-      uId: data['uId'] ?? '',
+      uid: data['uid'] ?? '',
       nickname: data['nickname'] ?? '',
       profileImageUrl: data['profileImageUrl'] ?? '',
       title: data['title'] ?? '',
@@ -92,7 +92,7 @@ class PostModel {
   Map<String, dynamic> toMap() {
     return {
 
-      'uId': uId,
+      'uid': uid,
       'nickname': nickname,
       'profileImageUrl': profileImageUrl,
       'category': category,
