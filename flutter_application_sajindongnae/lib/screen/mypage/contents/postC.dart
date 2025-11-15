@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
 import 'package:flutter_application_sajindongnae/services/post_service.dart';
 import 'package:flutter_application_sajindongnae/component/post_card.dart';
-import 'package:flutter_application_sajindongnae/screen/post/post_detail.dart';
 
 class PostCountScreen extends StatelessWidget {
   const PostCountScreen({super.key});
@@ -24,7 +23,7 @@ class PostCountScreen extends StatelessWidget {
     final userPostsStream = PostService.getPostsByUser(currentUser.uid);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.white, // 💡 배경 흰색
       body: StreamBuilder<List<PostModel>>(
         stream: userPostsStream,
         builder: (context, snapshot) {
@@ -32,6 +31,7 @@ class PostCountScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
+          // Firestore에 데이터가 없을 때
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(
               child: Text(
@@ -49,18 +49,8 @@ class PostCountScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final post = posts[index];
               print("🔥 불러온 게시글: ${post.title}");
-
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => PostDetailScreen(post: post),
-                    ),
-                  );
-                },
-                child: PostCard(post: post),
-              );
+              // 💥 여기서 네가 만든 PostCard UI 그대로 재사용
+              return PostCard(post: post);
             },
           );
         },

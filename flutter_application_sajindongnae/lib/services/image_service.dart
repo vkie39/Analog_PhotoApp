@@ -213,19 +213,13 @@ class ImageService {
     return null;
   }
 
-  static Future<String> uploadProfileImage(String uid, File file) async {
-    final ref = FirebaseStorage.instance.ref().child('profileImages/$uid/${DateTime.now().millisecondsSinceEpoch}');
-    final uploadTask = await ref.putFile(file);
-    final url = await ref.getDownloadURL();
-    return url;
-  }
-
   // 크롭
-  Future<CroppedFile?> cropImage(String imagePath, {bool lockSquare = false}) async {
+  Future<CroppedFile?> cropImage(String imagePath) async {
     try {
       final ext = path.extension(imagePath).toLowerCase();
+      // 각주: 확장자에 따라 저장 포맷을 맞추면 화질/알파 유지에 유리
       ImageCompressFormat format =
-          (ext == '.png') ? ImageCompressFormat.png : ImageCompressFormat.jpg;
+      (ext == '.png') ? ImageCompressFormat.png : ImageCompressFormat.jpg;
 
       final cropped = await ImageCropper().cropImage(
         sourcePath: imagePath,
@@ -233,25 +227,20 @@ class ImageService {
         uiSettings: [
           AndroidUiSettings(
             toolbarColor: Colors.white,
-            toolbarWidgetColor: Colors.black,
             toolbarTitle: '사진 편집',
-            lockAspectRatio: lockSquare,
-            initAspectRatio:
-                lockSquare ? CropAspectRatioPreset.square : CropAspectRatioPreset.original,
-          ),
-          IOSUiSettings(
-            aspectRatioLockEnabled: lockSquare,
+            toolbarWidgetColor: const Color.fromARGB(255, 0, 0, 0),
+            hideBottomControls: false,
+            initAspectRatio: CropAspectRatioPreset.original,
+            lockAspectRatio: false,
           ),
         ],
       );
       return cropped;
     } catch (e) {
-      debugPrint('Crop error: $e');
+      debugPrint('Crop error: $e'); // 각주: 크래시 방지
       return null;
     }
   }
-
-
 
   // 압축
   Future<XFile?> compressImage(String imagePath) async {
