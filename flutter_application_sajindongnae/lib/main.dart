@@ -57,6 +57,7 @@ class MyApp extends StatelessWidget {
         '/find_password': (context) => const PwfoundScreen(),
         '/home': (context) => const Default(), // 로그인 성공 후 이동
         '/admin': (context) => const AdminPage(),  // 관리자 전용 화면
+        '/mypage': (_) => MyPageScreen(),
       },
     );
   }
