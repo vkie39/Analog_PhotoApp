@@ -1,35 +1,81 @@
-// 진짜 보여주기 위한 임시 모델
-// DB구조 신경 하나도 안쓰고 보여주는 용으로 만든거니까 신경쓰지 말고 만들어두면 알아서 프론트 수정할예정
+// chat_list_model.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-// 채팅 리스트를 보여주기 위한 '임시' 채팅모델
-class chatModel {
+/// ChatRoom 클래스는 하나의 채팅방(대화 상대 단위)을 나타낸다.
+/// Firestore 상위 컬렉션인 chats 문서를 반영한다.
+/// 예시:
+/// chats/{chatRoomId}
+/// ├── participants: [userA_uid, userB_uid]
+/// ├── requestId: "의뢰글 ID"
+/// ├── lastMessage: "감사링 복받으셈"
+/// ├── lastSenderId: "user11"
+/// ├── lastTimestamp: Timestamp(...)
+/// ├── requesterNickname: "스폰지밥"
+/// ├── requesterProfileImageUrl: "https://~.png"
+class ChatRoom {
+  /// Firestore 문서 ID (chatRoomId)
+  final String chatRoomId;
+
+  /// 채팅에 참여한 두 명의 UID
+  final List<String> participants;
+
+  /// 연결된 의뢰글 ID
   final String requestId;
-  final String requesterId;
-  final String requesterNickname;
-  final String requesterProfileImageUrl;
-  final String accepterId;
-  final DateTime dateTime;
-  final String lastChat;
 
-  chatModel({
+  /// 마지막 메시지 내용 (채팅 목록에서 미리보기용)
+  final String lastMessage;
+
+  /// 마지막 메시지를 보낸 사람 UID
+  final String lastSenderId;
+
+  /// 마지막 메시지 전송 시각
+  final DateTime lastTimestamp;
+
+  /// 대화 상대 닉네임 (UI 표시용)
+  final String requesterNickname;
+
+  /// 대화 상대 프로필 이미지 URL
+  final String requesterProfileImageUrl;
+
+  ChatRoom({
+    required this.chatRoomId,
+    required this.participants,
     required this.requestId,
-    required this.requesterId,
+    required this.lastMessage,
+    required this.lastSenderId,
+    required this.lastTimestamp,
     required this.requesterNickname,
     required this.requesterProfileImageUrl,
-    required this.accepterId,
-    required this.dateTime,
-    required this.lastChat,  
   });
 
-    factory chatModel.fromMap(Map<String, dynamic> map) {
-    return chatModel(
-      requestId: map['requestId'],
-      requesterId: map['requesterId'],
-      requesterNickname: map['requesterNickname'],
-      requesterProfileImageUrl: map['requesterProfileImageUrl'],
-      accepterId: map['accepterId'],
-      dateTime: DateTime.parse(map['dateTime']),
-      lastChat: map['lastChat'],
+  /// Firestore 문서 → ChatRoom 객체 변환
+  factory ChatRoom.fromDoc(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+
+    return ChatRoom(
+      chatRoomId: doc.id,
+      participants: List<String>.from(data['participants'] ?? []),
+      requestId: data['requestId'] ?? '',
+      lastMessage: data['lastMessage'] ?? '',
+      lastSenderId: data['lastSenderId'] ?? '',
+      lastTimestamp: (data['lastTimestamp'] is Timestamp)
+          ? (data['lastTimestamp'] as Timestamp).toDate()
+          : DateTime.now(),
+      requesterNickname: data['requesterNickname'] ?? '',
+      requesterProfileImageUrl: data['requesterProfileImageUrl'] ?? '',
     );
+  }
+
+  /// ChatRoom 객체 → Firestore에 저장할 Map 형태
+  Map<String, dynamic> toMap() {
+    return {
+      'participants': participants,
+      'requestId': requestId,
+      'lastMessage': lastMessage,
+      'lastSenderId': lastSenderId,
+      'lastTimestamp': lastTimestamp,
+      'requesterNickname': requesterNickname,
+      'requesterProfileImageUrl': requesterProfileImageUrl,
+    };
   }
 }

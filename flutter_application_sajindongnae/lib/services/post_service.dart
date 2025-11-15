@@ -187,7 +187,7 @@ class PostService {
   static Stream<List<PostModel>> getPostsByUser(String uid) {
     return _firestore
         .collection('posts')
-        .where('uId', isEqualTo: uid) //uid 키 확인
+        .where('uid', isEqualTo: uid) //uid 키 확인
         // .orderBy('createdAt', descending: true) // 복합 인덱스 필요하다는데 그냥 멍..
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => PostModel.fromDocument(doc)).toList());

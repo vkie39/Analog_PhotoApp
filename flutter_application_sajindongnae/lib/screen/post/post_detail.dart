@@ -126,7 +126,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           );
         }
 
-        final isOwner = widget.post.uId == uid;
+        final isOwner = widget.post.uid == uid;
         final post = PostModel.fromDocument(snapshot.data!);
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
