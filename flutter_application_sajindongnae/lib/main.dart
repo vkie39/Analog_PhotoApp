@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 
+//관리자 계정
+import 'package:flutter_application_sajindongnae/admin/admin_main.dart';
+
 // ⚠️ 실제 로그인 화면: 이 파일만 씁니다.
 import 'package:flutter_application_sajindongnae/screen/auth/login.dart';
 
@@ -53,6 +56,7 @@ class MyApp extends StatelessWidget {
         '/find_id': (context) => const IdfoundScreen(),
         '/find_password': (context) => const PwfoundScreen(),
         '/home': (context) => const Default(), // 로그인 성공 후 이동
+        '/admin': (context) => const AdminPage(),  // 관리자 전용 화면
       },
     );
   }

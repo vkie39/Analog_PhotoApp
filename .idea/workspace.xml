@@ -10,12 +10,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="dbe5c5ef-6d8d-40ff-9099-696faacbabed" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/admin/admin_main.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/mypage/mypage.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/mypage/mypage.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/post/write.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/post/write.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/macos/Flutter/GeneratedPluginRegistrant.swift" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/macos/Flutter/GeneratedPluginRegistrant.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/main.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/main.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/auth/login.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/auth/login.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

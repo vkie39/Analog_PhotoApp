@@ -50,9 +50,18 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     final rawId = idController.text.trim();
     final pw = pwController.text;
+
+    //(1) 유효성 검사
     _validateId(rawId);
     _validatePw(pw);
     if (!_formOK) return;
+
+    //(2) 관리자 계정 하드코딩으로 분리
+    if (rawId == 'admin123' && pw == 'admin123') {
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/admin');
+      return;  // ⛔ 여기서 바로 종료 → 아래 Firestore/FirebaseAuth 안 타게
+    }
 
     setState(() => isLoading = true);
     try {
