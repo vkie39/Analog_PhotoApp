@@ -28,7 +28,7 @@ class ListScreen extends StatefulWidget {
 class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateMixin{ 
   final searchController = TextEditingController(); // 검색창 내용을 컨트롤하기 위함
 
-  final List<String> tabs = ['자유', '카메라추천', 'QnA']; // 탭 이름 정의
+  final List<String> tabs = ['자유', '카메라추천', '피드백']; // 탭 이름 정의
   late TabController _tabController; // late는 당장 초기화 안해도  nullable되는 것을 방지(나중에 값 넣을거라고 알려주는 타입)
 
 

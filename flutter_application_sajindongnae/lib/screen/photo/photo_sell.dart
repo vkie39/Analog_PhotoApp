@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_sajindongnae/component/search.dart';
+import 'package:flutter_application_sajindongnae/models/photo_trade_model.dart';
+import 'package:flutter_application_sajindongnae/models/request_model.dart';
 import 'package:flutter_application_sajindongnae/component/request_card.dart';
 import 'package:flutter_application_sajindongnae/models/tag_model.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/request_detail.dart';
@@ -11,11 +13,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/tag_select.dart';
 
-import 'package:flutter_application_sajindongnae/models/request_model.dart';
 import 'package:flutter_application_sajindongnae/services/request_service.dart';
 import 'package:flutter_application_sajindongnae/services/photo_trade_service.dart'; // [수정] PhotoTrade Service 로 수정
-import 'package:flutter_application_sajindongnae/models/photo_trade_model.dart';
-
 class PhotoSellScreen extends StatefulWidget {
   const PhotoSellScreen({super.key});
 
@@ -26,6 +25,10 @@ class PhotoSellScreen extends StatefulWidget {
 class _PhotoSellScreenState extends State<PhotoSellScreen>
     with SingleTickerProviderStateMixin {
   final searchController = TextEditingController();
+  List<String> tags = []; 
+  List<String> _selectedTags = [];
+
+/*
   List<String> tags = []; // 용도 : 화면에 보여줄 태그 리스트 (tag_select.dart에서 받아 옴)
   List<String> _selectedTags = []; // 용도: 화면에 보여줄 선택된 태그 리스트 (색상 변경용)
   SelectedTagState _searchTagState = SelectedTagState(); // 태그 선택 상태 관리용, 용도 : tag_select.dart와 데이터를 주고 받는 용
@@ -33,9 +36,58 @@ class _PhotoSellScreenState extends State<PhotoSellScreen>
   final List<String> tabs = ['판매', '구매']; // 탭 이름 정의
   late TabController _tabController;
 
+  final List<String> prices = [ // 가격 임시 데이터
+    '₩1,000',
+    '₩1,000',
+    '₩1,500',
+    '₩1,000',
+    '₩5,000',
+    '₩3,000',
+    '₩2,900',
+    '₩1,000',
+    '₩5,000',
+    '₩500',
+  ];
+
+  // 의뢰글 임시 데이터
+  final List<RequestModel> dummyRequests = [
+    RequestModel(
+      requestId: "1",
+      uid: "user1",
+      nickname: "동미대욜로생",
+      profileImageUrl: "https://example.com/1.png",
+      category: "풍경",
+      dateTime: DateTime.now().subtract(const Duration(minutes: 3)),
+      title: "동미대 학식 사진 구합니다",
+      description: "엄마한테 학식 먹고 있다고 뻥치고 놀러왔는데 뭐 먹는지 궁금하시대요.. 10분안에 가능하신분 찾습니다",
+      price: 0,
+      location: "구로구",
+      position: LatLng(37.495, 126.887),
+      bookmarkedBy: ['u1', 'u2', 'u3'],
+    ),
+    RequestModel(
+      requestId: "2",
+      uid: "user2",
+      nickname: "메가리카노",
+      profileImageUrl: "https://example.com/2.png",
+      category: "행사",
+      dateTime: DateTime.now().subtract(const Duration(hours: 1)),
+      title: "동아리 행사 사진 부탁드립니다아dkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkoooooooooooooooooooooooooooooooook",
+      description: "대학 축제 사진 구합니다",
+      price: 1000,
+      location: "강남구",
+      position: LatLng(37.115, 126.688),
+      bookmarkedBy: ['u1', 'u52', 'u32'],
+    ),
+  ];
+  */
+  SelectedTagState _searchTagState = SelectedTagState(); // 태그 선택 상태 관리용, 용도 : tag_select.dart와 데이터를 주고 받는 용               
+  final List<String> tabs = ['판매', '구매'];
   final RequestService _requestService = RequestService();
+  late TabController _tabController;
+
+  // [수정] PhotoTradeService 추가
   final PhotoTradeService _photoTradeService = PhotoTradeService();
-  
 
   @override
   void initState() {

@@ -72,7 +72,7 @@ class _UserContentScreenState extends State<UserContentScreen> with SingleTicker
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
+        children: const [
           SellPhotoScreen(), 
           BuyPhotoScreen(),
           PostCountScreen(),

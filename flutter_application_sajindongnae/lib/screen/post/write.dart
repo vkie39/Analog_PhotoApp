@@ -37,7 +37,7 @@ class WriteScreen extends StatefulWidget {
 class _WriteScreenState extends State<WriteScreen> {
   // 🔥 로그인한 사용자 가져오기
   final User? user = FirebaseAuth.instance.currentUser;
-  final List<String> categoryList = ['자유', '카메라추천', 'QnA'];
+  final List<String> categoryList = ['자유', '카메라추천', '피드백'];
   late String selectedCategory;
   late ImageService _imageService;
   XFile? _originalImage; // ?는 null의 의미

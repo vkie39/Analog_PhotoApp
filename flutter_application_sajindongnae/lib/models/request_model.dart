@@ -11,7 +11,7 @@ class RequestModel {
   final String title;
   final String description;
   final int price;
-  final bool isFree; // 무료/유료 여부 추가
+  final bool isFree;                // 무료/유료 여부 추가
   final String location;
   final LatLng position;
   final List<String> bookmarkedBy;
@@ -30,7 +30,7 @@ class RequestModel {
     required this.title,
     required this.description,
     required this.price,
-    required this.isFree,
+    required this.isFree,     
     required this.location,
     required this.position,
     required this.bookmarkedBy,
@@ -57,10 +57,9 @@ class RequestModel {
       nickname: map['nickname'] ?? '',
       profileImageUrl: map['profileImageUrl'] ?? '',
       category: map['category'],
-      dateTime:
-          (map['dateTime'] is Timestamp)
-              ? (map['dateTime'] as Timestamp).toDate()
-              : DateTime.now(),
+      dateTime: (map['dateTime'] is Timestamp)
+          ? (map['dateTime'] as Timestamp).toDate()
+          : DateTime.now(),
       title: map['title'] ?? '',
       description: map['description'] ?? '',
       price: map['price'] ?? 0,
@@ -86,7 +85,7 @@ class RequestModel {
       'title': title,
       'description': description,
       'price': price,
-      'isFree': isFree, // 추가
+      'isFree': isFree,             // 추가
       'location': location,
       'position': GeoPoint(position.latitude, position.longitude),
       'bookmarkedBy': bookmarkedBy,

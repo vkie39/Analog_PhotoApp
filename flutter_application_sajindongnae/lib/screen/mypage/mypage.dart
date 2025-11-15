@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage/setting/settings.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage/contents/userContent.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage/userLikeds/likedList.dart';
-import 'package:flutter_application_sajindongnae/screen/mypage/inquiry/inquiry.dart';
-import 'package:flutter_application_sajindongnae/screen/mypage/faq.dart';
 
 class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
@@ -23,10 +20,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
   int? sellPhotoCount;           // 판매 사진 수
   int? buyPhotoCount;            // 구매 사진 수
   int? postCount;                // 게시글 수
-
-  StreamSubscription? _sellPhotoListener;
-  StreamSubscription? _buyPhotoListener;
-  StreamSubscription? _postListener;
 
   @override
   void initState() {
@@ -266,110 +259,65 @@ class _MyPageScreenState extends State<MyPageScreen> {
             padding: const EdgeInsets.only(
               top: 8.0, left: 24.0, right: 16.0, bottom: 8.0,
             ),
-            child: StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(user!.uid)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData || snapshot.data == null) {
-                  // 로딩 시 기본 UI
-                  return Row(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 36,
+                  backgroundImage: profileImageUrl != null
+                      ? NetworkImage(profileImageUrl!)
+                      : const AssetImage('assets/images/default_profile.png')
+                  as ImageProvider,
+                ),
+                const SizedBox(width: 16),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const CircleAvatar(
-                        radius: 36,
-                        backgroundImage: AssetImage('assets/images/default_profile.png'),
-                      ),
-                      const SizedBox(width: 16),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Text(
-                              '이름을 설정해주세요',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Color.fromARGB(255, 156, 156, 156),
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                          ],
+                      Text(
+                        nickname ?? '이름을 설정해주세요',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: nickname == null
+                              ? const Color.fromARGB(255, 156, 156, 156)
+                              : Colors.black,
                         ),
                       ),
-                    ],
-                  );
-                }
-
-                final data = snapshot.data!.data() as Map<String, dynamic>?;
-
-                final nickname = data?['nickname'] ?? '이름을 설정해주세요';
-                final profileImageUrl = data?['profileImageUrl'];
-
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 36,
-                      backgroundImage: profileImageUrl != null
-                          ? NetworkImage(profileImageUrl)
-                          : const AssetImage('assets/images/default_profile.png') as ImageProvider,
-                    ),
-                    const SizedBox(width: 16),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
+                      const SizedBox(height: 4),
+                      Row(
                         children: [
-                          Text(
-                            nickname,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: nickname == '이름을 설정해주세요'
-                                  ? const Color.fromARGB(255, 156, 156, 156)
-                                  : Colors.black,
-                            ),
+                          Image.asset(
+                            'assets/images/point.jpg',
+                            width: 20,
+                            height: 20,
                           ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Image.asset(
-                                'assets/images/point.jpg',
-                                width: 20,
-                                height: 20,
-                              ),
-                              const SizedBox(width: 4),
-                              // 포인트는 기존 StreamBuilder 유지
-                              StreamBuilder<int>(
-                                stream: _watchPointBalance(),
-                                builder: (context, snapshot) {
-                                  final balance = snapshot.data ?? 0;
-                                  return Text(
-                                    '$balance',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.black87,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
+                          const SizedBox(width: 4),
+                          // ▶ 포인트: Firestore 실시간 값 표시
+                          StreamBuilder<int>(
+                            stream: _watchPointBalance(),
+                            builder: (context, snapshot) {
+                              final balance = snapshot.data ?? 0;
+                              return Text(
+                                '$balance',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                );
-              },
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-
 
           const Divider(
             color: Color.fromARGB(255, 240, 240, 240),
@@ -382,7 +330,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
             color: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildContentButton(
                   context,
@@ -406,8 +353,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
             ),
           ),
 
-          // ── 칸 나누기 ──────────────────────────────────────────────────
-
           const Divider(
             color: Color.fromARGB(255, 240, 240, 240),
             thickness: 8,
@@ -421,46 +366,22 @@ class _MyPageScreenState extends State<MyPageScreen> {
               color: Colors.white,
               child: Column(
                 children: [
-                  _buildMenuItem(
-                    '좋아요 내역',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const LikedListScreen(),
-                        ),
-                      );
-                    },
-                  ),
+                  _buildMenuItem('포인트 환전소', onTap: () {
+                    // TODO: 환전/적립 화면으로 이동
+                  }),
                   _buildMenuDivider(),
-                  
-                  _buildMenuItem('포인트 내역', onTap: () {}),
+                  _buildMenuItem('좋아요 내역', onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LikedListScreen()),
+                    );
+                  }),
                   _buildMenuDivider(),
-
-                  _buildMenuItem(
-                    '1:1 문의',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const InquiryScreen(),
-                        ),
-                      );
-                    },
-                  ),
+                  _buildMenuItem('1:1 문의', onTap: () {}),
                   _buildMenuDivider(),
-
-                  _buildMenuItem(
-                    '자주 묻는 질문',
-                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const FaqScreen(),
-                          )
-                      );
-                     }
-                    ),
+                  _buildMenuItem('자주 묻는 질문', onTap: () {}),
+                  _buildMenuDivider(),
+                  _buildMenuItem('공지 사항', onTap: () {}),
                   _buildMenuDivider(),
                 ],
               ),
@@ -474,11 +395,11 @@ class _MyPageScreenState extends State<MyPageScreen> {
   // ─────────────────────────────────────────────────────────────────────
   // 판매/구매/게시글 버튼 생성
   Expanded _buildContentButton(
-    BuildContext context, {
-    required int count,
-    required String title,
-    required int tabIndex,
-  }) {
+      BuildContext context, {
+        required int count,
+        required String title,
+        required int tabIndex,
+      }) {
     return Expanded(
       child: GestureDetector(
         onTap: () {
