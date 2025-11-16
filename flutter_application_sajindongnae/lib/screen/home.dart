@@ -3,12 +3,27 @@ import 'package:flutter/services.dart';
 import 'package:flutter_application_sajindongnae/component/post_card.dart';
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
 import 'package:flutter_application_sajindongnae/services/post_service.dart';
+import 'package:flutter_application_sajindongnae/screen/post/post_detail.dart';
 
 // 워터마크 오버레이 위젯
 import 'package:flutter_application_sajindongnae/screen/photo/watermarked_image.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen>{
+  final _bestPageCtrl = PageController(viewportFraction: 0.9);
+  int _bestPage = 0;
+
+  @override
+  void dispose(){
+    _bestPageCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,11 +73,11 @@ class HomeScreen extends StatelessWidget {
 
                 // 베스트 사진 4장
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(vertical:10.0),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final width = constraints.maxWidth;
-                      final aspectRatio = width < 400 ? 4/3 : 1.3;
+                      final aspectRatio = width < 400 ? 4 / 3 : 1.5/1;
 
 
                       final bestImagePaths = [
@@ -72,29 +87,53 @@ class HomeScreen extends StatelessWidget {
                         'assets/images/sellPhoto5.JPG',
                       ];
 
-                      return GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: bestImagePaths.length,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 8,
-                          crossAxisSpacing: 8,
-                          childAspectRatio: aspectRatio,
-                        ),
-                        itemBuilder: (context, index) {
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: WatermarkedImage.asset(
-                              bestImagePaths[index],
-                              fit: BoxFit.cover,
-                              watermarkText: '사진동네',
-                              opacity: 0.18,
-                              paddingFactor: 2.5,
-                              angleDeg: -45,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          AspectRatio(
+                            aspectRatio: aspectRatio,
+                            child: PageView.builder(
+                              controller: _bestPageCtrl,
+                              itemCount: bestImagePaths.length,
+                              onPageChanged: (i) => setState(() => _bestPage = i),
+                              itemBuilder: (context, index) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: WatermarkedImage.asset(
+                                      bestImagePaths[index],
+                                      fit: BoxFit.cover,
+                                      watermarkText: '사진동네',
+                                      opacity: 0.18,
+                                      paddingFactor: 2.5,
+                                      angleDeg: -45,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(bestImagePaths.length, (i) {
+                              final isActive = i == _bestPage;
+                              return AnimatedContainer(
+                                duration: const Duration(milliseconds: 220),
+                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                width: isActive ? 16 : 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  color: isActive
+                                      ? Colors.black.withOpacity(0.85)
+                                      : Colors.black.withOpacity(0.25),
+                                ),
+                              );
+                            }),
+                          ),
+                        ],
                       );
                     },
                   ),
@@ -135,7 +174,15 @@ class HomeScreen extends StatelessWidget {
                       final bestPosts = snapshot.data!;
 
                       return Column(
-                        children: bestPosts.map((post) => PostCard(post: post)).toList(),
+                        children: bestPosts.map((post) =>
+                         PostCard(
+                          post: post, 
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => PostDetailScreen(post: post)),
+                            );
+                          })).toList(),
                       );
                     }
                   },

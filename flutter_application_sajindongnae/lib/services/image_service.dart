@@ -26,7 +26,7 @@ import 'package:flutter/painting.dart' as painting; // Future<ui.Image> decodeIm
 final ImagePicker _picker = ImagePicker(); // 각주: image_picker 인스턴스
 
 // Android SDK 버전 조회 (iOS/웹은 null)
-Future<int?> _androidSdkInt() async {
+Future<int?> androidSdkInt() async {
   // 각주: 웹에서는 dart:io가 동작하지 않으므로 Platform 접근을 피한다
   if (!Platform.isAndroid) return null;
   final info = await DeviceInfoPlugin().androidInfo;
@@ -34,14 +34,14 @@ Future<int?> _androidSdkInt() async {
 }
 
 // 갤러리/파일 접근 권한 확인 (SDK 32 이하에서만 유효)
-Future<bool> _ensureLegacyStoragePermission(BuildContext context) async {
+Future<bool> ensureLegacyStoragePermission(BuildContext context) async {
   final st = await Permission.storage.status;
   if (st.isGranted) return true;
 
   if (st.isPermanentlyDenied) {
     final go = await _showGoToSettingsDialog(
       context,
-      reason: '사진을 불러오려면 갤러리 접근 권한이 필요합니다.\n설정에서 권한을 확인해주세요',
+      reason: '갤러리에 접근하기 위해 갤러리 접근 권한이 필요합니다.\n설정에서 권한을 확인해주세요',
     );
     if (go) await openAppSettings();
     return false;
@@ -69,12 +69,12 @@ Future<XFile?> pickImageFromGallery(BuildContext context) async {
   // 각주: 웹은 권한 없이 동작
   if (kIsWeb) return await _picker.pickImage(source: ImageSource.gallery);
 
-  final sdk = await _androidSdkInt();
+  final sdk = await androidSdkInt();
   if (sdk == null || sdk >= 33) {
     // 각주: Android 13+는 시스템 Photo Picker라 권한 불필요
     return await _picker.pickImage(source: ImageSource.gallery);
   } else {
-    final ok = await _ensureLegacyStoragePermission(context);
+    final ok = await ensureLegacyStoragePermission(context);
     if (!ok) return null;
     return await _picker.pickImage(source: ImageSource.gallery);
   }
@@ -91,12 +91,12 @@ Future<List<XFile?>> pickMultiImagesFromGallery(BuildContext context) async {
     return files;
   }
 
-  final sdk = await _androidSdkInt();
+  final sdk = await androidSdkInt();
   List<XFile> files = [];
   if (sdk == null || sdk >= 33) {
     files = await _picker.pickMultiImage();
   } else {
-    final ok = await _ensureLegacyStoragePermission(context);
+    final ok = await ensureLegacyStoragePermission(context);
     if (ok) {
       files = await _picker.pickMultiImage();
     } else {
@@ -152,9 +152,9 @@ Future<bool> _ensureCameraPermission(BuildContext context) async {
 //  파일 관련
 // -------------------------------
 Future<XFile?> pickImageFromFileSystem(BuildContext context) async {
-  final sdk = await _androidSdkInt();
+  final sdk = await androidSdkInt();
   if (sdk != null && sdk <= 32) {
-    final ok = await _ensureLegacyStoragePermission(context);
+    final ok = await ensureLegacyStoragePermission(context);
     if (!ok) return null;
   }
 
