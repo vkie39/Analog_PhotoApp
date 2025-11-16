@@ -159,6 +159,7 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
       position: pickedPos!,
       bookmarkedBy: [],
       isFree: _feeTypeIsSelected[0],
+      reportCount: 0,
     );
 
     await RequestService().addRequest(request);

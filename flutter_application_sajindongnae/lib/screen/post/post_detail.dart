@@ -170,7 +170,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) =>
-                                ReportPostScreen(postId: post.postId),
+                                ReportPostScreen(
+                                  postId: post.postId,
+                                  postType: 'posts',
+                                  ),
                           ),
                         );
                         break;

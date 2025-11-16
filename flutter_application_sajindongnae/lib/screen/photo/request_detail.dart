@@ -13,6 +13,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 // 모델 import
 import 'package:flutter_application_sajindongnae/models/request_model.dart';
 import 'package:flutter_application_sajindongnae/models/chat_list_model.dart';
+import 'package:flutter_application_sajindongnae/screen/post/report.dart';
 
 // 채팅 상세 페이지 import
 import 'package:flutter_application_sajindongnae/screen/chat/chat_detail.dart';
@@ -163,8 +164,18 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
             onSelected: (MoreAction action) async {
               switch (action) {
                 case MoreAction.report:
-                  dev.log('신고하기 선택됨');
-                  break;
+                dev.log('신고하기 선택됨');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ReportPostScreen(
+                      postId: request.requestId,
+                      postType: 'requests',
+                      ),
+                    ),
+                    );
+                    break;
+
                 case MoreAction.edit:
                   dev.log('수정하기 선택됨');
                   break;

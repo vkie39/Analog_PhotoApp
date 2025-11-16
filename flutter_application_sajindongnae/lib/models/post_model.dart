@@ -16,6 +16,8 @@ class PostModel {
   // 변경: likedBy 추가 (좋아요 누른 uid 목록)
   final List<String> likedBy;
 
+  final int reportCount;
+
   PostModel({
     required this.postId,
     required this.uid,
@@ -29,6 +31,7 @@ class PostModel {
     required this.content,
     this.imageUrl,
     this.likedBy = const [], // 기본값: 빈 리스트
+    this.reportCount = 0, // 기본값: 0
   });
 
 
@@ -50,7 +53,8 @@ class PostModel {
       content: map['content'] ?? '',
       imageUrl: map['imageUrl'] as String?,
       // 변경: likedBy 읽어오기
-      likedBy: List<String>.from(map['likedBy'] ?? []),
+      likedBy: List<String>.from(map['likedBy'] ?? []),     
+      reportCount: map['reportCount'] ?? 0,
     );
   }
 
@@ -84,6 +88,8 @@ class PostModel {
       commentCount: data['commentCount'] ?? 0,
       timestamp: (data['createdAt'] as Timestamp).toDate(),
       category: data['category'] ?? '' // Firestore 문서 필드 확인
+      , likedBy: List<String>.from(data['likedBy'] ?? []
+      ), reportCount: data['reportCount'] ?? 0    
     );
   }
 
@@ -103,6 +109,7 @@ class PostModel {
       'content': content,
       'imageUrl': imageUrl,
       'likedBy': likedBy, // 추가
+      'reportCount': reportCount,
     };
   }
 }
