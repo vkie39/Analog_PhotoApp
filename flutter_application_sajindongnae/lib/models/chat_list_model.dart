@@ -14,13 +14,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// ├── requesterProfileImageUrl: "https://~.png"
 class ChatRoom {
   /// Firestore 문서 ID (chatRoomId)
-  final String chatRoomId;
+  final String requestId;
 
   /// 채팅에 참여한 두 명의 UID
   final List<String> participants;
-
-  /// 연결된 의뢰글 ID
-  final String requestId;
+  final String chatRoomId; 
 
   /// 마지막 메시지 내용 (채팅 목록에서 미리보기용)
   final String lastMessage;

@@ -48,6 +48,7 @@ class PhotoTradeService {
 
   // 판매글 등록 (Storage 업로드 포함)
   Future<void> addTrade({
+    
     required File imageFile,
     required String title,
     required String description,
