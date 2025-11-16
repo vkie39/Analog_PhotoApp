@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:flutter_application_sajindongnae/screen/post/update.dart'; // main 브랜치에서 추가된 수정 화면
+import 'package:flutter_application_sajindongnae/screen/post/update.dart';
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
 import 'package:flutter_application_sajindongnae/component/comment_list.dart';
 import 'package:flutter_application_sajindongnae/models/comment_model.dart';
@@ -15,7 +15,7 @@ import 'dart:developer' as dev;
 enum MoreAction { report, edit, delete }
 
 class PostDetailScreen extends StatefulWidget {
-  final PostModel post; // 게시글 객체 받아옴
+  final PostModel post;
   const PostDetailScreen({super.key, required this.post});
 
   @override
@@ -41,17 +41,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   //
   // ----------------------------------------------------------------------------------
 
-  // 좋아요 토글 (Firestore 업데이트 → StreamBuilder 자동 업데이트)
   void _toggleLike(BuildContext ctx, PostModel post) async {
 
     // ---------------------------------------------------------------------------------
-    //
     // 함경민이 11-16일에 수정한 부분 (주석 유지)
-    //
-    // : 원래는 UI를 먼저 setState로 조작했으나, 실시간 스트림 구조와 충돌 가능성 있어
-    // : 최종 병합에서는 Firestore에만 반영하고 UI는 StreamBuilder로 업데이트함
-    //
-    // ----------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------
 
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
@@ -61,31 +55,20 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           duration: Duration(seconds: 2),
         ),
       );
-      dev.log('로그인 않은 사용자의 좋아요 시도: $uid');
       return;
     }
-    dev.log('로그인 사용자의 좋아요 시도: $uid');
 
     try {
-      // Firestore 좋아요 토글
       await PostService.toggleLike(post.postId);
-
-      dev.log("좋아요 토글 성공 → Firestore에서 새 데이터 스트림으로 자동 업데이트 예정");
-
     } catch (e) {
       dev.log('좋아요 토글 실패: $e');
-
-      // 사용자 안내
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('좋아요 업데이트에 실패했습니다. 잠시 후 다시 시도해주세요.'),
-        ),
+        const SnackBar(content: Text('좋아요 업데이트에 실패했습니다. 잠시 후 다시 시도해주세요.')),
       );
     }
 
     // ---------------------------------------------------------------------------------
-    //
-    // 함경민이 11-16일에 수정한 부분 !!!!!!!!!!! 여기까지 !!!!!!!!!!!!!!!
+    // 수정 끝
     // ----------------------------------------------------------------------------------
   }
 
@@ -95,14 +78,27 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     final commentText = _commentController.text.trim();
     if (commentText.isEmpty) return;
 
-    final commentId = const Uuid().v4();
     final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final commentId = const Uuid().v4();
+
+    // [수정] Firestore users 컬렉션에서 nickname, profileImageUrl 가져오기
+    final userDoc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .get();
+
+    final nickname = userDoc.data()?["nickname"] ?? "사용자";                 // [수정]
+    final profileImageUrl = userDoc.data()?["profileImageUrl"]
+                              ?? user.photoURL
+                              ?? "";                                        // [수정]
 
     final newComment = CommentModel(
       commentId: commentId,
-      uid: user?.uid ?? 'guest',
-      nickname: user?.email ?? '익명',
-      profileImageUrl: '',
+      uid: user.uid,
+      nickname: nickname,                // [수정]
+      profileImageUrl: profileImageUrl,  // [수정]
       content: commentText,
       timestamp: DateTime.now(),
     );
@@ -121,7 +117,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot>(
-      // 자동 갱신 방식 (Firestore 실시간 스트림)
       stream: FirebaseFirestore.instance
           .collection('posts')
           .doc(widget.post.postId)
@@ -133,12 +128,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           );
         }
 
-        final isOwner = widget.post.uid == uid;
-
-        // 최신 Firestore 데이터로 PostModel 생성
         final post = PostModel.fromDocument(snapshot.data!);
+        final isOwner = post.uid == uid;
 
-        // 좋아요 상태 및 갯수는 실시간 Firestore 데이터 기준
         final bool isLiked = uid != null && post.likedBy.contains(uid);
         final int likeCount = post.likeCount;
 
@@ -146,7 +138,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           behavior: HitTestBehavior.opaque,
           onTap: () => FocusScope.of(context).unfocus(),
           child: Scaffold(
-            backgroundColor: const Color(0xFFFFFFFF),
+            backgroundColor: Colors.white,
             appBar: AppBar(
               title: Text('${post.category} 게시판'),
               centerTitle: true,
@@ -169,20 +161,19 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       case MoreAction.report:
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) =>
+                            builder: (_) =>
                                 ReportPostScreen(
                                   postId: post.postId,
                                   postType: 'posts',
-                                  ),
+                                ),
                           ),
                         );
                         break;
 
                       case MoreAction.edit:
-                        dev.log('수정하기 선택됨');
                         await Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) =>
+                            builder: (_) =>
                                 UpdateScreen(existingPost: post),
                           ),
                         );
@@ -197,20 +188,17 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                             ),
                             backgroundColor: Colors.white,
                             title: const Text('정말로 이 판매글을 삭제하시겠습니까?'),
-                            content:
-                                const Text('삭제 후에는 복구할 수 없습니다.'),
+                            content: const Text('삭제 후에는 복구할 수 없습니다.'),
                             actions: [
                               TextButton(
                                 onPressed: () =>
                                     Navigator.of(context).pop(false),
-                                child: const Text('취소',
-                                    style: TextStyle(color: Colors.black)),
+                                child: const Text('취소', style: TextStyle(color: Colors.black)),
                               ),
                               TextButton(
                                 onPressed: () =>
                                     Navigator.of(context).pop(true),
-                                child: const Text('삭제',
-                                    style: TextStyle(color: Colors.red)),
+                                child: const Text('삭제', style: TextStyle(color: Colors.red)),
                               ),
                             ],
                           ),
@@ -251,26 +239,26 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             ),
 
             body: Builder(
-              builder: (innerContext) {
+              builder: (innerCtx) {
                 return ListView(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                   children: [
                     Row(
                       children: [
                         CircleAvatar(
-                          backgroundImage:
-                              NetworkImage(post.profileImageUrl),
+                          backgroundImage: NetworkImage(post.profileImageUrl),
                           radius: 20,
                         ),
                         const SizedBox(width: 10),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(post.nickname,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14)),
+                            Text(
+                              post.nickname,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14),
+                            ),
                             Text(
                               _getFormattedTime(post.timestamp),
                               style: const TextStyle(
@@ -282,14 +270,17 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     ),
 
                     const Divider(
-                        height: 32,
-                        thickness: 0.5,
-                        color: Color.fromARGB(255, 180, 180, 180)),
+                      height: 32,
+                      thickness: 0.5,
+                      color: Color.fromARGB(255, 180, 180, 180),
+                    ),
 
                     const SizedBox(height: 10),
-                    Text(post.title,
-                        style: const TextStyle(
-                            fontSize: 22, fontWeight: FontWeight.bold)),
+                    Text(
+                      post.title,
+                      style: const TextStyle(
+                          fontSize: 22, fontWeight: FontWeight.bold),
+                    ),
 
                     const SizedBox(height: 12),
                     Text(post.content,
@@ -304,8 +295,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           fit: BoxFit.fitWidth,
                           loadingBuilder: (context, child, progress) {
                             if (progress == null) return child;
-                            return const Center(
-                                child: CircularProgressIndicator());
+                            return const Center(child: CircularProgressIndicator());
                           },
                           errorBuilder: (_, __, ___) => Container(
                             height: 200,
@@ -321,15 +311,15 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
                     const SizedBox(height: 16),
                     const Divider(
-                        height: 32,
-                        thickness: 0.5,
-                        color: Color.fromARGB(255, 180, 180, 180)),
+                      height: 32,
+                      thickness: 0.5,
+                      color: Color.fromARGB(255, 180, 180, 180),
+                    ),
 
-                    // 좋아요 + 댓글 개수
                     Row(
                       children: [
                         InkWell(
-                          onTap: () => _toggleLike(innerContext, post),
+                          onTap: () => _toggleLike(innerCtx, post),
                           child: Row(
                             children: [
                               Icon(
@@ -397,8 +387,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                               color: Color.fromARGB(255, 189, 189, 189),
                               fontSize: 14,
                             ),
-                            contentPadding: EdgeInsets.symmetric(
-                                horizontal: 16),
+                            contentPadding:
+                                EdgeInsets.symmetric(horizontal: 16),
                             border: InputBorder.none,
                           ),
                         ),

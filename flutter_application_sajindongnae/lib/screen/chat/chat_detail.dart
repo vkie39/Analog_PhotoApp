@@ -27,23 +27,7 @@ import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';           // 권한
 
 
-/*
-// 더미 메시지 모델 (내가 임시로 만든것)
-class ChatMessage {
-  final String id;
-  final String senderId;
-  final String? text;
-  final XFile? image;
-  final DateTime createdAt;
 
-  ChatMessage({
-    required this.id,
-    required this.senderId,
-    this.text,
-    this.image,
-    required this.createdAt, 
-  });
-  */
 
 
 
@@ -134,36 +118,6 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
         
     // 두 사용자 프로필 미리 로드
     _loadProfiles();
-
-//=====================================
-// 함이 만들어뒀던 더미 채팅터데이터
-//=====================================
-/*
-    // 더미 채팅 데이터 _messages
-    _messages.addAll([
-      ChatMessage(
-        id: 'm1',
-        senderId: me,
-        text: '동미대 학식 바로 찍어드릴게여',
-        image:null,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 3)),
-      ),
-      ChatMessage(
-        id: 'm2',
-        senderId: otherUid,
-        text: '감사링 복받으셈',
-        image:null,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 2, seconds: 40)),
-      ),
-      ChatMessage(
-        id: 'm3',
-        senderId: otherUid,
-        text: null,
-        image: XFile('assets/images/sellPhoto5.JPG'),
-        createdAt: DateTime.now().subtract(const Duration(minutes: 2, seconds: 40)),
-      ),
-    ]);
-*/
 
     // Firestore 메시지 스트림 구독
 _db
