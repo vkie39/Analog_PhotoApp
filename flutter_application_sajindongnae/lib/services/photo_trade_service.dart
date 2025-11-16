@@ -59,6 +59,7 @@ class PhotoTradeService {
     required String location,
     required LatLng position,
     List<String>? tags,
+      
   }) async {
     try {
       final tradeId = const Uuid().v4();
@@ -89,6 +90,9 @@ class PhotoTradeService {
         category: '판매',
         location: location,
         position: position,
+        // [추가] 좋아요 기본값
+        likedBy: const [],        // 처음 생성 시 반드시 빈 배열로 생성해야 함
+        likeCount: 0,             // Firestore에 필드 없으면 toggleLike가 실패함
       );
 
       await _ref.doc(tradeId).set(newTrade.toMap());
@@ -186,4 +190,31 @@ class PhotoTradeService {
             .map((doc) => PhotoTradeModel.fromSnapshot(doc))
             .toList());
   }
+
+    // 좋아요 토글
+  Future<void> toggleLike(String tradeId, String uid) async {
+    final docRef = _ref.doc(tradeId);
+
+    await FirebaseFirestore.instance.runTransaction((transaction) async {
+      final snapshot = await transaction.get(docRef);
+      if (!snapshot.exists) return;
+
+      final likedBy = List<String>.from(snapshot.get('likedBy') ?? []);
+      int likeCount = snapshot.get('likeCount') ?? 0;
+
+      if (likedBy.contains(uid)) {
+        likedBy.remove(uid);
+        likeCount = likeCount > 0 ? likeCount - 1 : 0;
+      } else {
+        likedBy.add(uid);
+        likeCount += 1;
+      }
+
+      transaction.update(docRef, {
+        'likedBy': likedBy,
+        'likeCount': likeCount,
+      });
+    });
+  }
+
 }

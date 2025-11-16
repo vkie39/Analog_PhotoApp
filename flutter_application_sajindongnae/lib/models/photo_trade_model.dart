@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-
 class PhotoTradeModel {
   final String? id; // 문서 ID (Firestore 자동 생성 or 수동)
   final String imageUrl; // Storage에 업로드된 이미지 URL
@@ -19,7 +18,14 @@ class PhotoTradeModel {
   final String location; // 사진 촬영 장소
   final LatLng? position;
 
-  final List<String>? likedBy; // 좋아요 키 추가했는데 키 이름에 맞게 수정해도 상관 X
+  // -------------------------
+  // 좋아요 기능 관련 필드 추가
+  // likedBy  : 좋아요 누른 사용자 UID 목록
+  // likeCount: 좋아요 수
+  // 원래 없던 필드이며 SellDetail에서 좋아요 기능을 쓰기 위해 추가함
+  // -------------------------
+  final List<String> likedBy;
+  final int likeCount;
 
   PhotoTradeModel({
     this.id,
@@ -37,9 +43,13 @@ class PhotoTradeModel {
     required this.category,
     required this.location,
     this.position,
-    // this.location = '',
 
-    this.likedBy, // 좋아요 키 추가했는데 키 이름에 맞게 수정해도 상관 X
+    // -------------------------
+    // [추가] 좋아요 기본값 설정 (nullable 제거)
+    // null-safe 처리를 위해 기본값을 [] / 0으로 설정
+    // -------------------------
+    this.likedBy = const [],
+    this.likeCount = 0,
   });
 
   // Firestore → Model 변환
@@ -51,6 +61,7 @@ class PhotoTradeModel {
   factory PhotoTradeModel.fromMap(Map<String, dynamic> data, [String? id]) {
     LatLng? latLng;
     final pos = data['position'];
+
     if (pos is GeoPoint) {
       latLng = LatLng(pos.latitude, pos.longitude);
     } else if (pos is Map<String, dynamic>) {
@@ -70,15 +81,19 @@ class PhotoTradeModel {
       isSold: data['isSold'] ?? false,
       buyerUid: data['buyerUid'],
       tags: List<String>.from(data['tags'] ?? []),
-      createdAt:
-          (data['createdAt'] is Timestamp)
-              ? (data['createdAt'] as Timestamp).toDate()
-              : DateTime.now(),
+      createdAt: (data['createdAt'] is Timestamp)
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
       category: data['category'] ?? '판매',
       location: data['location'] ?? '',
       position: latLng,
 
-      likedBy: data['likedBy'] != null ? List<String>.from(data['likedBy']) : [], // 좋아요 키 추가했는데 키 이름에 맞게 수정해도 상관 X
+      // -------------------------
+      // [추가] Firestore에서 likedBy / likeCount 값을 읽어오는 부분
+      // 값이 없을 수 있으므로 기본값 [] / 0
+      // -------------------------
+      likedBy: List<String>.from(data['likedBy'] ?? []),
+      likeCount: data['likeCount'] ?? 0,
     );
   }
 
@@ -94,6 +109,13 @@ class PhotoTradeModel {
       'profileImageUrl': profileImageUrl,
       'isSold': isSold,
       'buyerUid': buyerUid,
+
+      // -------------------------
+      // [추가] 좋아요 관련 필드를 Firestore에 저장
+      // -------------------------
+      'likedBy': likedBy,
+      'likeCount': likeCount,
+
       'tags': tags,
       'createdAt': Timestamp.fromDate(createdAt),
       'category': category,

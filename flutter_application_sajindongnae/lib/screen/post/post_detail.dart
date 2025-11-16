@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:flutter_application_sajindongnae/screen/post/update.dart'; // ✅ main 브랜치에서 추가된 수정 화면
+import 'package:flutter_application_sajindongnae/screen/post/update.dart'; // main 브랜치에서 추가된 수정 화면
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
 import 'package:flutter_application_sajindongnae/component/comment_list.dart';
 import 'package:flutter_application_sajindongnae/models/comment_model.dart';
@@ -24,20 +24,7 @@ class PostDetailScreen extends StatefulWidget {
 
 class _PostDetailScreenState extends State<PostDetailScreen> {
   final TextEditingController _commentController = TextEditingController();
-  bool isLiked = false; // 좋아요 상태
-  int likeCount = 0; // 좋아요 수
   final uid = FirebaseAuth.instance.currentUser?.uid;
-
-  @override
-  void initState() {
-    super.initState();
-    likeCount = widget.post.likeCount;
-
-    // 브랜치에서 있던 좋아요 초기화 로직 유지
-    if (uid != null && widget.post.likedBy.contains(uid)) {
-      isLiked = true;
-    }
-  }
 
   @override
   void dispose() {
@@ -45,8 +32,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     super.dispose();
   }
 
-  // 브랜치에서 개선된 likedBy 기반 좋아요 토글 로직 반영
-  void _toggleLike(PostModel post) async {
+  // 좋아요 로직 리팩토링
+  // Firestore에서 좋아요/취소만 처리하고, UI 갱신은 StreamBuilder로 처리하도록 수정
+  void _toggleLike(String postId, List likedBy) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
       ScaffoldMessenger.of(
@@ -54,27 +42,15 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       ).showSnackBar(const SnackBar(content: Text('로그인이 필요합니다.')));
       return;
     }
+
     try {
       // Firestore 좋아요 토글
-      await PostService.toggleLike(post.postId);
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) return;
-      setState(() {
-        if (post.likedBy.contains(uid)) {
-          post.likedBy.remove(uid);
-          likeCount -= 1;
-          isLiked = false;
-        } else {
-          post.likedBy.add(uid);
-          likeCount += 1;
-          isLiked = true;
-        }
-      });
+      await PostService.toggleLike(postId);
+      // setState 호출하지 않음
+      // 이유: 실시간 스트림으로 최신 값이 자동 반영됨
     } catch (e, stack) {
-      // 에러 잡기
       dev.log('좋아요 토글 실패: $e', stackTrace: stack);
 
-      // 사용자 안내
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('좋아요 업데이트에 실패했습니다. 잠시 후 다시 시도해주세요.')),
       );
@@ -114,11 +90,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot>(
       //자동 갱신 방식 (Firestore 실시간 스트림)
-      stream:
-          FirebaseFirestore.instance
-              .collection('posts')
-              .doc(widget.post.postId)
-              .snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('posts')
+          .doc(widget.post.postId)
+          .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Scaffold(
@@ -127,7 +102,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         }
 
         final isOwner = widget.post.uid == uid;
+
+        // 최신 Firestore 데이터로 PostModel 생성
         final post = PostModel.fromDocument(snapshot.data!);
+
+        // 수정된 부분: 좋아요 상태 및 갯수는 Firestore 데이터 기준으로 계산
+        final bool isLiked = uid != null && post.likedBy.contains(uid);
+        final int likeCount = post.likeCount;
+
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => FocusScope.of(context).unfocus(),
@@ -163,12 +145,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           context,
                         ).push<PostModel>(
                           MaterialPageRoute(
-                            builder:
-                                (context) => UpdateScreen(existingPost: post),
+                            builder: (context) => UpdateScreen(existingPost: post),
                           ),
                         );
                         if (updatedPost != null) {
-                          // 자동 갱신이 있으니 여기선 setState 불필요
+                          // 자동 갱신이 있으니 setState 불필요
                         }
                         break;
                       case MoreAction.delete:
@@ -176,46 +157,41 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         // 삭제 확인 다이얼로그 표시
                         final shouldDelete = await showDialog<bool>(
                           context: context,
-                          builder:
-                              (context) => AlertDialog(
-                                shape: RoundedRectangleBorder(
-                                  // 모서리 둥글게
-                                  borderRadius: BorderRadius.circular(16),
+                          builder: (context) => AlertDialog(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            backgroundColor: Colors.white,
+                            title: const Text('정말로 이 판매글을 삭제하시겠습니까?'),
+                            content: const Text('삭제 후에는 복구할 수 없습니다.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(false),
+                                child: const Text(
+                                  '취소',
+                                  style: TextStyle(color: Colors.black),
                                 ),
-                                backgroundColor: Colors.white, // 배경색
-                                title: const Text('정말로 이 판매글을 삭제하시겠습니까?'), // 제목
-                                content: const Text('삭제 후에는 복구할 수 없습니다.'), // 내용
-                                actions: [
-                                  TextButton(
-                                    onPressed:
-                                        () => Navigator.of(context).pop(false),
-                                    child: const Text(
-                                      '취소',
-                                      style: TextStyle(color: Colors.black),
-                                    ),
-                                  ),
-                                  TextButton(
-                                    onPressed:
-                                        () => Navigator.of(context).pop(true),
-                                    child: const Text(
-                                      '삭제',
-                                      style: TextStyle(color: Colors.red),
-                                    ),
-                                  ),
-                                ],
                               ),
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(true),
+                                child: const Text(
+                                  '삭제',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
                         );
-                        // 사용자가 삭제를 확인했을 때 삭제 로직 실행
+
                         if (shouldDelete == true) {
                           dev.log('삭제 로직 실행됨');
                           await PostService.deletePostWithImage(post);
-                          Navigator.of(context).pop(); // 삭제 후 이전 화면으로 돌아감
+                          Navigator.of(context).pop();
                         }
                         break;
                     }
                   },
 
-                  // 메뉴 항목. 작성자와 비작성자에 따라 다르게 표시
                   itemBuilder: (BuildContext context) {
                     if (isOwner) {
                       return const [
@@ -223,8 +199,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           value: MoreAction.edit,
                           child: Text('수정하기'),
                         ),
-                        PopupMenuDivider(height: 5), // 구분선
-
+                        PopupMenuDivider(height: 5),
                         PopupMenuItem<MoreAction>(
                           value: MoreAction.delete,
                           child: Text('삭제하기'),
@@ -299,18 +274,17 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         if (loadingProgress == null) return child;
                         return const Center(child: CircularProgressIndicator());
                       },
-                      errorBuilder:
-                          (context, error, stackTrace) => Container(
-                            height: 200,
-                            color: Colors.grey[200],
-                            child: const Center(
-                              child: Icon(
-                                Icons.broken_image,
-                                color: Colors.grey,
-                                size: 40,
-                              ),
-                            ),
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 200,
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            color: Colors.grey,
+                            size: 40,
                           ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -323,18 +297,20 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 Row(
                   children: [
                     InkWell(
-                      onTap: () => _toggleLike(post),
+                      // 수정된 부분: 좋아요 토글 시 Firestore만 처리
+                      onTap: () => _toggleLike(post.postId, post.likedBy),
                       child: Row(
                         children: [
+                          // 수정된 부분: isLiked는 Firestore 데이터 기준
                           Icon(
                             isLiked ? Icons.favorite : Icons.favorite_border,
                             size: 30,
-                            color:
-                                isLiked
-                                    ? const Color.fromARGB(255, 102, 204, 105)
-                                    : const Color.fromARGB(255, 161, 161, 161),
+                            color: isLiked
+                                ? const Color.fromARGB(255, 102, 204, 105)
+                                : const Color.fromARGB(255, 161, 161, 161),
                           ),
                           const SizedBox(width: 6),
+                          // 수정된 부분: likeCount는 Firestore 값 사용
                           Text(
                             '$likeCount',
                             style: const TextStyle(
