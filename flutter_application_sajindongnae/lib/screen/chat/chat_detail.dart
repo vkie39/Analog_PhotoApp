@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_sajindongnae/models/request_model.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/request_detail.dart';
 import 'package:flutter_application_sajindongnae/screen/chat/chat_image_viewer.dart';
+import 'package:flutter_application_sajindongnae/models/message_model.dart'; // [추가됨] Firestore Message 모델
 import 'package:flutter_application_sajindongnae/services/image_service.dart';
 
 import 'package:fluttertoast/fluttertoast.dart';
@@ -15,6 +16,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+
 
 import 'dart:typed_data';
 
@@ -25,7 +27,7 @@ import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';           // 권한
 
 
-
+/*
 // 더미 메시지 모델 (내가 임시로 만든것)
 class ChatMessage {
   final String id;
@@ -41,16 +43,14 @@ class ChatMessage {
     this.image,
     required this.createdAt, 
   });
+  */
 
-  bool get hasText => (text != null && text!.isNotEmpty);
-  bool get hasImage => image != null;
-}
+
 
 class ChatDetailScreen extends StatefulWidget {
   final RequestModel request; // 이전 화면에서 넘겨받음
+  const ChatDetailScreen({super.key, required this.request});
 
-  ChatDetailScreen({super.key, required this.request});  // firebase연동후엔 required this.requestId가 되어야 함
- 
   @override
   _ChatDetailScreen createState() => _ChatDetailScreen();
 }
@@ -58,24 +58,30 @@ class ChatDetailScreen extends StatefulWidget {
 class _ChatDetailScreen extends State<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  
-  // 현재 로그인한 사용자 uid 
-  // TODO: 이거 나중에 전역변수로 바꿔야 할듯 
+
   String? get _myUid => FirebaseAuth.instance.currentUser?.uid;
+
+
+  // Firestore 인스턴스 [추가됨]
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  // Firestore 실시간 메시지 목록
+  List<Message> _messages = [];
+
 
   // 대화 상대방의 프로필을 표시하기 위한 변수
   String? _myProfileUrl;
   String? _otherProfileUrl;
   bool _isLoadingProfiles = true;
+  late RequestModel _originalRequest;
 
-  // 더미(임시) 대화 데이터들
-  final List<ChatMessage> _messages = []; 
 
-  // 의뢰글에서 받아온거 저장
-  late final String _requestId;           
+  // 채팅방 정보 [추가됨]
+  late final String _chatRoomId;
+  late final String _requestId;
   late final String _requesterUid;
   late final String _requesterNickname;
   late final String _requestTitle;
+
   late final int _requestPrice;
   // 리퀘스트 상태(의뢰중, 거래중, 의뢰완료) 이건 request_model에 필드 만들면 수정해야 함
   String _requestStatement= '의뢰중';
@@ -103,22 +109,36 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   void initState() {
     super.initState();
 
+    _originalRequest = widget.request;
     _imageService = ImageService();
 
-    _requestId = widget.request.requestId;
-    _requesterUid = widget.request.uid;
-    _requesterNickname = widget.request.nickname;
-    _requestTitle = widget.request.title;
-    _requestPrice = widget.request.price;
+    _requestId = _originalRequest.requestId;
+    _requesterUid = _originalRequest.uid;
+    _requesterNickname = _originalRequest.nickname;
+    _requestTitle = _originalRequest.title;
+    _requestPrice = _originalRequest.price;
+
     
+
+    // [수정됨] 채팅방 ID 생성 규칙 (requestId로 고정)
+    _chatRoomId = 'chat_${widget.request.requestId}';
+
+    _ensureChatRoomExists();   // 채팅방 생성 확인 (가장 중요)
+    _loadRequest();  // 의뢰글 정보 로드
+
 
     // 현재 사용자와 상대방 UID
     final otherUid = _requesterUid;
     final me = _myUid ?? 'dummy_me';
+
         
     // 두 사용자 프로필 미리 로드
     _loadProfiles();
 
+//=====================================
+// 함이 만들어뒀던 더미 채팅터데이터
+//=====================================
+/*
     // 더미 채팅 데이터 _messages
     _messages.addAll([
       ChatMessage(
@@ -143,18 +163,52 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
         createdAt: DateTime.now().subtract(const Duration(minutes: 2, seconds: 40)),
       ),
     ]);
+*/
 
-    // 화면 아래로 내려줌
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    // Firestore 메시지 스트림 구독
+_db
+    .collection('chats')
+    .doc(_chatRoomId)
+    .collection('messages')
+    .orderBy('createdAt', descending: false)
+    .snapshots()
+    .listen((snapshot) {
+  setState(() {
+    _messages = snapshot.docs.map((d) => Message.fromDoc(d)).toList();
+  });
+});
 
+        
+    
   }
- 
+
   @override
   void dispose() {
     _scrollController.dispose();
     _messageController.dispose();
     super.dispose();
   }
+
+  Future<void> _loadRequest() async {
+  final snap = await FirebaseFirestore.instance
+      .collection('requests')
+      .doc(_requestId)
+      .get();
+
+  if (!snap.exists) return;
+
+  final data = snap.data()!;
+  final req = RequestModel.fromMap(data, snap.id);
+
+  setState(() {
+    _originalRequest = req;
+    _requestTitle = req.title;
+    _requestPrice = req.price;
+    _requestStatement = req.status;   // 혹시 상태 표시할 경우
+  });
+}
+
+
 
   Future<void> _loadProfiles() async {
     try {
@@ -193,73 +247,112 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   }
 
 
-  void _openRequestDetail(){
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => RequestDetailScreen(request: widget.request),
-        // 만약 DB 설계에 따라 requestId만 넘겨야 하면 아래걸로 수정
-        // builder: (_) => RequestDetailScreen(requestId: widget.request.requestId),
-      ),
-    );
-  }
- 
-  // 화면을 포커스를 아래로 맞춰주는 함수(새로운 채팅이 올때 내려줘야 함)
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+  void _openRequestDetail() {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => RequestDetailScreen(request: widget.request),
+    ),
+  );
+}
+
+
+  // 메시지 전송 함수 [수정됨 → Firestore write로 변경]
+  Future<void> _sendMessage() async {
+    
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+    await _ensureChatRoomExists();   // 없으면 만들어놓고 메세지 전송
+
+    final senderId = _myUid ?? 'unknown';
+    final messageData = {
+      'senderId': senderId,
+      'text': text,
+      'createdAt': FieldValue.serverTimestamp(),
+    };
+
+    try {
+      // Firestore에 메시지 추가
+      await _db
+          .collection('chats')
+          .doc(_chatRoomId)
+          .collection('messages')
+          .add(messageData);
+
+      // 채팅방의 최근 메시지 갱신
+      await _db.collection('chats').doc(_chatRoomId).update({
+        'participants': [_myUid, _requesterUid],
+        'lastMessage': text,
+        'lastSenderId': senderId,
+        'lastTimestamp': FieldValue.serverTimestamp(),
+      });
+
+      _messageController.clear();
+    } catch (e) {
+      debugPrint('메시지 전송 오류: $e');
     }
   }
 
 
-
- // =========================================================================== 
- // 메세지 전송 함수
- // ===========================================================================
-
-  void _sendMessage() {
-  // 메세지 입력하고 버튼 누르면 _messages에 추가해줌 (이후엔 firestore에 저장하도록 수정해야 함)
-    final text = _messageController.text.trim();
-    if (text.isEmpty) return;
-
-    final me = _myUid ?? 'dummy_me';
-
-    setState(() {
-      _messages.add(
-        ChatMessage(
-          id: 'local-${DateTime.now().millisecondsSinceEpoch}',
-          senderId: me,
-          text: text,
-          image: null,
-          createdAt: DateTime.now(),
-        ),
-      );
-    });
-    _messageController.clear();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+  // 메시지 실시간 구독 [추가됨]
+  Stream<QuerySnapshot<Map<String, dynamic>>> _messageStream() {
+    return _db
+        .collection('chats')
+        .doc(_chatRoomId)
+        .collection('messages')
+        .orderBy('createdAt', descending: false)
+        .snapshots();
   }
 
-  // 선택된 이미지를 바로 채팅으로 추가하는 함수
-  void _appendImageMessage(XFile picked) {
-    final me = _myUid ?? 'dummy_me';
-    setState(() {
-      _messages.add(
-        ChatMessage(
-          id: 'local-img-${DateTime.now().millisecondsSinceEpoch}',
-          senderId: me,
-          text: null,
-          image: picked,
-          createdAt: DateTime.now(),
-        ),
-      );
+
+  void _appendImageMessage(XFile picked) async {
+  final senderId = _myUid ?? 'unknown';
+  await _ensureChatRoomExists();   // 없으면 만들어놓고 메세지 전송
+
+  try {
+    // 1) Firebase Storage 업로드
+    final imageUrl = await _imageService.uploadChatImage(picked, _chatRoomId);
+
+    // 2) Firestore에 메시지 저장
+    await _db
+        .collection('chats')
+        .doc(_chatRoomId)
+        .collection('messages')
+        .add({
+      'senderId': senderId,
+      'text': null,
+      'imageUrl': imageUrl,
+      'createdAt': FieldValue.serverTimestamp(),
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+
+    // 3) 채팅방 마지막 메시지 갱신
+    await _db.collection('chats').doc(_chatRoomId).update({
+      'lastMessage': '(이미지)',
+      'lastSenderId': senderId,
+      'lastTimestamp': FieldValue.serverTimestamp(),
+    });
+  } catch (e) {
+    debugPrint('이미지 메시지 전송 오류: $e');
   }
+}
+
+// 채팅방이 없으면 생성하는 함수
+Future<void> _ensureChatRoomExists() async {
+  final docRef = _db.collection('chats').doc(_chatRoomId);
+  final snapshot = await docRef.get();
+
+  if (!snapshot.exists) {
+    await docRef.set({
+      'participants': [_myUid, _requesterUid],
+      'createdAt': FieldValue.serverTimestamp(),
+      'lastMessage': '',
+      'lastSenderId': '',
+      'lastTimestamp': FieldValue.serverTimestamp(),
+    });
+  }
+}
+
+
 
 
 
@@ -290,7 +383,11 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   }
   
   // [말풍선] 위젯
+/*
   Widget _buildBubble(BuildContext context, ChatMessage msg, bool isMe) {
+*/
+  Widget _buildBubble(Message msg, bool isMe) {
+
     return Container(
       // 각 메세지 버블에 대한 마진과 패팅, 스타일 설정
       margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
@@ -319,6 +416,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
             style: const TextStyle(fontSize: 15, color: Colors.black),
           ),
         if (msg.hasText && msg.hasImage) const SizedBox(height: 8),
+/*
 
         // 이미지 전송
         if (msg.hasImage)
@@ -354,6 +452,15 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
                         fit: BoxFit.cover,
                       ),
               ),
+*/
+        if (msg.hasImage && msg.imageUrl != null && msg.imageUrl!.startsWith("http"))
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              msg.imageUrl!,
+              fit: BoxFit.cover,            
+              width: 200,
+
             ),
           ),
         
@@ -619,6 +726,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
         ), 
       ),
       
+
       body: Container(
         color: Colors.white, 
         child: Column(
@@ -766,17 +874,22 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
                 ],
               ), 
             ),
-            
 
             Expanded(
               child: GestureDetector(
-                onTap: () => _togglePanel(false), // 채팅 영역 탭하면 패널 닫기
-                child: _isLoadingProfiles
-                    ? const Center(child: CircularProgressIndicator())
-                    : ListView.builder(
+                onTap: () => _togglePanel(false),
+                child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: _messageStream(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                      }
+                      
+                      final docs = snapshot.data!.docs;
+                      return ListView.builder(
                         controller: _scrollController,
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: _messages.length,
+                        itemCount: docs.length,
                         itemBuilder: (context, index) {
                             final msg = _messages[index];
                             final isMe = msg.senderId == (_myUid ?? 'dummy_me');  // 메세지 송신자가 나인지 확인해서, 나라면 오른쪽에 메세지 칸? 생성
@@ -794,9 +907,24 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
                                     _buildBubble(context, msg, isMe),
                                     if(!isMe) Text((msg.createdAt).toKoreanAMPM(), style: TextStyle(fontSize: 10, color: Colors.grey)),
                                     // if (isMe) const SizedBox(width: 36),
+/*
+                          final msg = Message.fromDoc(docs[index]);
+                          final isMe = msg.senderId == (_myUid ?? 'dummy_me');
+                          
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              mainAxisAlignment:
+                              isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                              children: [
+                                if (!isMe) _buildAvatar(isMe: false),
+                                _buildBubble(msg, isMe),
+*/
                                 ],
-                        )
-                      
+                            ),
+                         );
+                      },
                     );
                   },
                 ),
@@ -853,7 +981,6 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
 }
 
 
-
 extension KoreanTimeFormat on DateTime {
   String toKoreanAMPM() {
     final hour = this.hour;
@@ -868,3 +995,4 @@ extension KoreanTimeFormat on DateTime {
     return "$period $hourStr:$minute";
   }
 }
+

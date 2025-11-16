@@ -1,29 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_application_sajindongnae/screen/mypage/contents/sellPhoto.dart';
-import 'package:flutter_application_sajindongnae/screen/mypage/contents/buyPhoto.dart';
-import 'package:flutter_application_sajindongnae/screen/mypage/contents/postC.dart';
+import 'package:flutter_application_sajindongnae/screen/mypage/inquiry/inquiryList.dart';
+import 'package:flutter_application_sajindongnae/screen/mypage/inquiry/inquiryForm.dart';
 
-class UserContentScreen extends StatefulWidget {
-  const UserContentScreen({super.key, this.initialTab = 0});
-
-  final int initialTab;
+class InquiryScreen extends StatefulWidget {
+  const InquiryScreen({super.key});
 
   @override
-  State<UserContentScreen> createState() => _UserContentScreenState();
+  State<InquiryScreen> createState() => _InquiryScreenState();
 }
 
-class _UserContentScreenState extends State<UserContentScreen> with SingleTickerProviderStateMixin {
+class _InquiryScreenState extends State<InquiryScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(
-      length: 3, // 판매 / 구매 / 게시글
-      vsync: this,
-      initialIndex: widget.initialTab,
-    );
+    _tabController = TabController(length: 2, vsync: this); // 내부 탭 2개
   }
 
   @override
@@ -35,15 +28,15 @@ class _UserContentScreenState extends State<UserContentScreen> with SingleTicker
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final tabWidth = screenWidth / 3; // 3개의 탭
-    const lineWidth = 110.0; // 탭 길이
+    final tabWidth = screenWidth / 2; // 2개의 탭
+    const lineWidth = 160.0;
     final horizontalInset = (tabWidth - lineWidth) / 2;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          '나의 활동',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 20),
+          '1:1 문의',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -51,31 +44,26 @@ class _UserContentScreenState extends State<UserContentScreen> with SingleTicker
         bottom: TabBar(
           controller: _tabController,
           isScrollable: false,
+          tabs: const [
+            Tab(text: '문의하기'),
+            Tab(text: '문의 내역'),
+          ],
           labelColor: Colors.black,
           unselectedLabelColor: Colors.grey,
-          //선택된 탭 볼드체, 선택 안 된 탭 일반체
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 15),
-
-          // 탭 길이 설정
           indicatorSize: TabBarIndicatorSize.tab,
           indicator: UnderlineTabIndicator(
             borderSide: const BorderSide(width: 2.5, color: Colors.black),
             insets: EdgeInsets.symmetric(horizontal: horizontalInset),
           ),
-          tabs: const [
-            Tab(text: '판매사진'),
-            Tab(text: '구매사진'),
-            Tab(text: '게시글'),
-          ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          SellPhotoScreen(), 
-          BuyPhotoScreen(),
-          PostCountScreen(),
+        children: const [
+          InquiryFormScreen(), // 문의하기
+          InquiryListScreen(), // 문의내역
         ],
       ),
     );

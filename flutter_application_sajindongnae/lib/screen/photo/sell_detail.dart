@@ -2,6 +2,7 @@ import 'dart:developer' as dev;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/photo_sell.dart';
 import 'package:flutter_application_sajindongnae/models/photo_trade_model.dart';
 import 'package:flutter_application_sajindongnae/services/photo_trade_service.dart';
@@ -22,6 +23,7 @@ class SellDetailScreen extends StatefulWidget {
 }
 
 class _SellDetailScreenState extends State<SellDetailScreen> {
+
   // [수정] PhotoTradeService 추가
   final PhotoTradeService _photoTradeService = PhotoTradeService();
   PhotoTradeModel get photo => widget.photo;

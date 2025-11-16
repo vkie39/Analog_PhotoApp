@@ -213,13 +213,19 @@ class ImageService {
     return null;
   }
 
+  static Future<String> uploadProfileImage(String uid, File file) async {
+    final ref = FirebaseStorage.instance.ref().child('profileImages/$uid/${DateTime.now().millisecondsSinceEpoch}');
+    final uploadTask = await ref.putFile(file);
+    final url = await ref.getDownloadURL();
+    return url;
+  }
+
   // 크롭
-  Future<CroppedFile?> cropImage(String imagePath) async {
+  Future<CroppedFile?> cropImage(String imagePath, {bool lockSquare = false}) async {
     try {
       final ext = path.extension(imagePath).toLowerCase();
-      // 각주: 확장자에 따라 저장 포맷을 맞추면 화질/알파 유지에 유리
       ImageCompressFormat format =
-      (ext == '.png') ? ImageCompressFormat.png : ImageCompressFormat.jpg;
+          (ext == '.png') ? ImageCompressFormat.png : ImageCompressFormat.jpg;
 
       final cropped = await ImageCropper().cropImage(
         sourcePath: imagePath,
@@ -227,20 +233,50 @@ class ImageService {
         uiSettings: [
           AndroidUiSettings(
             toolbarColor: Colors.white,
+            toolbarWidgetColor: Colors.black,
             toolbarTitle: '사진 편집',
-            toolbarWidgetColor: const Color.fromARGB(255, 0, 0, 0),
-            hideBottomControls: false,
-            initAspectRatio: CropAspectRatioPreset.original,
-            lockAspectRatio: false,
+            lockAspectRatio: lockSquare,
+            initAspectRatio:
+                lockSquare ? CropAspectRatioPreset.square : CropAspectRatioPreset.original,
+          ),
+          IOSUiSettings(
+            aspectRatioLockEnabled: lockSquare,
           ),
         ],
       );
       return cropped;
     } catch (e) {
-      debugPrint('Crop error: $e'); // 각주: 크래시 방지
+      debugPrint('Crop error: $e');
       return null;
     }
   }
+
+  /// 채팅 이미지 전용 업로드 함수
+/// 선택한 XFile을 Firebase Storage에 업로드하고 다운로드 URL 반환
+Future<String> uploadChatImage(XFile imageFile, String chatRoomId) async {
+  try {
+    // 스토리지 경로: chats/{chatRoomId}/{timestamp}.jpg
+    final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
+    final ref = FirebaseStorage.instance
+        .ref()
+        .child("chats")
+        .child(chatRoomId)
+        .child(fileName);
+
+    // 이미지 바이트 업로드
+    await ref.putData(await imageFile.readAsBytes(),
+        SettableMetadata(contentType: "image/jpeg"));
+
+    // 다운로드 URL 반환
+    return await ref.getDownloadURL();
+  } catch (e) {
+    debugPrint("채팅 이미지 업로드 실패: $e");
+    rethrow;
+  }
+}
+
+
+
 
   // 압축
   Future<XFile?> compressImage(String imagePath) async {
@@ -409,3 +445,4 @@ Future<bool> _showGoToSettingsDialog(
 void _toast(BuildContext context, String msg) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 }
+

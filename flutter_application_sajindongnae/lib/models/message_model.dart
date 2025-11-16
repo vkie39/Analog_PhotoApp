@@ -1,29 +1,54 @@
-//메세지 단위의 모델
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
 
-class MessageModel {
+class Message {
+  final String id;
   final String senderId;
-  final String text;
-  final int timestamp;
+  final String? text;      // 텍스트
+  final String? imageUrl;  // Firestore에 들어가는 이미지 URL
+  final DateTime createdAt;
 
-  MessageModel({
+  Message({
+    required this.id,
     required this.senderId,
-    required this.text,
-    required this.timestamp,
+    this.text,
+    this.imageUrl,
+    required this.createdAt,
   });
 
-  factory MessageModel.fromMap(Map<dynamic, dynamic> map) {
-    return MessageModel(
-      senderId: map['senderId'] ?? '',
-      text: map['text'] ?? '',
-      timestamp: map['timestamp'] ?? 0,
+  /// Firestore → Message
+  factory Message.fromDoc(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+
+    return Message(
+      id: doc.id,
+      senderId: data['senderId'] ?? '',
+      text: data['text'],
+      imageUrl: data['imageUrl'],
+      createdAt: (data['createdAt'] is Timestamp)
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
     );
   }
 
+  /// Message → Firestore 저장용
   Map<String, dynamic> toMap() {
     return {
       'senderId': senderId,
       'text': text,
-      'timestamp': timestamp,
+      'imageUrl': imageUrl,
+      'createdAt': createdAt,
     };
+  }
+  /// 텍스트 포함 여부
+  bool get hasText => text != null && text!.trim().isNotEmpty;
+
+  /// 이미지 포함 여부
+  bool get hasImage => imageUrl != null && imageUrl!.isNotEmpty;
+
+  /// UI가 요구하는 msg.image (XFile) 제공
+  XFile? get image {
+    if (!hasImage) return null;
+    return XFile(imageUrl!);  // Image.network 대신 UI는 XFile을 사용하므로 이렇게 맞춤
   }
 }

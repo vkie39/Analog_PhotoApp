@@ -74,4 +74,14 @@ class RequestService {
       'completedAt': Timestamp.now(),
     });
   }
+
+  // 좋아요 내역 (마이페이지용)
+  Stream<List<RequestModel>> getLikedRequests(String uid) {
+    return _ref
+        .where('likedBy', arrayContains: uid)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => RequestModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+            .toList());
+  }
 }
