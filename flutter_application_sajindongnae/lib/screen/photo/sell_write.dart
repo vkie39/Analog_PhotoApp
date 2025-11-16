@@ -18,8 +18,6 @@ import 'package:flutter_application_sajindongnae/models/photo_trade_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 
-
-
 // Form을 관리하기 위한 키 (입력칸이 빈칸인지, 숫자인지 확인하고 업로드 하는 용도) -> 글로벌 키
 final _formKey = GlobalKey<FormState>();
 
@@ -246,6 +244,10 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
 
       try {
         print("🔥 위치 값: $_selectedLocation");
+        print("🔥 userDoc exists: ${userDoc.exists}");
+        print("🔥 userDoc keys = ${userDoc.data()?.keys}");
+        print("🔥 nickname raw = ${userDoc.data()?['nickname']}");
+
         // 5) Firestore + Storage 업로드 (사진 업로드 후 문서 생성)
         await PhotoTradeService().addTrade(
           imageFile: File(_selectedImage!.path),               // 선택된 이미지 파일
@@ -253,10 +255,10 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
           description: description,                            // 추가 설명
           price: price,                                        // 가격
           uid: user.uid,                                       // 작성자 UID
-          nickname: user.displayName ?? '사용자',               // 닉네임
+          nickname: nickname,                                  // 닉네임
           profileImageUrl: user.photoURL ?? '',                // 프로필 이미지
           tags: tags,                                          // 선택된 태그들                      
-          position: pos!,
+          position: pos,
           location: location,
         );
 

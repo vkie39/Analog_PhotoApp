@@ -57,7 +57,7 @@ class PhotoTradeService {
     required String nickname,
     required String profileImageUrl,
     required String location,
-    required LatLng position,
+    LatLng? position,
     List<String>? tags,
       
   }) async {
