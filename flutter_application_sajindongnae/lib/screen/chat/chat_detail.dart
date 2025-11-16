@@ -51,6 +51,7 @@ class ChatMessage {
 class ChatDetailScreen extends StatefulWidget {
   final RequestModel request; // 이전 화면에서 넘겨받음
   const ChatDetailScreen({super.key, required this.request});
+  
 
   @override
   _ChatDetailScreen createState() => _ChatDetailScreen();
@@ -64,6 +65,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   final ScrollController _scrollController = ScrollController();
 
   String? get _myUid => FirebaseAuth.instance.currentUser?.uid;
+  late bool _isOwner; // 리퀘스트 작성자가 아니라면 리퀘스트 상태변화를 할 수 없도록 함
 
 
   // Firestore 인스턴스 [추가됨]
@@ -85,7 +87,6 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   late final String _requesterUid;
   late final String _requesterNickname;
   late final String _requestTitle;
-
   late final int _requestPrice;
   // 리퀘스트 상태(의뢰중, 거래중, 의뢰완료) 이건 request_model에 필드 만들면 수정해야 함
   String _requestStatement= '의뢰중';
@@ -122,7 +123,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
     _requestTitle = _originalRequest.title;
     _requestPrice = _originalRequest.price;
 
-    
+    _requestStatement = _originalRequest.status ?? '의뢰중';
 
     // [수정됨] 채팅방 ID 생성 규칙 (requestId로 고정)
     _chatRoomId = 'chat_${widget.request.requestId}';
@@ -134,6 +135,9 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
     // 현재 사용자와 상대방 UID
     final otherUid = _requesterUid;
     final me = _myUid ?? 'dummy_me';
+    _isOwner = _myUid == _requesterUid; 
+
+
 
     // 의뢰글 실시간으로 가져옴
     _requestSub = _requestService.watchRequest(_requestId).listen((req) {
@@ -799,18 +803,66 @@ Future<void> _ensureChatRoomExists() async {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
-                                    PopupMenuButton<String>(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                      color: Colors.white,              // 메뉴 배경색   
-                                      elevation: 6,                       // 그림자 깊이
-                                      position: PopupMenuPosition.under,  // 메뉴가 버튼 아래에 나타나도록 설정
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
+                                    if(_isOwner)
+                                      PopupMenuButton<String>(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(18),
+                                        ),
+                                        color: Colors.white,              // 메뉴 배경색   
+                                        elevation: 6,                       // 그림자 깊이
+                                        position: PopupMenuPosition.under,  // 메뉴가 버튼 아래에 나타나도록 설정
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
 
-                                          // 현재 의뢰 상태 표시 - 텍스트
+                                            // 현재 의뢰 상태 표시 - 텍스트
+                                            Text(
+                                              _requestStatement, // 텍스트 자체를 트리거로 사용
+                                              style: const TextStyle(
+                                                color: Color.fromARGB(255, 0, 0, 0),
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+
+                                            // 현재 의뢰 상태 표시 - 아이콘
+                                            const Icon(
+                                              Icons.arrow_drop_down,
+                                              color: Colors.black,
+                                              size: 20,
+                                            ),
+                                          ],
+                                        ),
+
+                                        // 메뉴 항목 선택시 처리
+                                        onSelected: (value) async {
+                                          dev.log('의뢰 상태 변경: $value');
+                                          // 1) UI 변경
+                                          setState(() {
+                                            _requestStatement = value; // 바로 대입
+                                          });
+
+                                          // 2) Firestore 업데이트
+                                          try {
+                                            await _requestService.updateRequest(
+                                              _requestId,
+                                              {'status': value},   // 바뀐 상태만 업데이트
+                                            );
+                                            dev.log('Firestore request 상태 업데이트 성공');
+                                          } catch (e) {
+                                            dev.log('request 상태 업데이트 실패: $e');
+                                            Fluttertoast.showToast(msg: "request 상태 변경 실패했습니다");
+                                          }
+                                        },
+                                        itemBuilder: (context) => const [
+                                          PopupMenuItem(value: '의뢰중', child: Text('의뢰중')),
+                                          PopupMenuItem(value: '거래중', child: Text('거래중')),
+                                          PopupMenuItem(value: '의뢰완료', child: Text('의뢰완료')),
+                                        ],
+                                      ),
+
+                                    if(!_isOwner)
+                                     // 현재 의뢰 상태 표시 - 텍스트
                                           Text(
                                             _requestStatement, // 텍스트 자체를 트리거로 사용
                                             style: const TextStyle(
@@ -818,42 +870,6 @@ Future<void> _ensureChatRoomExists() async {
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                          const SizedBox(width: 4),
-
-                                          // 현재 의뢰 상태 표시 - 아이콘
-                                          const Icon(
-                                            Icons.arrow_drop_down,
-                                            color: Colors.black,
-                                            size: 20,
-                                          ),
-                                        ],),
-
-                                      // 메뉴 항목 선택시 처리
-                                      onSelected: (value) async {
-                                        dev.log('의뢰 상태 변경: $value');
-                                        // 1) UI 변경
-                                        setState(() {
-                                          _requestStatement = value; // 바로 대입
-                                        });
-
-                                        // 2) Firestore 업데이트
-                                        try {
-                                          await _requestService.updateRequest(
-                                            _requestId,
-                                            {'status': value},   // 바뀐 상태만 업데이트
-                                          );
-                                          dev.log('Firestore request 상태 업데이트 성공');
-                                        } catch (e) {
-                                          dev.log('request 상태 업데이트 실패: $e');
-                                          Fluttertoast.showToast(msg: "request 상태 변경 실패했습니다");
-                                        }
-                                      },
-                                      itemBuilder: (context) => const [
-                                        PopupMenuItem(value: '의뢰중', child: Text('의뢰중')),
-                                        PopupMenuItem(value: '거래중', child: Text('거래중')),
-                                        PopupMenuItem(value: '의뢰완료', child: Text('의뢰완료')),
-                                      ],
-                                    ),
                                     const SizedBox(width: 4),
                                     
                                     // 의뢰 제목 표시
@@ -867,6 +883,9 @@ Future<void> _ensureChatRoomExists() async {
                                     ),
                                   ],
                                 ),
+
+                              
+
                                 
                                 const SizedBox(height: 4),
                                 // 의뢰 가격 표시 (0원은 '무료의뢰'로 표시)

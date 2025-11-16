@@ -19,6 +19,7 @@ class RequestModel {
   final String? acceptedBy;
   final List<String> likedBy;
   final int likeCount;
+  final bool isPaied;
 
   RequestModel({
     required this.requestId,
@@ -34,10 +35,11 @@ class RequestModel {
     required this.location,
     required this.position,
     required this.bookmarkedBy,
-    this.status = 'pending', // 요청 상태 기본값 설정
+    this.status = '의뢰중', // 요청 상태 기본값 설정
     this.acceptedBy,
     this.likedBy = const [],
     this.likeCount = 0,
+    required this.isPaied, 
   });
 
   factory RequestModel.fromMap(Map<String, dynamic> map, [String? docId]) {
@@ -68,10 +70,12 @@ class RequestModel {
       location: map['location'] ?? '',
       position: latLng,
       bookmarkedBy: List<String>.from(map['bookmarkedBy'] ?? []),
-      status: map['status'] ?? 'pending',
+      status: map['status'] ?? '의뢰중',
       acceptedBy: map['acceptedBy'],
       likedBy: List<String>.from(map['likedBy'] ?? []),
       likeCount: map['likeCount'] ?? 0,
+      isPaied: map['isPaied'] ?? false,
+
     );
   }
 
