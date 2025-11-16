@@ -7,11 +7,24 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_application_sajindongnae/models/request_model.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/request_detail.dart';
+import 'package:flutter_application_sajindongnae/screen/chat/chat_image_viewer.dart';
 import 'package:flutter_application_sajindongnae/services/image_service.dart';
+
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
+
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+
+import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
+import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';           // 권한
+
+
 
 // 더미 메시지 모델 (내가 임시로 만든것)
 class ChatMessage {
@@ -126,7 +139,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
         id: 'm3',
         senderId: otherUid,
         text: null,
-        image: XFile('assets/images/racon.jpg'),
+        image: XFile('assets/images/sellPhoto5.JPG'),
         createdAt: DateTime.now().subtract(const Duration(minutes: 2, seconds: 40)),
       ),
     ]);
@@ -277,15 +290,16 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   }
   
   // [말풍선] 위젯
-  Widget _buildBubble(ChatMessage msg, bool isMe) {
+  Widget _buildBubble(BuildContext context, ChatMessage msg, bool isMe) {
     return Container(
+      // 각 메세지 버블에 대한 마진과 패팅, 스타일 설정
       margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
       padding: const EdgeInsets.all(12.0),
       constraints: BoxConstraints(
         maxWidth: MediaQuery.of(context).size.width * 0.72,
       ),
       decoration: BoxDecoration(
-        color: isMe ? Colors.lightGreen[200] : Colors.grey[300],
+        color: isMe ? Colors.lightGreen[200] : Colors.grey[300], // 내 메세지는 초록, 상대방은 회색 
         borderRadius: BorderRadius.only(
           topLeft: const Radius.circular(12),
           topRight: const Radius.circular(12),
@@ -293,30 +307,58 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
           bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(12),
         ),
       ),
+
       child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+
+        // 텍스트 전송
         if (msg.hasText)
           Text(
             msg.text!,       // null 아님이 보장되는 경우만 !
             style: const TextStyle(fontSize: 15, color: Colors.black),
           ),
         if (msg.hasText && msg.hasImage) const SizedBox(height: 8),
+
+        // 이미지 전송
         if (msg.hasImage)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: msg.image!.path.startsWith('assets/')
-                ? Image.asset(
-                    msg.image!.path,
-                    width: 200,
-                    fit: BoxFit.cover,
-                  )
-                : Image.file(
-                    File(msg.image!.path),
-                    width: 200,
-                    fit: BoxFit.cover,
+          GestureDetector(
+            
+            onTap:(){ 
+              final isAsset = msg.image!.path.startsWith('assets/'); // 에셋 이미지인지 확인 (실제 firestore쓸거면 없어도 되는 부분)
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ChatImageViewer( // 새페이지로 이동 (코드 하단에 위젯 정의함)
+                    imagePath: msg.image!.path,    // msg에 정의된 이미지 경로 전달. msg.image는 XFile 타입
+                    isAsset: isAsset,              // 에셋 이미지 여부 전달 (true: 에셋 이미지는 image.asset, false: 파일이미지는 image.file로 구분하여 처리하기 위함 -> 둘이 경로가 다름)
+                    heroTag : 'chat_image_${msg.id}',
+                    photoOwnerNickname: _requesterNickname,
                   ),
+                ),
+              );
+            },
+            child: Hero( // 이미지 전환 애니메이션을 위한 Hero 위젯 (전체 화면으로 전환될 때 자연스럽게 보이도록)
+              tag: 'chat_image_${msg.id}', // Hero는 태그를 통해 두 이미지를 자연스럽게 연결함
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: msg.image!.path.startsWith('assets/')
+                    ? Image.asset(
+                        msg.image!.path,
+                        width: 200,
+                        fit: BoxFit.cover,
+                      )
+                    : Image.file(
+                        File(msg.image!.path),
+                        width: 200,
+                        fit: BoxFit.cover,
+                      ),
+              ),
+            ),
           ),
+        
+
+          
       ],
     ),
     );
@@ -555,6 +597,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
     );
   }
 
+
  // =========================================================================== 
  // UI 빌드
  // ===========================================================================
@@ -572,9 +615,10 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
           icon: Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.pop(context);
-          },
-        ),
+          }
+        ), 
       ),
+      
       body: Container(
         color: Colors.white, 
         child: Column(
@@ -745,8 +789,10 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
                             mainAxisAlignment:
                                 isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
                                 children: [
+                                    if(isMe) Text((msg.createdAt).toKoreanAMPM(), style: TextStyle(fontSize: 10, color: Colors.grey)),
                                     if(!isMe) _buildAvatar(isMe: false),
-                                    _buildBubble(msg, isMe),
+                                    _buildBubble(context, msg, isMe),
+                                    if(!isMe) Text((msg.createdAt).toKoreanAMPM(), style: TextStyle(fontSize: 10, color: Colors.grey)),
                                     // if (isMe) const SizedBox(width: 36),
                                 ],
                         )
@@ -803,5 +849,22 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
         ),
       ),
     );
+  }
+}
+
+
+
+extension KoreanTimeFormat on DateTime {
+  String toKoreanAMPM() {
+    final hour = this.hour;
+    final minute = this.minute.toString().padLeft(2, '0');
+
+    final isAM = hour < 12;
+    final period = isAM ? "오전" : "오후";
+
+    final hour12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    final hourStr = hour12.toString().padLeft(2, '0');
+
+    return "$period $hourStr:$minute";
   }
 }
