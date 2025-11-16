@@ -1,6 +1,6 @@
 import 'dart:developer' as dev;
 import 'dart:io';
-
+import 'dart:async'; 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +10,7 @@ import 'package:flutter_application_sajindongnae/screen/photo/request_detail.dar
 import 'package:flutter_application_sajindongnae/screen/chat/chat_image_viewer.dart';
 import 'package:flutter_application_sajindongnae/models/message_model.dart'; // [추가됨] Firestore Message 모델
 import 'package:flutter_application_sajindongnae/services/image_service.dart';
+import 'package:flutter_application_sajindongnae/services/request_service.dart'; 
 
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
@@ -56,6 +57,9 @@ class ChatDetailScreen extends StatefulWidget {
 }
 
 class _ChatDetailScreen extends State<ChatDetailScreen> {
+  final RequestService _requestService = RequestService(); // 함 추가 11/16
+  StreamSubscription<RequestModel?>? _requestSub;          // 함 추가 11/16
+
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -124,12 +128,23 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
     _chatRoomId = 'chat_${widget.request.requestId}';
 
     _ensureChatRoomExists();   // 채팅방 생성 확인 (가장 중요)
-    _loadRequest();  // 의뢰글 정보 로드
+    // _loadRequest();         // 실시간으로 바꾸며 제거 : 의뢰글 정보 로드
 
 
     // 현재 사용자와 상대방 UID
     final otherUid = _requesterUid;
     final me = _myUid ?? 'dummy_me';
+
+    // 의뢰글 실시간으로 가져옴
+    _requestSub = _requestService.watchRequest(_requestId).listen((req) {
+    if (req == null) return; // 삭제된 경우 등 방어
+    setState(() {
+          _originalRequest = req;
+          _requestTitle   = req.title;
+          _requestPrice   = req.price;
+          _requestStatement = req.status;  // 상태 필드
+        });
+      });
 
         
     // 두 사용자 프로필 미리 로드
@@ -166,16 +181,15 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
 */
 
     // Firestore 메시지 스트림 구독
-_db
-    .collection('chats')
-    .doc(_chatRoomId)
-    .collection('messages')
-    .orderBy('createdAt', descending: false)
-    .snapshots()
-    .listen((snapshot) {
-  setState(() {
-    _messages = snapshot.docs.map((d) => Message.fromDoc(d)).toList();
-  });
+      _db .collection('chats')
+          .doc(_chatRoomId)
+          .collection('messages')
+          .orderBy('createdAt', descending: false)
+          .snapshots()
+          .listen((snapshot) {
+        setState(() {
+          _messages = snapshot.docs.map((d) => Message.fromDoc(d)).toList();
+        });
 });
 
         
@@ -184,6 +198,7 @@ _db
 
   @override
   void dispose() {
+     _requestSub?.cancel(); 
     _scrollController.dispose();
     _messageController.dispose();
     super.dispose();
@@ -383,10 +398,10 @@ Future<void> _ensureChatRoomExists() async {
   }
   
   // [말풍선] 위젯
-/*
-  Widget _buildBubble(BuildContext context, ChatMessage msg, bool isMe) {
-*/
-  Widget _buildBubble(Message msg, bool isMe) {
+
+  Widget _buildBubble(BuildContext context, Message msg, bool isMe) {
+
+  //Widget _buildBubble(Message msg, bool isMe) {
 
     return Container(
       // 각 메세지 버블에 대한 마진과 패팅, 스타일 설정
@@ -406,68 +421,88 @@ Future<void> _ensureChatRoomExists() async {
       ),
 
       child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
 
-        // 텍스트 전송
-        if (msg.hasText)
-          Text(
-            msg.text!,       // null 아님이 보장되는 경우만 !
-            style: const TextStyle(fontSize: 15, color: Colors.black),
-          ),
-        if (msg.hasText && msg.hasImage) const SizedBox(height: 8),
-/*
-
-        // 이미지 전송
-        if (msg.hasImage)
-          GestureDetector(
-            
-            onTap:(){ 
-              final isAsset = msg.image!.path.startsWith('assets/'); // 에셋 이미지인지 확인 (실제 firestore쓸거면 없어도 되는 부분)
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ChatImageViewer( // 새페이지로 이동 (코드 하단에 위젯 정의함)
-                    imagePath: msg.image!.path,    // msg에 정의된 이미지 경로 전달. msg.image는 XFile 타입
-                    isAsset: isAsset,              // 에셋 이미지 여부 전달 (true: 에셋 이미지는 image.asset, false: 파일이미지는 image.file로 구분하여 처리하기 위함 -> 둘이 경로가 다름)
-                    heroTag : 'chat_image_${msg.id}',
-                    photoOwnerNickname: _requesterNickname,
-                  ),
-                ),
-              );
-            },
-            child: Hero( // 이미지 전환 애니메이션을 위한 Hero 위젯 (전체 화면으로 전환될 때 자연스럽게 보이도록)
-              tag: 'chat_image_${msg.id}', // Hero는 태그를 통해 두 이미지를 자연스럽게 연결함
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: msg.image!.path.startsWith('assets/')
-                    ? Image.asset(
-                        msg.image!.path,
-                        width: 200,
-                        fit: BoxFit.cover,
-                      )
-                    : Image.file(
-                        File(msg.image!.path),
-                        width: 200,
-                        fit: BoxFit.cover,
-                      ),
-              ),
-*/
-        if (msg.hasImage && msg.imageUrl != null && msg.imageUrl!.startsWith("http"))
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              msg.imageUrl!,
-              fit: BoxFit.cover,            
-              width: 200,
-
+          // 텍스트 전송
+          if (msg.hasText)
+            Text(
+              msg.text!,       // null 아님이 보장되는 경우만 !
+              style: const TextStyle(fontSize: 15, color: Colors.black),
             ),
-          ),
-        
+          if (msg.hasText && msg.hasImage) const SizedBox(height: 8),
 
-          
-      ],
-    ),
+          // 이미지 전송
+          if (msg.hasImage)
+            GestureDetector(
+              
+              onTap: () {
+                // 1) Firestore에 올라간 네트워크 이미지 (imageUrl)
+                if (msg.imageUrl != null && msg.imageUrl!.isNotEmpty) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChatImageViewer(
+                        imagePath: msg.imageUrl!,        // ✅ URL 그대로 넘김
+                        isAsset: false,                  // 네트워크니까 false
+                        heroTag: 'chat_image_${msg.id}',
+                        photoOwnerNickname: _requesterNickname,
+                      ),
+                    ),
+                  );
+                  return;
+                }
+                // 2) (옵션) 아직 로컬 XFile을 쓰는 경우 대비 -> 나중에 지워도 됨
+                if (msg.image != null) {
+                  final isAsset = msg.image!.path.startsWith('assets/');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChatImageViewer(
+                        imagePath: msg.image!.path,
+                        isAsset: isAsset,
+                        heroTag: 'chat_image_${msg.id}',
+                        photoOwnerNickname: _requesterNickname,
+                      ),
+                    ),
+                  );
+                }
+              },
+                
+              child: Hero(
+                tag: 'chat_image_${msg.id}',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: msg.imageUrl != null && msg.imageUrl!.startsWith('http')
+                      // 1) 네트워크 이미지
+                      ? Image.network(
+                          msg.imageUrl!,
+                          width: 200,
+                          fit: BoxFit.cover,
+                        )
+                      // 2) 에셋 이미지
+                      : (msg.image != null && msg.image!.path.startsWith('assets/'))
+                          ? Image.asset(
+                              msg.image!.path,
+                              width: 200,
+                              fit: BoxFit.cover,
+                            )
+                          // 3) 파일 이미지 (로컬 경로)
+                          : (msg.image != null)
+                              ? Image.file(
+                                  File(msg.image!.path),
+                                  width: 200,
+                                  fit: BoxFit.cover,
+                                )
+                              // 4) 혹시 둘 다 없으면 안전하게 빈 위젯
+                              : const SizedBox.shrink(),
+                ),
+              ),
+            ),
+
+            
+        ],
+      ),
     );
   }
 
@@ -794,14 +829,24 @@ Future<void> _ensureChatRoomExists() async {
                                         ],),
 
                                       // 메뉴 항목 선택시 처리
-                                      onSelected: (value) {
+                                      onSelected: (value) async {
                                         dev.log('의뢰 상태 변경: $value');
+                                        // 1) UI 변경
                                         setState(() {
                                           _requestStatement = value; // 바로 대입
-                                          // =========================================================
-                                          // TODO: 실제로는 Firestore의 request 문서도 변경해야 함
-                                          // =========================================================
                                         });
+
+                                        // 2) Firestore 업데이트
+                                        try {
+                                          await _requestService.updateRequest(
+                                            _requestId,
+                                            {'status': value},   // 바뀐 상태만 업데이트
+                                          );
+                                          dev.log('Firestore request 상태 업데이트 성공');
+                                        } catch (e) {
+                                          dev.log('request 상태 업데이트 실패: $e');
+                                          Fluttertoast.showToast(msg: "request 상태 변경 실패했습니다");
+                                        }
                                       },
                                       itemBuilder: (context) => const [
                                         PopupMenuItem(value: '의뢰중', child: Text('의뢰중')),
@@ -891,9 +936,9 @@ Future<void> _ensureChatRoomExists() async {
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         itemCount: docs.length,
                         itemBuilder: (context, index) {
-                            final msg = _messages[index];
-                            final isMe = msg.senderId == (_myUid ?? 'dummy_me');  // 메세지 송신자가 나인지 확인해서, 나라면 오른쪽에 메세지 칸? 생성
-
+                          final msg = Message.fromDoc(docs[index]);
+                          final isMe = msg.senderId == (_myUid ?? 'dummy_me');
+                          
                     return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
                         // 열 [프로필, 메세지]
