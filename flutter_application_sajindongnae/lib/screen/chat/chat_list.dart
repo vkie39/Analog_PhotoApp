@@ -11,7 +11,6 @@ import 'package:flutter_application_sajindongnae/component/chat_card.dart';
 
 // 채팅 상세 페이지
 import 'package:flutter_application_sajindongnae/screen/chat/chat_detail.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -46,7 +45,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: _db
             .collection('chats')
-            //.where('participants', arrayContains: currentUid)
             .orderBy('lastTimestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
@@ -58,7 +56,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
           // 데이터 없을 때
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             print('현재 로그인 UID: $currentUid');
-
             return const Center(child: Text('진행 중인 채팅이 없습니다.'));
           }
 
@@ -75,29 +72,31 @@ class _ChatListScreenState extends State<ChatListScreen> {
             itemBuilder: (context, index) {
               final room = chatRooms[index];
 
-              // ChatCard에 ChatRoom 직접 전달
               return ChatCard(
                 chatRoom: room,
-                onTap: () {
+
+                // 채팅방 클릭 시 처리
+                onTap: () async {
+                  final requestId = room.requestId;
+
+                  // 의뢰글 Firestore에서 불러오기
+                  final snap =
+                      await _db.collection('requests').doc(requestId).get();
+
+                  if (!snap.exists) {
+                    print("의뢰글이 존재하지 않습니다: $requestId");
+                    return;
+                  }
+
+                  // RequestModel로 변환
+                  final request = RequestModel.fromMap(snap.data()!, snap.id);
+
+                  // 채팅 상세 화면으로 이동
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => ChatDetailScreen(
-                        request: RequestModel(
-                          requestId: room.requestId,
-                          uid: room.lastSenderId,
-                          nickname: room.requesterNickname,
-                          title: room.lastMessage,
-                          profileImageUrl: room.requesterProfileImageUrl,
-                          dateTime: room.lastTimestamp,
-                          description: '',
-                          price: 0,
-                          isFree: true,         
-                          location: '',
-                          position: const LatLng(0, 0),
-                          bookmarkedBy: [],
-                          
-                        ),
+                        request: request, // 이제 정확한 RequestModel 전달
                       ),
                     ),
                   );
