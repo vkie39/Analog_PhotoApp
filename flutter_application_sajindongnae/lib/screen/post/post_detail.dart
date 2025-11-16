@@ -9,7 +9,6 @@ import 'package:flutter_application_sajindongnae/component/comment_list.dart';
 import 'package:flutter_application_sajindongnae/models/comment_model.dart';
 import 'package:flutter_application_sajindongnae/services/comment_service.dart';
 import 'package:flutter_application_sajindongnae/services/post_service.dart';
-import 'dart:developer';
 import 'dart:developer' as dev;
 
 enum MoreAction { report, edit, delete }
@@ -48,27 +47,65 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   }
 
   // ✅ HEAD 브랜치에서 개선된 likedBy 기반 좋아요 토글 로직 반영
-  void _toggleLike(PostModel post) async {
+  void _toggleLike(BuildContext ctx, PostModel post) async {
+
+    // ---------------------------------------------------------------------------------
+    //
+    // 함경민이 11-16일에 수정한 부분
+    //
+    // : 좋아요 클릭 이벤트에 대한 UI를 즉시 반영하기 위해
+    // : UI 업데이트를 위한 setState를 비동기 작업과 분리하여, 비동기 작업 이전에 실행되도록 함
+    // : 11-15일 확인했을 때 좋아요에 대한 firestore 권한 문제? 같은게 있었는데
+    // : firestore에서 에러나면 그 이후 UI업데이트 로직도 실행이 안되는 문제가 있었음
+    // : 그래서 UI를 먼저하고, firestore작업을 다음에 하도록 함
+    // : 아직 권한 문제가 완전히 해결된 건 아니라 이전 페이지 갔다가 다시 오면 좋아요 반영이 안됨
+    // 
+    // ----------------------------------------------------------------------------------
+    
     try {
-      await PostService.toggleLike(post.postId);
 
       final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) return;
-
+      if (uid == null) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          const SnackBar(
+            content: Text('로그인 후 이용해주세요.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        dev.log('로그인 않은 사용자의 좋아요 시도: $uid');
+        return;
+      }
+      dev.log('로그인 사용자의 좋아요 시도: $uid');
+      
+      // UI 즉시 반영(디자인만) -> 실제 데이터는 아래의 비동기 작업 PostService.toggleLike이후에 반영됨 (파이어베이스에서 작업 오류나면 반영 안됨)
       setState(() {
-        if (post.likedBy.contains(uid)) {
-          post.likedBy.remove(uid);
+        if (isLiked) {
           likeCount -= 1;
           isLiked = false;
         } else {
-          post.likedBy.add(uid);
           likeCount += 1;
           isLiked = true;
         }
       });
+
+      await PostService.toggleLike(post.postId);
+      if (post.likedBy.contains(uid)) {
+          post.likedBy.remove(uid);
+        } else {
+          post.likedBy.add(uid);
+        }
+
     } catch (e) {
-      log('좋아요 토글 실패: $e');
+      dev.log('좋아요 토글 실패: $e');
     }
+
+    // ---------------------------------------------------------------------------------
+    //
+    // 함경민이 11-16일에 수정한 부분 !!!!!!!!!!! 여기까지 !!!!!!!!!!!!!!!
+    // 
+    // ----------------------------------------------------------------------------------
+
+
   }
 
   // 댓글 등록
@@ -225,103 +262,107 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
 
             ),
-            body: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-              children: [
-                Row(
+            body: Builder(
+              builder: (innerContext){
+                return ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                   children: [
-                    CircleAvatar(
-                      backgroundImage: NetworkImage(post.profileImageUrl),
-                      radius: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Row(
                       children: [
-                        Text(post.nickname,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 14)),
-                        Text(_getFormattedTime(post.timestamp),
-                            style: const TextStyle(
-                                color: Colors.grey, fontSize: 12)),
+                        CircleAvatar(
+                          backgroundImage: NetworkImage(post.profileImageUrl),
+                          radius: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(post.nickname,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 14)),
+                            Text(_getFormattedTime(post.timestamp),
+                                style: const TextStyle(
+                                    color: Colors.grey, fontSize: 12)),
+                          ],
+                        ),
                       ],
                     ),
-                  ],
-                ),
-                const Divider(
-                    height: 32,
-                    thickness: 0.5,
-                    color: Color.fromARGB(255, 180, 180, 180)),
-                const SizedBox(height: 10),
-                Text(post.title,
-                    style: const TextStyle(
-                        fontSize: 22, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                Text(post.content,
-                    style: const TextStyle(fontSize: 15)),
-                if (post.imageUrl != null) ...[
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.network(
-                      post.imageUrl!,
-                      fit: BoxFit.fitWidth,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(
-                            child: CircularProgressIndicator());
-                      },
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        height: 200,
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: Icon(Icons.broken_image,
-                              color: Colors.grey, size: 40),
+                    const Divider(
+                        height: 32,
+                        thickness: 0.5,
+                        color: Color.fromARGB(255, 180, 180, 180)),
+                    const SizedBox(height: 10),
+                    Text(post.title,
+                        style: const TextStyle(
+                            fontSize: 22, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    Text(post.content,
+                        style: const TextStyle(fontSize: 15)),
+                    if (post.imageUrl != null) ...[
+                      const SizedBox(height: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(
+                          post.imageUrl!,
+                          fit: BoxFit.fitWidth,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(
+                                child: CircularProgressIndicator());
+                          },
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            height: 200,
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: Icon(Icons.broken_image,
+                                  color: Colors.grey, size: 40),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                const Divider(
-                    height: 32,
-                    thickness: 0.5,
-                    color: Color.fromARGB(255, 180, 180, 180)),
-                Row(
-                  children: [
-                    InkWell(
-                      onTap: () => _toggleLike(post),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isLiked
-                                ? Icons.favorite
-                                : Icons.favorite_border,
-                            size: 30,
-                            color: isLiked
-                                ? const Color.fromARGB(255, 102, 204, 105)
-                                : const Color.fromARGB(255, 161, 161, 161),
+                    ],
+                    const SizedBox(height: 16),
+                    const Divider(
+                        height: 32,
+                        thickness: 0.5,
+                        color: Color.fromARGB(255, 180, 180, 180)),
+                    Row(
+                      children: [
+                        InkWell(
+                          onTap: () => _toggleLike(innerContext, post),
+                          child: Row(
+                            children: [
+                              Icon(
+                                isLiked
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                size: 30,
+                                color: isLiked
+                                    ? const Color.fromARGB(255, 102, 204, 105)
+                                    : const Color.fromARGB(255, 161, 161, 161),
+                              ),
+                              const SizedBox(width: 6),
+                              Text('$likeCount',
+                                  style: const TextStyle(
+                                      color: Color.fromARGB(255, 161, 161, 161))),
+                            ],
                           ),
-                          const SizedBox(width: 6),
-                          Text('$likeCount',
-                              style: const TextStyle(
-                                  color: Color.fromARGB(255, 161, 161, 161))),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 80),
+                        const Icon(Icons.comment,
+                            size: 30,
+                            color: Color.fromARGB(255, 191, 191, 191)),
+                        const SizedBox(width: 6),
+                        Text('${post.commentCount}',
+                            style: const TextStyle(
+                                color: Color.fromARGB(255, 161, 161, 161))),
+                      ],
                     ),
-                    const SizedBox(width: 80),
-                    const Icon(Icons.comment,
-                        size: 30,
-                        color: Color.fromARGB(255, 191, 191, 191)),
-                    const SizedBox(width: 6),
-                    Text('${post.commentCount}',
-                        style: const TextStyle(
-                            color: Color.fromARGB(255, 161, 161, 161))),
+                    const SizedBox(height: 18),
+                    CommentList(postId: post.postId),
                   ],
-                ),
-                const SizedBox(height: 18),
-                CommentList(postId: post.postId),
-              ],
+                );
+              },
             ),
             bottomNavigationBar: Container(
               color: Colors.white,
