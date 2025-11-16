@@ -147,8 +147,8 @@ class _AccountManageTab extends StatelessWidget {
                   return _AdminCard(
                     title: nickname,
                     subtitle: email.isNotEmpty
-                        ? '$email\n(uid: $uid)'
-                        : 'uid: $uid',
+                        ? email
+                        : '정보 없음',
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -191,36 +191,85 @@ class _AccountManageTab extends StatelessWidget {
 class _PostManageTab extends StatelessWidget {
   const _PostManageTab();
 
+  Stream<QuerySnapshot<Map<String, dynamic>>> _postStream() {
+    return FirebaseFirestore.instance
+        .collection('posts')
+        .orderBy('createdAt', descending: true) // 최신 글 먼저
+        .snapshots();
+  }
+
   @override
   Widget build(BuildContext context) {
+    // TODO: 실제 로그인된 유저 정보 가져오기
+    final currentUserId = '로그인된 uid'; // 예: FirebaseAuth.instance.currentUser!.uid
+    final isAdmin = true; // 실제 관리자인지 확인하는 로직 필요
+
     return Column(
       children: [
         const _SearchBar(hintText: '제목, 닉네임, 태그로 검색'),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount: 10, // TODO: 실제 게시글 데이터 개수로 변경
-            itemBuilder: (context, index) {
-              return _AdminCard(
-                title: '사진 게시글 제목 $index',
-                subtitle: '작성자: user_$index · 신고  ${index % 3}건',
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.visibility_outlined, size: 20),
-                      onPressed: () {
-                        // TODO: 게시글 상세보기
-                      },
+          child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: _postStream(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text('게시글을 불러오는 중 오류가 발생했어요'),
+                );
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(child: Text('등록된 게시글이 없습니다.'));
+              }
+
+              final docs = snapshot.data!.docs;
+
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: docs.length,
+                itemBuilder: (context, index) {
+                  final doc = docs[index];
+                  final data = doc.data();
+
+                  final title = data['title'] ?? '제목 없음';
+                  final author = data['authorNickname'] ?? '작성자 없음';
+                  final authorId = data['authorId'] ?? '';
+                  final reportCount = data['reportCount'] ?? 0;
+
+                  // 삭제 권한 판단
+                  final bool canDelete = isAdmin || (currentUserId == authorId);
+
+                  return _AdminCard(
+                    title: title,
+                    subtitle: '작성자: $author · 신고 $reportCount건',
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.visibility_outlined, size: 20),
+                          onPressed: () {
+                            // TODO: 게시글 상세보기
+                          },
+                        ),
+                        if (canDelete)
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 20),
+                            onPressed: () async {
+                              try {
+                                await FirebaseFirestore.instance
+                                    .collection('posts')
+                                    .doc(doc.id)
+                                    .delete();
+                              } catch (e) {
+                                debugPrint('게시글 삭제 실패: $e');
+                              }
+                            },
+                          ),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 20),
-                      onPressed: () {
-                        // TODO: 게시글 삭제
-                      },
-                    ),
-                  ],
-                ),
+                  );
+                },
               );
             },
           ),
@@ -229,6 +278,8 @@ class _PostManageTab extends StatelessWidget {
     );
   }
 }
+
+
 
 class _QnaManageTab extends StatelessWidget {
   const _QnaManageTab();

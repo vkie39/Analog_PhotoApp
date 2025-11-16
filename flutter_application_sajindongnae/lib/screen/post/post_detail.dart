@@ -9,6 +9,7 @@ import 'package:flutter_application_sajindongnae/component/comment_list.dart';
 import 'package:flutter_application_sajindongnae/models/comment_model.dart';
 import 'package:flutter_application_sajindongnae/services/comment_service.dart';
 import 'package:flutter_application_sajindongnae/services/post_service.dart';
+import 'package:flutter_application_sajindongnae/screen/post/report.dart';
 import 'dart:developer';
 import 'dart:developer' as dev;
 
@@ -153,8 +154,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   onSelected: (MoreAction action) async {
                     switch (action) {
                       case MoreAction.report:
-                        dev.log('신고하기 선택됨');
-                        // 신고하기 로직 추가
+                        // 신고하기 화면으로 이동
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => ReportPostScreen(postId: post.postId),
+                          ),
+                        );
                         break;
                       case MoreAction.edit:
                         dev.log('수정하기 선택됨');
