@@ -251,6 +251,31 @@ class ImageService {
     }
   }
 
+  /// 채팅 이미지 전용 업로드 함수
+/// 선택한 XFile을 Firebase Storage에 업로드하고 다운로드 URL 반환
+Future<String> uploadChatImage(XFile imageFile, String chatRoomId) async {
+  try {
+    // 스토리지 경로: chats/{chatRoomId}/{timestamp}.jpg
+    final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
+    final ref = FirebaseStorage.instance
+        .ref()
+        .child("chats")
+        .child(chatRoomId)
+        .child(fileName);
+
+    // 이미지 바이트 업로드
+    await ref.putData(await imageFile.readAsBytes(),
+        SettableMetadata(contentType: "image/jpeg"));
+
+    // 다운로드 URL 반환
+    return await ref.getDownloadURL();
+  } catch (e) {
+    debugPrint("채팅 이미지 업로드 실패: $e");
+    rethrow;
+  }
+}
+
+
 
 
   // 압축
@@ -420,3 +445,4 @@ Future<bool> _showGoToSettingsDialog(
 void _toast(BuildContext context, String msg) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 }
+

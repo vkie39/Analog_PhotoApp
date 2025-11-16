@@ -15,6 +15,7 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
 
+
 class ChatDetailScreen extends StatefulWidget {
   final RequestModel request; // 이전 화면에서 넘겨받음
   const ChatDetailScreen({super.key, required this.request});
@@ -32,11 +33,16 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
 
   // Firestore 인스턴스 [추가됨]
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  // Firestore 실시간 메시지 목록
+  List<Message> _messages = [];
+
 
   // 대화 상대방의 프로필을 표시하기 위한 변수
   String? _myProfileUrl;
   String? _otherProfileUrl;
   bool _isLoadingProfiles = true;
+  late RequestModel _originalRequest;
+
 
   // 채팅방 정보 [추가됨]
   late final String _chatRoomId;
@@ -72,22 +78,41 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   void initState() {
     super.initState();
 
+    _originalRequest = widget.request;
     _imageService = ImageService();
 
-    _requestId = widget.request.requestId;
-    _requesterUid = widget.request.uid;
-    _requesterNickname = widget.request.nickname;
-    _requestTitle = widget.request.title;
-    _requestPrice = widget.request.price;
+    _requestId = _originalRequest.requestId;
+    _requesterUid = _originalRequest.uid;
+    _requesterNickname = _originalRequest.nickname;
+    _requestTitle = _originalRequest.title;
+    _requestPrice = _originalRequest.price;
+
     
 
-    // [추가됨] 채팅방 ID 생성 규칙 (두 UID 정렬 후 연결)
-    final sortedIds = [_myUid ?? 'unknown', _requesterUid]..sort();
-    _chatRoomId = sortedIds.join('_');
+    // [수정됨] 채팅방 ID 생성 규칙 (requestId로 고정)
+    _chatRoomId = 'chat_${widget.request.requestId}';
+
+    _ensureChatRoomExists();   // 채팅방 생성 확인 (가장 중요)
+    _loadRequest();  // 의뢰글 정보 로드
+
 
     // 현재 사용자와 상대방 UID
     final otherUid = _requesterUid;
     final me = _myUid ?? 'dummy_me';
+
+    // Firestore 메시지 스트림 구독
+_db
+    .collection('chats')
+    .doc(_chatRoomId)
+    .collection('messages')
+    .orderBy('createdAt', descending: false)
+    .snapshots()
+    .listen((snapshot) {
+  setState(() {
+    _messages = snapshot.docs.map((d) => Message.fromDoc(d)).toList();
+  });
+});
+
         
     
   }
@@ -98,6 +123,27 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
     _messageController.dispose();
     super.dispose();
   }
+
+  Future<void> _loadRequest() async {
+  final snap = await FirebaseFirestore.instance
+      .collection('requests')
+      .doc(_requestId)
+      .get();
+
+  if (!snap.exists) return;
+
+  final data = snap.data()!;
+  final req = RequestModel.fromMap(data, snap.id);
+
+  setState(() {
+    _originalRequest = req;
+    _requestTitle = req.title;
+    _requestPrice = req.price;
+    _requestStatement = req.status;   // 혹시 상태 표시할 경우
+  });
+}
+
+
 
   Future<void> _loadProfiles() async {
     try {
@@ -136,21 +182,24 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   }
 
 
-  void _openRequestDetail(){
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => RequestDetailScreen(request: widget.request),
-      ),
-    );
-  }
+  void _openRequestDetail() {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => RequestDetailScreen(request: widget.request),
+    ),
+  );
+}
+
 
   // 메시지 전송 함수 [수정됨 → Firestore write로 변경]
   Future<void> _sendMessage() async {
+    
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
-    final senderId = _myUid ?? 'unknown';
+    await _ensureChatRoomExists();   // 없으면 만들어놓고 메세지 전송
 
+    final senderId = _myUid ?? 'unknown';
     final messageData = {
       'senderId': senderId,
       'text': text,
@@ -167,6 +216,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
 
       // 채팅방의 최근 메시지 갱신
       await _db.collection('chats').doc(_chatRoomId).update({
+        'participants': [_myUid, _requesterUid],
         'lastMessage': text,
         'lastSenderId': senderId,
         'lastTimestamp': FieldValue.serverTimestamp(),
@@ -190,22 +240,54 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   }
 
 
-  // 선택된 이미지를 바로 채팅으로 추가하는 함수
-  void _appendImageMessage(XFile picked) {
-    final me = _myUid ?? 'dummy_me';
-    setState(() {
-      _messages.add(
-        ChatMessage(
-          id: 'local-img-${DateTime.now().millisecondsSinceEpoch}',
-          senderId: me,
-          text: null,
-          image: picked,
-          createdAt: DateTime.now(),
-        ),
-      );
+  void _appendImageMessage(XFile picked) async {
+  final senderId = _myUid ?? 'unknown';
+  await _ensureChatRoomExists();   // 없으면 만들어놓고 메세지 전송
+
+  try {
+    // 1) Firebase Storage 업로드
+    final imageUrl = await _imageService.uploadChatImage(picked, _chatRoomId);
+
+    // 2) Firestore에 메시지 저장
+    await _db
+        .collection('chats')
+        .doc(_chatRoomId)
+        .collection('messages')
+        .add({
+      'senderId': senderId,
+      'text': null,
+      'imageUrl': imageUrl,
+      'createdAt': FieldValue.serverTimestamp(),
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+
+    // 3) 채팅방 마지막 메시지 갱신
+    await _db.collection('chats').doc(_chatRoomId).update({
+      'lastMessage': '(이미지)',
+      'lastSenderId': senderId,
+      'lastTimestamp': FieldValue.serverTimestamp(),
+    });
+  } catch (e) {
+    debugPrint('이미지 메시지 전송 오류: $e');
   }
+}
+
+// 채팅방이 없으면 생성하는 함수
+Future<void> _ensureChatRoomExists() async {
+  final docRef = _db.collection('chats').doc(_chatRoomId);
+  final snapshot = await docRef.get();
+
+  if (!snapshot.exists) {
+    await docRef.set({
+      'participants': [_myUid, _requesterUid],
+      'createdAt': FieldValue.serverTimestamp(),
+      'lastMessage': '',
+      'lastSenderId': '',
+      'lastTimestamp': FieldValue.serverTimestamp(),
+    });
+  }
+}
+
+
 
 
 
@@ -236,7 +318,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   }
   
   // [말풍선] 위젯
-  Widget _buildBubble(ChatMessage msg, bool isMe) {
+  Widget _buildBubble(Message msg, bool isMe) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
       padding: const EdgeInsets.all(12.0),
@@ -261,20 +343,14 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
             style: const TextStyle(fontSize: 15, color: Colors.black),
           ),
         if (msg.hasText && msg.hasImage) const SizedBox(height: 8),
-        if (msg.hasImage)
+        if (msg.hasImage && msg.imageUrl != null && msg.imageUrl!.startsWith("http"))
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: msg.image!.path.startsWith('assets/')
-                ? Image.asset(
-                    msg.image!.path,
-                    width: 200,
-                    fit: BoxFit.cover,
-                  )
-                : Image.file(
-                    File(msg.image!.path),
-                    width: 200,
-                    fit: BoxFit.cover,
-                  ),
+            child: Image.network(
+              msg.imageUrl!,
+              fit: BoxFit.cover,            
+              width: 200,
+            ),
           ),
       ],
     ),
@@ -680,35 +756,39 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
                 ],
               ), 
             ),
-            
 
             Expanded(
               child: GestureDetector(
-                onTap: () => _togglePanel(false), // 채팅 영역 탭하면 패널 닫기
-                child: _isLoadingProfiles
-                    ? const Center(child: CircularProgressIndicator())
-                    : ListView.builder(
+                onTap: () => _togglePanel(false),
+                child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: _messageStream(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                      }
+                      
+                      final docs = snapshot.data!.docs;
+                      return ListView.builder(
                         controller: _scrollController,
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: _messages.length,
+                        itemCount: docs.length,
                         itemBuilder: (context, index) {
-                            final msg = _messages[index];
-                            final isMe = msg.senderId == (_myUid ?? 'dummy_me');  // 메세지 송신자가 나인지 확인해서, 나라면 오른쪽에 메세지 칸? 생성
-
-                    return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
-                        // 열 [프로필, 메세지]
-                        child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            mainAxisAlignment:
-                                isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                                children: [
-                                    if(!isMe) _buildAvatar(isMe: false),
-                                    _buildBubble(msg, isMe),
-                                    // if (isMe) const SizedBox(width: 36),
+                          final msg = Message.fromDoc(docs[index]);
+                          final isMe = msg.senderId == (_myUid ?? 'dummy_me');
+                          
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              mainAxisAlignment:
+                              isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                              children: [
+                                if (!isMe) _buildAvatar(isMe: false),
+                                _buildBubble(msg, isMe),
                                 ],
-                        )
-                      
+                            ),
+                         );
+                      },
                     );
                   },
                 ),

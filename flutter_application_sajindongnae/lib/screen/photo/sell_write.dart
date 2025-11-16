@@ -256,7 +256,7 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
           nickname: user.displayName ?? '사용자',               // 닉네임
           profileImageUrl: user.photoURL ?? '',                // 프로필 이미지
           tags: tags,                                          // 선택된 태그들                      
-          position: _selectedPosition!,
+          position: pos!,
           location: location,
         );
 
