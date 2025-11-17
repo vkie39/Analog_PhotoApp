@@ -17,6 +17,7 @@ class PhotoTradeModel {
   final String category; // 사진 카테고리
   final String location; // 사진 촬영 장소
   final LatLng? position;
+  final int reportCount; // 신고 횟수
 
   // -------------------------
   // 좋아요 기능 관련 필드 추가
@@ -43,7 +44,7 @@ class PhotoTradeModel {
     required this.category,
     required this.location,
     this.position,
-
+    this.reportCount = 0,
     // -------------------------
     // [추가] 좋아요 기본값 설정 (nullable 제거)
     // null-safe 처리를 위해 기본값을 [] / 0으로 설정
@@ -94,6 +95,7 @@ class PhotoTradeModel {
       // -------------------------
       likedBy: List<String>.from(data['likedBy'] ?? []),
       likeCount: data['likeCount'] ?? 0,
+      reportCount: data['reportCount'] ?? 0,
     );
   }
 
@@ -122,6 +124,7 @@ class PhotoTradeModel {
       'location': location,
       if (position != null)
         'position': GeoPoint(position!.latitude, position!.longitude),
+      'reportCount': reportCount,
     };
   }
 }
