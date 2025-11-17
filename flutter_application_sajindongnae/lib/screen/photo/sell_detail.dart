@@ -65,6 +65,159 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
     );
   }
 
+
+  Future<void> _handlePurchase(PhotoTradeModel photo) async {
+    final buyer = FirebaseAuth.instance.currentUser; // 현재 로그인 = 구매자
+    if (buyer == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('로그인이 필요합니다.')),
+      );
+      return;
+    }
+
+    // ── 가격 파싱 ──────────────────────────────────────────────
+    final int price;
+    if (photo.price is int) {
+      price = photo.price as int;
+    } else if (photo.price is num) {
+      price = (photo.price as num).toInt();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('잘못된 가격 정보입니다.')),
+      );
+      return;
+    }
+
+    if (photo.id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('잘못된 판매글입니다.')),
+      );
+      return;
+    }
+
+    // ── UID 설정 ───────────────────────────────────────────────
+    final String buyerUid  = buyer.uid;   // 구매자 uid
+    final String sellerUid = photo.uid;   // 판매자 uid (판매글 작성자)
+
+    // 본인 사진은 구매 못하게
+    if (buyerUid == sellerUid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('자신의 사진은 구매할 수 없습니다.')),
+      );
+      return;
+    }
+
+    // ── Firestore 참조 ─────────────────────────────────────────
+    final buyerRef =
+    FirebaseFirestore.instance.collection('users').doc(buyerUid);
+    final sellerRef =
+    FirebaseFirestore.instance.collection('users').doc(sellerUid);
+    final tradeRef =
+    FirebaseFirestore.instance.collection('photo_trades').doc(photo.id);
+
+    try {
+      await FirebaseFirestore.instance.runTransaction((tx) async {
+        // 1) 구매자 포인트 조회
+        final buyerSnap = await tx.get(buyerRef);
+        if (!buyerSnap.exists) {
+          throw Exception('NO_BUYER_DOC');
+        }
+
+        final buyerData = buyerSnap.data() as Map<String, dynamic>;
+        final buyerPoint =
+            (buyerData['point'] as Map<String, dynamic>?) ?? <String, dynamic>{};
+        final dynamic buyerRawBalance = buyerPoint['balance'];
+
+        int buyerBalance;
+        if (buyerRawBalance is int) {
+          buyerBalance = buyerRawBalance;
+        } else if (buyerRawBalance is num) {
+          buyerBalance = buyerRawBalance.toInt();
+        } else {
+          buyerBalance = 0;
+        }
+
+        if (buyerBalance < price) {
+          // 잔액 부족
+          throw Exception('INSUFFICIENT_POINT');
+        }
+
+        // 2) 판매자 포인트 조회 (문서/point 없으면 0으로 시작)
+        final sellerSnap = await tx.get(sellerRef);
+        Map<String, dynamic> sellerData = {};
+        Map<String, dynamic> sellerPoint = {};
+        int sellerBalance = 0;
+
+        if (sellerSnap.exists) {
+          sellerData = sellerSnap.data() as Map<String, dynamic>;
+          sellerPoint =
+              (sellerData['point'] as Map<String, dynamic>?) ?? <String, dynamic>{};
+          final dynamic sellerRawBalance = sellerPoint['balance'];
+          if (sellerRawBalance is int) {
+            sellerBalance = sellerRawBalance;
+          } else if (sellerRawBalance is num) {
+            sellerBalance = sellerRawBalance.toInt();
+          }
+        } else {
+          // 판매자 문서가 아예 없으면 uid 정도는 기본으로 넣어줌
+          sellerData = {'uid': sellerUid};
+        }
+
+        final int newBuyerBalance  = buyerBalance - price;
+        final int newSellerBalance = sellerBalance + price;
+
+        // 3) 구매자 포인트 차감
+        tx.update(buyerRef, {
+          'point': {
+            ...buyerPoint,
+            'balance': newBuyerBalance,
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+        });
+
+        // 4) 판매자 포인트 적립 (set + merge 로 문서 없어도 생성)
+        tx.set(
+          sellerRef,
+          {
+            ...sellerData,
+            'point': {
+              ...sellerPoint,
+              'balance': newSellerBalance,
+              'updatedAt': FieldValue.serverTimestamp(),
+            },
+          },
+          SetOptions(merge: true),
+        );
+
+        // 5) 거래 정보 업데이트 (구매 완료 처리)
+        tx.update(tradeRef, {
+          'buyerUid': buyerUid,
+          'sellerUid': sellerUid,
+          'status': 'completed',  // 프로젝트에서 쓰는 상태값에 맞게 조정 가능
+          'purchasedAt': FieldValue.serverTimestamp(),
+        });
+      });
+
+      // 트랜잭션 성공
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('구매가 완료되었습니다.')),
+      );
+    } catch (e) {
+      final msg = e.toString();
+      if (msg.contains('INSUFFICIENT_POINT')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('포인트가 부족합니다. 충전 후 다시 시도해주세요.')),
+        );
+      } else {
+        dev.log('구매 처리 중 오류: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('구매 처리 중 오류가 발생했습니다.')),
+        );
+      }
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final sellDocId = photo.id ?? '';
@@ -366,9 +519,9 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
 
       // 구매 버튼
       ElevatedButton(
-        onPressed: () {
+        onPressed: () async {
           dev.log('구매하기 버튼 클릭됨');
-          // TODO : 구매 기능
+          await _handlePurchase(photo);
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFDDECC7), // HEAD 색상 유지
