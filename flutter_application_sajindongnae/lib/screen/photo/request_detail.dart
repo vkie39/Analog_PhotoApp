@@ -393,12 +393,22 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                   onPressed: () async {
                     dev.log('수락하기 버튼 클릭됨');
 
-                    // 로그인 사용자 확인
                     final currentUid = FirebaseAuth.instance.currentUser?.uid;
+                    // 로그인 사용자 확인
                     if (currentUid == null) {
                       dev.log('로그인이 필요합니다.');
                       return;
                     }
+                    //본인 의뢰 수락 금지
+                    if (isOwner) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('본인 의뢰는 수락할 수 없습니다.'),
+                          ),
+                          );
+                          return; // ← 더 이상 아래 로직 실행 안 됨
+                        }
+
 
                     // Firestore 및 채팅방 생성 로직
                     final db = FirebaseFirestore.instance;

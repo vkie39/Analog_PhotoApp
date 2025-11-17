@@ -494,4 +494,3 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
     );
   }
 }
-  

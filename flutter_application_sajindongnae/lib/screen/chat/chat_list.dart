@@ -29,7 +29,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUid = _auth.currentUser?.uid;
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -49,6 +49,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: _db
             .collection('chats')
+            .where('participants', arrayContains: currentUid)
             .orderBy('lastTimestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
