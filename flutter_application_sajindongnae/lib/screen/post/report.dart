@@ -97,6 +97,7 @@ class _ReportPostScreenState extends State<ReportPostScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                 ),
                 onPressed: () async {
+                  // 기본 검증
                   if (selectedReason == null ||
                       (selectedReason == '기타 내용' &&
                           otherController.text.isEmpty)) {
@@ -118,6 +119,20 @@ class _ReportPostScreenState extends State<ReportPostScreen> {
                       selectedReason == '기타 내용'
                           ? otherController.text
                           : selectedReason!;
+
+                  // ⭐ NEW: 이미 신고한 적이 있는지 먼저 체크
+                  // 이유: 신고 중복 방지 + reportCount 중복 증가 방지
+                  final alreadyReported = await ReportService()
+                      .hasReported(widget.postId, uid);
+
+                  if (alreadyReported) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('이미 신고한 게시글입니다.')),
+                    );
+                    return; // 더 진행 금지
+                  }
+                  // ⭐ NEW 끝
 
                   try {
                     await ReportService().submitReport(
@@ -141,7 +156,9 @@ class _ReportPostScreenState extends State<ReportPostScreen> {
                 },
                 child: const Text(
                   '신고하기',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
             ),
