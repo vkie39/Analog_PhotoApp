@@ -60,7 +60,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (rawId == 'admin123' && pw == 'admin123') {
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/admin');
-      return;  // ⛔ 여기서 바로 종료 → 아래 Firestore/FirebaseAuth 안 타게
+      return;  // 여기서 바로 종료 → 아래 Firestore/FirebaseAuth 안 타게
+               // 근데 firebase에 추가했음. 권한 부여때문에 수정.
     }
 
     setState(() => isLoading = true);
@@ -81,10 +82,23 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         return;
       }
+      final doc = qs.docs.first;
+      final data = doc.data();
 
-      final data = qs.docs.first.data();
+      //관리자한테 제한당한 계정인지 확인 (normal / banned)
+      final status = (data['status'] as String?) ?? 'normal';
+      if (status == 'banned') {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('해당 계정은 관리자에 의해 이용이 제한되었습니다.'),
+          ),
+        ); //firebase에서 로그인 자체를 막음
+        return;
+      }
+
       final email = (data['email'] as String?)?.trim();
-      if (email == null || email.isEmpty) {
+      if (email == null || email.isEmpty){
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('이 아이디에 연결된 이메일이 없습니다.')),

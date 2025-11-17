@@ -1,5 +1,6 @@
 import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
+import 'package:flutter_application_sajindongnae/screen/post/report.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_application_sajindongnae/models/photo_trade_model.dart';
@@ -284,9 +285,17 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                 onSelected: (MoreAction action) async {
                   switch (action) {
                     case MoreAction.report:
-                      dev.log('신고하기 선택됨');
-                      // 신고하기 로직 추가
-                      break;
+                    dev.log('신고하기 선택됨');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ReportPostScreen(
+                          postId: photo.id!,
+                          postType: 'photo_trades',   // sales (sells 아님)
+                          ),
+                          ),
+                          );
+                          break;
                     case MoreAction.edit:
                       dev.log('수정하기 선택됨');
                       // 수정하기 로직 추가

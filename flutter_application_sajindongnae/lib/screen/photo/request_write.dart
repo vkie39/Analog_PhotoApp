@@ -2,7 +2,7 @@ import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
 import 'dart:developer' as dev;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:firebase_auth/firebase_auth.dart'; 
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/request_service.dart';
 import '../../models/request_model.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/location_select.dart';
@@ -23,10 +23,10 @@ class RequestWriteScreen extends StatefulWidget {
   State<RequestWriteScreen> createState() => RequestWriteScreenScreenState();
 }
 
-class RequestWriteScreenScreenState extends State<RequestWriteScreen> with SingleTickerProviderStateMixin {                
-  
+class RequestWriteScreenScreenState extends State<RequestWriteScreen> with SingleTickerProviderStateMixin {
+
   // 입력칸 컨트롤러
-  final TextEditingController requestTitleController = TextEditingController();  
+  final TextEditingController requestTitleController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController locationController = TextEditingController();
@@ -63,24 +63,24 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
 
 
   // 위치 선택 화면으로 이동하고 선택된 위치를 받아오는 함수
-  Future<void> _openLocationSelector(BuildContext context) async {   
-    final result = await Navigator.push<LocationPickResult>(      
-      context,  
+  Future<void> _openLocationSelector(BuildContext context) async {
+    final result = await Navigator.push<LocationPickResult>(
+      context,
       MaterialPageRoute(
-        builder: (context) => LocationSelectScreen(
-          initialPosition: pickedPos, 
-          initialAddress: locationController.text.isEmpty
-                          ? locationController.text : null,
-        )
-      ), 
+          builder: (context) => LocationSelectScreen(
+            initialPosition: pickedPos,
+            initialAddress: locationController.text.isEmpty
+                ? locationController.text : null,
+          )
+      ),
     );
 
     // LocationSelectScreen 선택된 위치를 받아와서 상태 업데이트
-    if (result != null) {                  
+    if (result != null) {
       setState(() {
         locationController.text = result.address;        // 선택된 상태 업데이트
         pickedPos = result.position;
-        
+
         circles = {
           Circle(
             circleId: CircleId('miniCircle'),
@@ -105,7 +105,7 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
     if (value == null || value.trim().isEmpty) {
       return '$fieldName을(를) 입력하세요';
     }
-    return null; 
+    return null;
   }
 
   // 유효성 검사 함수 (숫자)
@@ -117,7 +117,7 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
     if (parsedValue == null || parsedValue <= 0) {
       return '유효한 숫자를 입력하세요';
     }
-    return null; 
+    return null;
   }
 
 
@@ -149,13 +149,13 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
           .get();
 
       final nickname = userDoc.data()?["nickname"] ?? "사용자";                 // [수정]
-      final profileImageUrl = userDoc.data()?["profileImageUrl"] 
-                                ?? user.photoURL 
-                                ?? "";                                         // [수정]
+      final profileImageUrl = userDoc.data()?["profileImageUrl"]
+          ?? user.photoURL
+          ?? "";                                         // [수정]
 
       final photoName = requestTitleController.text.trim();
       final price =
-          int.parse(priceController.text.replaceAll(',', '').trim());
+      int.parse(priceController.text.replaceAll(',', '').trim());
       final description = descriptionController.text.trim();
       final location = locationController.text.trim();
 
@@ -182,6 +182,9 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
       dev.log('request 모델 생성 완료 *********************');
     
 
+      dev.log('request 모델 생성 완료 *********************');
+
+
       // 등록
       await RequestService().addRequest(request);
 
@@ -206,11 +209,11 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
           text: '0',
         );
       } else {
-        if (_feeTypeIsSelected[1]) priceController.clear(); 
+        if (_feeTypeIsSelected[1]) priceController.clear();
       }
     });
   }
-  
+
   // 유료-무료 버튼 디자인
   Widget _feeChip(String label, bool selected){
     return AnimatedContainer(
@@ -220,7 +223,7 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
       decoration: BoxDecoration(
         color: selected ? const Color(0xFFE0E0E0) : Colors.transparent,
         borderRadius: BorderRadius.circular(5),
-      ), 
+      ),
       child: Text(
         label,
         style: const TextStyle(color: Colors.black87),
@@ -287,7 +290,7 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
                       TextFormField(
                         controller: requestTitleController,
                         decoration: baseDecoration.copyWith(
-                          labelText: '의뢰 제목*', 
+                          labelText: '의뢰 제목*',
                           hintText: '제목을 입력하세요',
                         ),
                         validator: (value) => _validateNotEmpty(value, '의뢰 제목'),
@@ -297,10 +300,10 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
                       TextField(
                         controller: descriptionController,
                         decoration: baseDecoration.copyWith(
-                          labelText: '추가 설명', 
+                          labelText: '추가 설명',
                           hintText: '추가 설명을 입력하세요',
                           border: InputBorder.none,
-                          enabledBorder: InputBorder.none, 
+                          enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
                         ),
                         maxLines: 5,
@@ -344,7 +347,7 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
                         controller: priceController,
                         enabled: _feeTypeIsSelected[1],
                         decoration: baseDecoration.copyWith(
-                          labelText: '가격*', 
+                          labelText: '가격*',
                           hintText: '가격을 입력하세요',
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
@@ -362,7 +365,7 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
                 // 위치 입력칸
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 8.0),                 
+                  padding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 8.0),
                   decoration: BoxDecoration(
                     border: Border.all(
                       color: Color.fromARGB(255, 221, 221, 221),
@@ -383,8 +386,8 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
                       padding: const EdgeInsets.symmetric(vertical: 12.0),
                       child: Text(
                         locationController.text.isEmpty
-                          ? '의뢰자가 사진을 찍을 위치를 선택하세요'
-                          : locationController.text,
+                            ? '의뢰자가 사진을 찍을 위치를 선택하세요'
+                            : locationController.text,
                         style: const TextStyle(fontSize: 14, color: Color.fromARGB(255, 136, 136, 136)),
                       ),
                     ),
@@ -406,10 +409,10 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
                           onMapCreated: (c) => _miniMapController = c,
                           markers:{
                             Marker(
-                              markerId: const MarkerId('mini'),
-                              position: pickedPos!,
-                              infoWindow: const InfoWindow(title: '선택 위치'),
-                              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen)
+                                markerId: const MarkerId('mini'),
+                                position: pickedPos!,
+                                infoWindow: const InfoWindow(title: '선택 위치'),
+                                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen)
                             ),
                           },
                           myLocationEnabled: false,
@@ -432,11 +435,11 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
                   child: Container(
                     decoration: const BoxDecoration(
                       border: Border(
-                        bottom: BorderSide(color: Colors.black54, width: 1)
+                          bottom: BorderSide(color: Colors.black54, width: 1)
                       ),
                     ),
                     child: const Text('위치 지정은 왜 필요한 건가요?'),
-                  ), 
+                  ),
                 ),
 
                 if (_showExplanation) ...[
@@ -450,8 +453,8 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
                       const SizedBox(height: 15),
                       const Text(
                         '지정한 위치를 기준으로 반경 2.5km 이내의 이웃들에게 알림이 전달돼요.\n'
-                        '알림을 통해 의뢰한 사진을 더 빠르게 받아보실 수 있습니다.\n'
-                        '위치 정보는 알림 서비스 제공에만 사용되며, 다른 용도로 저장되거나 공유되지 않으니 안심하세요',
+                            '알림을 통해 의뢰한 사진을 더 빠르게 받아보실 수 있습니다.\n'
+                            '위치 정보는 알림 서비스 제공에만 사용되며, 다른 용도로 저장되거나 공유되지 않으니 안심하세요',
                         style: TextStyle(fontSize: 12, color: Colors.black54),
                         textAlign: TextAlign.left,
                       )
@@ -471,19 +474,19 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
             _submitForm();
           },
           style: ButtonStyle(
-            backgroundColor: WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
-              if (states.contains(WidgetState.pressed)) {
-                return const Color(0xFFDDECC7);
-              }
-              return const Color(0xFF8BC34A);
-            }),
-            minimumSize: WidgetStateProperty.all<Size>(const Size(double.infinity, 50)),
-            shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-              RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-                side: const BorderSide(color: Color(0xFF8BC34A))
+              backgroundColor: WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
+                if (states.contains(WidgetState.pressed)) {
+                  return const Color(0xFFDDECC7);
+                }
+                return const Color(0xFF8BC34A);
+              }),
+              minimumSize: WidgetStateProperty.all<Size>(const Size(double.infinity, 50)),
+              shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+                  RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: const BorderSide(color: Color(0xFF8BC34A))
+                  )
               )
-            )
           ),
           child: const Text("등록", style: TextStyle(fontSize: 15, color: Colors.white)),
         ),
@@ -491,5 +494,4 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
     );
   }
 }
-
   

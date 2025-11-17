@@ -164,14 +164,31 @@ class _AccountManageTab extends StatelessWidget {
                         const SizedBox(width: 8),
                         IconButton(
                           icon: const Icon(Icons.more_vert, size: 20),
-                          onPressed: () {
-                            // 예시: 정지/해제 토글
-                            FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(uid)
-                                .update({
-                              'status': isBanned ? 'normal' : 'banned',
-                            });
+                          onPressed: () async {
+                            try {
+                              final newStatus = isBanned ? 'normal' : 'banned';
+
+                              await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(uid)
+                                  .update({'status': newStatus});
+
+                              // 🔥 성공 메시지 (선택)
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('회원 상태가 "$newStatus" 로 변경되었습니다.'),
+                                  duration: const Duration(seconds: 1),
+                                ),
+                              );
+                            } catch (e) {
+                              debugPrint('회원 상태 변경 실패: $e');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('상태 변경 실패: 권한 또는 네트워크 문제'),
+                                  duration: const Duration(seconds: 1),
+                                ),
+                              );
+                            }
                           },
                         ),
                       ],
