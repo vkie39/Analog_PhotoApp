@@ -25,6 +25,17 @@ class RequestService {
     return RequestModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
   }
 
+  // 함경민 추가 : 단일 의뢰글 실시간 스트림
+  Stream<RequestModel?> watchRequest(String id) {
+    return _ref.doc(id).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      return RequestModel.fromMap(
+        doc.data() as Map<String, dynamic>,
+        doc.id,
+      );
+    });
+
+  }
   // 신규 의뢰글 등록
   Future<void> addRequest(RequestModel model) async {
     await _ref.doc(model.requestId).set(model.toMap());
