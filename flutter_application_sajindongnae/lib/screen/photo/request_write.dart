@@ -178,6 +178,9 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
         isPaied: false,
         reportCount: 0,
       );
+    
+      dev.log('request 모델 생성 완료 *********************');
+    
 
       dev.log('request 모델 생성 완료 *********************');
 
@@ -189,7 +192,7 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
         const SnackBar(content: Text("의뢰글이 등록되었습니다.")),
       );
 
-      dev.log('request 업로드 완료 *********************');
+    dev.log('request 업로드 완료 *********************');
     }
   }
 
@@ -491,5 +494,3 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
     );
   }
 }
-
-
