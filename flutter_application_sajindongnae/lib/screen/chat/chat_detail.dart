@@ -383,10 +383,7 @@ Future<void> _ensureChatRoomExists() async {
   }
   
   // [말풍선] 위젯
-Widget _buildBubble(BuildContext context, Message msg, bool isMe) {
-
-  //Widget _buildBubble(Message msg, bool isMe) {
-
+  Widget _buildBubble(BuildContext context, Message msg, bool isMe) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
       padding: const EdgeInsets.all(12.0),
@@ -405,28 +402,26 @@ Widget _buildBubble(BuildContext context, Message msg, bool isMe) {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          // 텍스트 전송
+          // 텍스트 메시지
           if (msg.hasText)
             Text(
-              msg.text!,       // null 아님이 보장되는 경우만 !
+              msg.text!,
               style: const TextStyle(fontSize: 15, color: Colors.black),
             ),
           if (msg.hasText && msg.hasImage) const SizedBox(height: 8),
 
-          // 이미지 전송
+          // 이미지 메시지
           if (msg.hasImage)
             GestureDetector(
-              
               onTap: () {
-                // 1) Firestore에 올라간 네트워크 이미지 (imageUrl)
+                // 1) Firestore에 올라간 네트워크 이미지
                 if (msg.imageUrl != null && msg.imageUrl!.isNotEmpty) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => ChatImageViewer(
-                        imagePath: msg.imageUrl!,        // ✅ URL 그대로 넘김
-                        isAsset: false,                  // 네트워크니까 false
+                        imagePath: msg.imageUrl!,
+                        isAsset: false,
                         heroTag: 'chat_image_${msg.id}',
                         photoOwnerNickname: _requesterNickname,
                         canDownload: _canDownload,
@@ -435,7 +430,7 @@ Widget _buildBubble(BuildContext context, Message msg, bool isMe) {
                   );
                   return;
                 }
-                // 2) (옵션) 아직 로컬 XFile을 쓰는 경우 대비 -> 나중에 지워도 됨
+                // 2) (옵션) 로컬 XFile용
                 if (msg.image != null) {
                   final isAsset = msg.image!.path.startsWith('assets/');
                   Navigator.push(
@@ -447,48 +442,70 @@ Widget _buildBubble(BuildContext context, Message msg, bool isMe) {
                         heroTag: 'chat_image_${msg.id}',
                         photoOwnerNickname: _requesterNickname,
                         canDownload: _canDownload,
-
                       ),
                     ),
                   );
                 }
               },
-                
               child: Hero(
                 tag: 'chat_image_${msg.id}',
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: msg.imageUrl != null && msg.imageUrl!.startsWith('http')
-                      // 1) 네트워크 이미지
-                      ? Image.network(
+                  child: Stack(
+                    children: [
+                      // 1) 원본 이미지
+                      if (msg.imageUrl != null && msg.imageUrl!.startsWith('http'))
+                        Image.network(
                           msg.imageUrl!,
                           width: 200,
                           fit: BoxFit.cover,
                         )
-                      // 2) 에셋 이미지
-                      : (msg.image != null && msg.image!.path.startsWith('assets/'))
-                          ? Image.asset(
-                              msg.image!.path,
-                              width: 200,
-                              fit: BoxFit.cover,
-                            )
-                          // 3) 파일 이미지 (로컬 경로)
-                          : (msg.image != null)
-                              ? Image.file(
-                                  File(msg.image!.path),
-                                  width: 200,
-                                  fit: BoxFit.cover,
-                                )
-                              // 4) 혹시 둘 다 없으면 안전하게 빈 위젯
-                              : const SizedBox.shrink(),
+                      else if (msg.image != null &&
+                          msg.image!.path.startsWith('assets/'))
+                        Image.asset(
+                          msg.image!.path,
+                          width: 200,
+                          fit: BoxFit.cover,
+                        )
+                      else if (msg.image != null)
+                          Image.file(
+                            File(msg.image!.path),
+                            width: 200,
+                            fit: BoxFit.cover,
+                          )
+                        else
+                          const SizedBox.shrink(),
+
+                      // 2) 워터마크
+                      Positioned(
+                        right: 6,
+                        bottom: 4,
+                        child: Text(
+                          '사진동네',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withOpacity(0.9),
+                            fontWeight: FontWeight.bold,
+                            shadows: [
+                              Shadow(
+                                offset: const Offset(0, 0),
+                                blurRadius: 3,
+                                color: Colors.black.withOpacity(0.6),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-
         ],
       ),
     );
   }
+
   
 
   // [결제 요청] 메세지 보내기
