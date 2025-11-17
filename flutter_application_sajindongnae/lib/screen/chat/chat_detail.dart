@@ -43,7 +43,10 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   final ScrollController _scrollController = ScrollController();
 
   String? get _myUid => FirebaseAuth.instance.currentUser?.uid;
-  late bool _isOwner; // 리퀘스트 작성자인지 여부
+
+  late String _otherUid;
+  late bool _isOwner; // 리퀘스트 작성자가 아니라면 리퀘스트 상태변화를 할 수 없도록 함
+
 
   // Firestore 인스턴스
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -55,6 +58,12 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   String? _myProfileUrl;
   String? _otherProfileUrl;
   bool _isLoadingProfiles = true;
+  String? _otherNickname;
+  
+  // 결제하기 활성화 여부 검사용 (상대방이 보낸 사진이 하나라도 있으면 true가 됨)
+  bool _canPay = false;
+  bool _canDownload = false;
+
 
   // 결제/다운로드 활성화 여부
   bool _canPay = false;       // 상대방이 보낸 사진이 하나라도 있으면 true
@@ -110,7 +119,17 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
 
     _chatRoomId = 'chat_${widget.request.requestId}';
 
-    _ensureChatRoomExists();
+
+    // 채팅방 만들고, 상대방 UI 가져오기
+    _ensureChatRoomExists().then((_) async {
+      await _loadParticipants();   // ← participants에서 상대방 UID 가져오기
+      await _loadProfiles();       // ← 상대방 uid 기반 프로필 로딩
+    });
+
+    // 현재 사용자
+    final me = _myUid ?? 'dummy_me';
+    _isOwner = _myUid == _requesterUid; 
+
 
     _isOwner = _myUid == _requesterUid;
     _canDownload = !_isOwner || _originalRequest.isPaied;
@@ -129,9 +148,10 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
       });
     });
 
-    _loadProfiles();
 
-    // 채팅 메세지 실시간 구독 → _canPay 계산 용
+
+    // Firestore 메시지 스트림 구독
+
     _chatSub = _db
         .collection('chats')
         .doc(_chatRoomId)
@@ -165,31 +185,76 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
     super.dispose();
   }
 
+
+  Future<void> _loadRequest() async {
+  final snap = await FirebaseFirestore.instance
+      .collection('requests')
+      .doc(_requestId)
+      .get();
+
+  if (!snap.exists) return;
+
+  final data = snap.data()!;
+  final req = RequestModel.fromMap(data, snap.id);
+
+  setState(() {
+    _originalRequest = req;
+    _requestTitle = req.title;
+    _requestPrice = req.price;
+    _requestStatement = req.status;   // 혹시 상태 표시할 경우
+  });
+}
+
+
+ // =========================================================================== 
+ //  상대방 ID 찾아내고 프로필 가져오기
+ // ===========================================================================
+
+  // 상대방 ID 찾기
+  Future<void> _loadParticipants() async {
+    final doc = await _db.collection('chats').doc(_chatRoomId).get();
+
+    if (!doc.exists) return;
+
+    final data = doc.data()!;
+    final List<dynamic> participants = data['participants'] ?? [];
+
+    final me = _myUid;
+    if (me == null) return;
+
+    // participants 중 내가 아닌 uid를 상대방으로 지정
+    _otherUid = participants.firstWhere((uid) => uid != me);
+
+    dev.log("상대방 UID = $_otherUid");
+  }
+
+ main
   Future<void> _loadProfiles() async {
     try {
       final me = _myUid;
-      final other = _requesterUid;
+      final other = _otherUid;
 
-      Future<String?> getUrl(String uid) async {
-        final snap =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
-        if (!snap.exists) return null;
-        final data = snap.data()!;
-        return (data['profileImageUrl'] as String?)?.trim().isEmpty == true
-            ? null
-            : data['profileImageUrl'] as String?;
+      Future<Map<String, dynamic>?> getUser(String uid) async {
+        final snap = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+        return snap.exists ? snap.data() : null;
+
       }
 
-      String? myUrl;
+      // 내 정보 (옵션)
+      Map<String, dynamic>? myData;
       if (me != null) {
-        myUrl = await getUrl(me);
+        myData = await getUser(me);
       }
-      final otherUrl = await getUrl(other);
+
+      // 상대방 정보
+      final otherData = await getUser(other);
 
       if (!mounted) return;
+
       setState(() {
-        _myProfileUrl = myUrl;
-        _otherProfileUrl = otherUrl;
+        _myProfileUrl = myData?['profileImageUrl'];
+        _otherProfileUrl = otherData?['profileImageUrl'];
+        _otherNickname  = otherData?['nickname'];   // ← ★ 여기서 닉네임 저장!
         _isLoadingProfiles = false;
       });
     } catch (e) {
@@ -197,6 +262,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
       setState(() => _isLoadingProfiles = false);
     }
   }
+
 
   void _openRequestDetail() {
     Navigator.push(
@@ -694,7 +760,8 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(otherName.isNotEmpty ? otherName : '채팅'),
+        title: Text(_otherNickname ?? '채팅'),
+
         scrolledUnderElevation: 0,
         backgroundColor: Colors.white,
         leading: IconButton(
