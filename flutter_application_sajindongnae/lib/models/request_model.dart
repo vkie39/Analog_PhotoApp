@@ -101,7 +101,7 @@ class RequestModel {
       'status': status,
       'acceptedBy': acceptedBy,
       'likedBy': likedBy,
-      'likeCount': likeCount,ranch
+      'likeCount': likeCount,
       'isPaied': isPaied,
       'reportCount': reportCount, // ← 추가한 필드
 
