@@ -15,6 +15,7 @@ import 'package:permission_handler/permission_handler.dart';           // 권한
 import 'package:flutter_application_sajindongnae/models/request_model.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/request_detail.dart';
 import 'package:flutter_application_sajindongnae/services/image_service.dart';
+import 'package:http/http.dart' as http;  
 
  // ---------------------------------------------------------------------------
  // 채팅 이미지 전체화면 뷰어
@@ -33,6 +34,7 @@ class ChatImageViewer extends StatelessWidget {
   final bool isAsset;
   final String heroTag;
   final String? photoOwnerNickname;
+  final bool canDownload;
 
   const ChatImageViewer({
     super.key,
@@ -40,6 +42,7 @@ class ChatImageViewer extends StatelessWidget {
     required this.isAsset,
     required this.heroTag,
     this.photoOwnerNickname, 
+    required this.canDownload,
   });
 
   
@@ -61,12 +64,22 @@ class ChatImageViewer extends StatelessWidget {
       
       // 2) 이미지 바이트 읽기 (asset vs 파일)
       Uint8List bytes;
-      if (isAsset) {
-        // 에셋 이미지인 경우
+      if (imagePath.startsWith('http')) {
+      // 네트워크 이미지 (Firestore downloadUrl)
+      final uri = Uri.parse(imagePath);
+      final resp = await http.get(uri);
+      if (resp.statusCode != 200) {
+        Fluttertoast.showToast(msg: '이미지를 불러오지 못했습니다.');
+        return;
+      }
+      bytes = resp.bodyBytes;
+      
+      } else if (isAsset) {
+        //  에셋 이미지
         final bd = await rootBundle.load(imagePath);
         bytes = bd.buffer.asUint8List();
       } else {
-        // 파일 이미지인 경우
+        //  로컬 파일
         final file = File(imagePath);
         if (!file.existsSync()) {
           Fluttertoast.showToast(msg: '이미지 파일을 찾을 수 없습니다.');
@@ -108,9 +121,27 @@ class ChatImageViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget imageWidget = isAsset
-        ? Image.asset(imagePath, fit: BoxFit.contain)
-        : Image.file(File(imagePath), fit: BoxFit.contain);
+    late final Widget imageWidget;
+
+    if (imagePath.startsWith('http')) {
+      // 네트워크 이미지 -> firestore용 이것만 빼고 나중에 지워도 됨
+      imageWidget = Image.network(
+        imagePath,
+        fit: BoxFit.contain,
+      );
+    } else if (isAsset) {
+      // 에셋
+      imageWidget = Image.asset(
+        imagePath,
+        fit: BoxFit.contain,
+      );
+    } else {
+      // 로컬 파일
+      imageWidget = Image.file(
+        File(imagePath),
+        fit: BoxFit.contain,
+      );
+    } 
 
     return Scaffold(
       backgroundColor: Colors.black,
