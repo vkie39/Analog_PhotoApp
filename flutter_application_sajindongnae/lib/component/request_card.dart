@@ -37,7 +37,7 @@ class RequestCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        request.location!,
+                        _getTimeAgo(request.dateTime),
                         style: const TextStyle(
                           fontSize: 12,
                           color: Color.fromARGB(255, 120, 119, 119),
@@ -49,13 +49,18 @@ class RequestCard extends StatelessWidget {
                             color: Color.fromARGB(255, 120, 119, 119),
                           ),
                       ),
-                      Text(
-                        _getTimeAgo(request.dateTime),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color.fromARGB(255, 120, 119, 119),
-                        ),
-                      ),
+                      Expanded(
+                        child:Text(
+                          request.location!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color.fromARGB(255, 120, 119, 119),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),     
+                      )
+                                       
                     ],
                   ),
                   const SizedBox(height:4),

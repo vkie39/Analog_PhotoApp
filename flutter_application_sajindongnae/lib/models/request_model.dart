@@ -19,6 +19,7 @@ class RequestModel {
   final String? acceptedBy;
   final List<String> likedBy;
   final int likeCount;
+  final int reportCount; // ← 추가한 필드
 
   RequestModel({
     required this.requestId,
@@ -38,6 +39,7 @@ class RequestModel {
     this.acceptedBy,
     this.likedBy = const [],
     this.likeCount = 0,
+    this.reportCount = 0, // ← 추가한 필드 기본값 설정
   });
 
   factory RequestModel.fromMap(Map<String, dynamic> map, [String? docId]) {
@@ -72,6 +74,7 @@ class RequestModel {
       acceptedBy: map['acceptedBy'],
       likedBy: List<String>.from(map['likedBy'] ?? []),
       likeCount: map['likeCount'] ?? 0,
+      reportCount: map['reportCount'] ?? 0, // ← 추가한 필드
     );
   }
 
@@ -94,6 +97,7 @@ class RequestModel {
       'acceptedBy': acceptedBy,
       'likedBy': likedBy,
       'likeCount': likeCount,
+      'reportCount': reportCount, // ← 추가한 필드
     };
   }
 }

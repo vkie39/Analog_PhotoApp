@@ -46,32 +46,6 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
   }
 
 
-  // Firestore 연결 전 임시 데이터 (결과 확인용)
-  /*
-  final List<PostModel> postList = List.generate(
-    30,
-    (index) => PostModel(
-      postId: 'post_$index',
-      userId: 'user_$index',
-      nickname: '사용자$index',
-      profileImageUrl: 'https://', // 아무 주소 없어서 오류 뜰거지만 괜찮음. 임시임
-      category: index % 3 == 0 
-          ? '자유'
-          : index % 3 == 1
-              ? '카메라추천'
-              : '피드백',
-      likeCount: 10 + index,
-      commentCount: 5 + index,
-      timestamp: DateTime.now().subtract(Duration(minutes: index * 15)),
-      title: '제목 $index',
-      content: '$index번째 테스트 게시글',
-    ),
-  );
-  
-*/
-
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -124,20 +98,6 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
               Expanded(                                  // 남은 공간을 모두 차지하도록 하는 위젯
                 child: TabBarView(
                   controller: _tabController,
-                  /*
-                  children: tabs.map((category) {
-                    final filteredList = postList
-                        .where((post) => post.category == category) // postList를 하나씩 post로 받아와서 필터링링
-                        .toList();
-                    return ListView.builder(
-                      padding: EdgeInsets.symmetric(vertical: 15),
-                      itemCount: filteredList.length, // filteredList에 몇개의 요소가 있는지 확인하고, 이 수를 기준으로 itemBuilder호출출
-                      itemBuilder: (context, index){ // index는 ListView.builder내부에서 자동으로 0부터 itemCount-1까지 넣어줌
-                        return PostCard(post: filteredList[index]);
-                      },
-                    );
-                  }).toList(),  
-                  */ 
                   children: tabs.map((category) {
                     return StreamBuilder<List<PostModel>>(
                       stream: PostService.getPostsByCategory(category), // ← Firestore에서 데이터 스트림 가져오기
