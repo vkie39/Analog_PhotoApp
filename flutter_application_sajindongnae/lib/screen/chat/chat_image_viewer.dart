@@ -154,13 +154,30 @@ class ChatImageViewer extends StatelessWidget {
         ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.download),
-            onPressed: () async{
-              await _saveImageToGallery(context);
-            },
-          ),
-    ],
+          // 다운로드 가능한 경우 (다운로드 버튼 표시)
+          if (canDownload)
+            IconButton(
+              icon: const Icon(Icons.download),
+              onPressed: () async {
+                await _saveImageToGallery(context);
+              },
+            )
+          // 다운로드 불가능한 경우 (결제 후 다운 버튼 표시- 버튼 누르면 왜 다운 못하는지 설명문 보여줄까 함)
+          else
+            TextButton(
+              onPressed: () {
+                // 나중에 결제 화면으로 이동시키고 싶으면 여기서 Navigator.push로 연결해도 됨
+                Fluttertoast.showToast(msg: '결제 후 다운로드 가능해요.');
+              },
+              child: const Text(
+                '결제후 다운로드 가능해요',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12, // 필요하면 글씨 조금 작게
+                ),
+              ),
+            ),
+        ],
       ),
       body: Center(
         child: Hero(
