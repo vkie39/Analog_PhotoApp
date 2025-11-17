@@ -114,8 +114,14 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
     _requestStatement = _originalRequest.status ?? '의뢰중';
     _isPaied = _originalRequest.isPaied;
 
-    // [수정됨] 채팅방 ID 생성 규칙 (requestId로 고정)
-    _chatRoomId = 'chat_${widget.request.requestId}';
+
+    // ===========================================
+    // 🔧 수정된 코드 — chatRoomId 통일 방식
+    // RequestDetailScreen과 동일한 규칙으로 통일
+    final sortedIds = [_myUid, _requesterUid]..sort();
+    _chatRoomId = sortedIds.join('_');   // ← UID 기준 고정 chatRoomId
+    // ===========================================
+
 
     _ensureChatRoomExists();   // 채팅방 생성 확인 (가장 중요)
     // _loadRequest();         // 실시간으로 바꾸며 제거 : 의뢰글 정보 로드
