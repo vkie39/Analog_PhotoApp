@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -79,10 +80,14 @@ class _ChatListScreenState extends State<ChatListScreen> {
               return ChatCard(
                 chatRoom: room,
                 onTap: () async {
+                  dev.log('🔥 room.requestId = ${room.requestId}');  
                   try {
                     // 1) requestId로 해당 의뢰글 Firestore에서 조회
                     final request =
                         await _requestService.getRequestById(room.requestId);
+                    dev.log('request ID 받아오기 *********************');
+                      
+                    
 
                     if (request == null) {
                       // 의뢰글이 삭제됐거나 없는 경우
@@ -110,6 +115,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('의뢰 정보를 불러오지 못했습니다.')),
                     );
+                    dev.log('의뢰 정보 오류 :  ${e}');
                   }
                 },
               );

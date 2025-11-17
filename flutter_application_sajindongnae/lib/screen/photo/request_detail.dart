@@ -24,8 +24,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 // 모델 import
 import 'package:flutter_application_sajindongnae/models/request_model.dart';
-import 'package:flutter_application_sajindongnae/services/request_service.dart';
 import 'package:flutter_application_sajindongnae/models/chat_list_model.dart';
+
+import 'package:flutter_application_sajindongnae/services/request_service.dart';
+import 'package:flutter_application_sajindongnae/screen/photo/request_write.dart';
 import 'package:flutter_application_sajindongnae/screen/post/report.dart';
 
 // 채팅 상세 페이지 import
@@ -66,26 +68,8 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // 실시간으로 바꾸며 제거 : _loadBookmarkState();
   }
-   
-  // 실시간으로 바꾸며 제거 : Firestore에서 북마크 상태를 불러옴
-  /*Future<void> _loadBookmarkState() async {
-    if (_myUid == null) return;
 
-    final doc = await FirebaseFirestore.instance
-        .collection('requests')
-        .doc(request.requestId)
-        .get();
-
-    if (doc.exists) {
-      final data = doc.data()!;
-      final bookmarkedBy = (data['bookmarkedBy'] as List?)?.cast<String>() ?? [];
-      setState(() {
-        isMarkedRequest = bookmarkedBy.contains(_myUid);
-      });
-    }
-  }*/
 
   // 북마크 상태를 토글하고 Firestore에 반영
   Future<void> _toggleBookmark(RequestModel request) async {
@@ -96,12 +80,6 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
       return;
     }
 
-    // 실시간으로 바꾸며 제거 : final docRef = FirebaseFirestore.instance.collection('requests').doc(request.requestId);
-    /*
-    setState(() {
-      isMarkedRequest = !isMarkedRequest;
-    });
-    */
     try {
       await RequestService().toggleBookmark(request.requestId, _myUid!);
       dev.log('북마크 토글 완료');
@@ -121,9 +99,7 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // [수정됨] 실제 로그인한 사용자 uid와 작성자 uid 비교
-    // 실시간으로 바꾸며 제거 :final isOwner = request.uid == FirebaseAuth.instance.currentUser?.uid;
-    
+
     final initialRequest = widget.request;      // 전 페이지에서 받아온 request
     final requestId = initialRequest.requestId; // 그 request의 ID를 requestId에 저장
 
@@ -214,6 +190,14 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                       break;
                     case MoreAction.edit:
                       dev.log('수정하기 선택됨');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RequestWriteScreen(
+                            existingRequest: request, // StreamBuilder에서 받은 최신 request
+                          ),
+                        ),
+                      );
                       break;
                     case MoreAction.delete:
                       dev.log('삭제하기 선택됨');

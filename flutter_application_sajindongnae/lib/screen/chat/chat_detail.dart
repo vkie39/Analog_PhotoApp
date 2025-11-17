@@ -47,6 +47,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   final ScrollController _scrollController = ScrollController();
 
   String? get _myUid => FirebaseAuth.instance.currentUser?.uid;
+  late String _otherUid;
   late bool _isOwner; // 리퀘스트 작성자가 아니라면 리퀘스트 상태변화를 할 수 없도록 함
 
 
@@ -60,6 +61,8 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   String? _myProfileUrl;
   String? _otherProfileUrl;
   bool _isLoadingProfiles = true;
+  String? _otherNickname;
+
   
   // 결제하기 활성화 여부 검사용 (상대방이 보낸 사진이 하나라도 있으면 true가 됨)
   bool _canPay = false;
@@ -117,12 +120,13 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
     // [수정됨] 채팅방 ID 생성 규칙 (requestId로 고정)
     _chatRoomId = 'chat_${widget.request.requestId}';
 
-    _ensureChatRoomExists();   // 채팅방 생성 확인 (가장 중요)
-    // _loadRequest();         // 실시간으로 바꾸며 제거 : 의뢰글 정보 로드
+    // 채팅방 만들고, 상대방 UI 가져오기
+    _ensureChatRoomExists().then((_) async {
+      await _loadParticipants();   // ← participants에서 상대방 UID 가져오기
+      await _loadProfiles();       // ← 상대방 uid 기반 프로필 로딩
+    });
 
-
-    // 현재 사용자와 상대방 UID
-    final otherUid = _requesterUid;
+    // 현재 사용자
     final me = _myUid ?? 'dummy_me';
     _isOwner = _myUid == _requesterUid; 
 
@@ -142,10 +146,6 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
           _isPaied = req.isPaied;
         });
       });
-
-        
-    // 두 사용자 프로필 미리 로드
-    _loadProfiles();
 
 
     // Firestore 메시지 스트림 구독
@@ -209,42 +209,61 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
 }
 
 
+ // =========================================================================== 
+ //  상대방 ID 찾아내고 프로필 가져오기
+ // ===========================================================================
+
+  // 상대방 ID 찾기
+  Future<void> _loadParticipants() async {
+    final doc = await _db.collection('chats').doc(_chatRoomId).get();
+
+    if (!doc.exists) return;
+
+    final data = doc.data()!;
+    final List<dynamic> participants = data['participants'] ?? [];
+
+    final me = _myUid;
+    if (me == null) return;
+
+    // participants 중 내가 아닌 uid를 상대방으로 지정
+    _otherUid = participants.firstWhere((uid) => uid != me);
+
+    dev.log("상대방 UID = $_otherUid");
+  }
 
   Future<void> _loadProfiles() async {
     try {
       final me = _myUid;
-      final other = _requesterUid;
+      final other = _otherUid;
 
-      // users 컬렉션 스키마 예시:
-      // { uid, nickname, profileImageUrl, ... }
-      Future<String?> getUrl(String uid) async {
+      Future<Map<String, dynamic>?> getUser(String uid) async {
         final snap = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-        if (!snap.exists) return null;
-        final data = snap.data()!;
-        return (data['profileImageUrl'] as String?)?.trim().isEmpty == true
-            ? null
-            : data['profileImageUrl'] as String?;
+        return snap.exists ? snap.data() : null;
       }
 
-      String? myUrl;
+      // 내 정보 (옵션)
+      Map<String, dynamic>? myData;
       if (me != null) {
-        myUrl = await getUrl(me);
+        myData = await getUser(me);
       }
-      final otherUrl = await getUrl(other);
+
+      // 상대방 정보
+      final otherData = await getUser(other);
 
       if (!mounted) return;
+
       setState(() {
-        _myProfileUrl = myUrl;
-        _otherProfileUrl = otherUrl;
+        _myProfileUrl = myData?['profileImageUrl'];
+        _otherProfileUrl = otherData?['profileImageUrl'];
+        _otherNickname  = otherData?['nickname'];   // ← ★ 여기서 닉네임 저장!
         _isLoadingProfiles = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoadingProfiles = false);
-      // 필요시 스낵바/로그 처리
-      // dev.log('Failed to load profiles: $e');
     }
   }
+
 
 
   void _openRequestDetail() {
@@ -790,7 +809,7 @@ Future<void> _ensureChatRoomExists() async {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(otherName.isNotEmpty? otherName: '채팅'),
+        title: Text(_otherNickname ?? '채팅'),
         scrolledUnderElevation: 0,
         backgroundColor: Colors.white,  // AppBar 배경색
         leading: IconButton(
