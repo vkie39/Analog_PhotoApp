@@ -341,16 +341,14 @@ Future<void> _ensureChatRoomExists() async {
   Widget _buildBubble(BuildContext context, ChatMessage msg, bool isMe) {
 */
   Widget _buildBubble(Message msg, bool isMe) {
-
     return Container(
-      // 각 메세지 버블에 대한 마진과 패팅, 스타일 설정
       margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
       padding: const EdgeInsets.all(12.0),
       constraints: BoxConstraints(
         maxWidth: MediaQuery.of(context).size.width * 0.72,
       ),
       decoration: BoxDecoration(
-        color: isMe ? Colors.lightGreen[200] : Colors.grey[300], // 내 메세지는 초록, 상대방은 회색 
+        color: isMe ? Colors.lightGreen[200] : Colors.grey[300],
         borderRadius: BorderRadius.only(
           topLeft: const Radius.circular(12),
           topRight: const Radius.circular(12),
@@ -358,75 +356,58 @@ Future<void> _ensureChatRoomExists() async {
           bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(12),
         ),
       ),
-
       child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-
-        // 텍스트 전송
-        if (msg.hasText)
-          Text(
-            msg.text!,       // null 아님이 보장되는 경우만 !
-            style: const TextStyle(fontSize: 15, color: Colors.black),
-          ),
-        if (msg.hasText && msg.hasImage) const SizedBox(height: 8),
-/*
-
-        // 이미지 전송
-        if (msg.hasImage)
-          GestureDetector(
-            
-            onTap:(){ 
-              final isAsset = msg.image!.path.startsWith('assets/'); // 에셋 이미지인지 확인 (실제 firestore쓸거면 없어도 되는 부분)
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ChatImageViewer( // 새페이지로 이동 (코드 하단에 위젯 정의함)
-                    imagePath: msg.image!.path,    // msg에 정의된 이미지 경로 전달. msg.image는 XFile 타입
-                    isAsset: isAsset,              // 에셋 이미지 여부 전달 (true: 에셋 이미지는 image.asset, false: 파일이미지는 image.file로 구분하여 처리하기 위함 -> 둘이 경로가 다름)
-                    heroTag : 'chat_image_${msg.id}',
-                    photoOwnerNickname: _requesterNickname,
-                  ),
-                ),
-              );
-            },
-            child: Hero( // 이미지 전환 애니메이션을 위한 Hero 위젯 (전체 화면으로 전환될 때 자연스럽게 보이도록)
-              tag: 'chat_image_${msg.id}', // Hero는 태그를 통해 두 이미지를 자연스럽게 연결함
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: msg.image!.path.startsWith('assets/')
-                    ? Image.asset(
-                        msg.image!.path,
-                        width: 200,
-                        fit: BoxFit.cover,
-                      )
-                    : Image.file(
-                        File(msg.image!.path),
-                        width: 200,
-                        fit: BoxFit.cover,
-                      ),
-              ),
-*/
-        if (msg.hasImage && msg.imageUrl != null && msg.imageUrl!.startsWith("http"))
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              msg.imageUrl!,
-              fit: BoxFit.cover,            
-              width: 200,
-
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 텍스트 메시지
+          if (msg.hasText)
+            Text(
+              msg.text!,
+              style: const TextStyle(fontSize: 15, color: Colors.black),
             ),
-          ),
-        
+          if (msg.hasText && msg.hasImage) const SizedBox(height: 8),
 
-          
-      ],
-    ),
+          // 이미지 + 워터마크
+          if (msg.hasImage && msg.imageUrl != null && msg.imageUrl!.startsWith("http"))
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Stack(
+                children: [
+                  Image.network(
+                    msg.imageUrl!,
+                    fit: BoxFit.cover,
+                    width: 200,
+                  ),
+                  Positioned(
+                    right: 6,
+                    bottom: 4,
+                    child: Text(
+                      '사진동네', // 또는 _requesterNickname / '© PhotoTown' 등
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withOpacity(0.85),
+                        fontWeight: FontWeight.bold,
+                        shadows: [
+                          Shadow(
+                            offset: const Offset(0, 0),
+                            blurRadius: 3,
+                            color: Colors.black.withOpacity(0.6),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 
 
- // =========================================================================== 
+
+  // ===========================================================================
  // 이미지 선택 관련 함수들
  // ===========================================================================
 
