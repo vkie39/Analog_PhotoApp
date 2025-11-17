@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
+import 'dart:developer' as dev;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart'; 
 import '../../services/request_service.dart';
@@ -139,11 +140,15 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
       return;
     }
 
+    dev.log('유효성 검사 완료 *********************');
+
     final photoName = requestTitleController.text.trim();
     final price =
         int.parse(priceController.text.replaceAll(',', '').trim());
     final description = descriptionController.text.trim();
     final location = locationController.text.trim();
+    dev.log('데이터 공백 처리 완료 *********************');
+
 
     final request = RequestModel(
       requestId: const Uuid().v4(),
@@ -159,9 +164,18 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
       position: pickedPos!,
       bookmarkedBy: [],
       isFree: _feeTypeIsSelected[0],
+      isPaied: false,
     );
 
-    await RequestService().addRequest(request);
+    dev.log('request 모델 생성 완료 *********************');
+    
+    try{
+      await RequestService().addRequest(request);
+    } catch (e){
+      dev.log('request_upload_error: ${e}');
+    }
+    
+    dev.log('request 업로드 완료 *********************');
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("의뢰글이 등록되었습니다.")),

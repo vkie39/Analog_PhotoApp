@@ -34,6 +34,7 @@ class ChatImageViewer extends StatelessWidget {
   final bool isAsset;
   final String heroTag;
   final String? photoOwnerNickname;
+  final bool canDownload;
 
   const ChatImageViewer({
     super.key,
@@ -41,6 +42,7 @@ class ChatImageViewer extends StatelessWidget {
     required this.isAsset,
     required this.heroTag,
     this.photoOwnerNickname, 
+    required this.canDownload,
   });
 
   

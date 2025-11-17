@@ -28,25 +28,6 @@ import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';           // 권한
 
 
-/*
-// 더미 메시지 모델 (내가 임시로 만든것)
-class ChatMessage {
-  final String id;
-  final String senderId;
-  final String? text;
-  final XFile? image;
-  final DateTime createdAt;
-
-  ChatMessage({
-    required this.id,
-    required this.senderId,
-    this.text,
-    this.image,
-    required this.createdAt, 
-  });
-  */
-
-
 
 class ChatDetailScreen extends StatefulWidget {
   final RequestModel request; // 이전 화면에서 넘겨받음
@@ -60,6 +41,7 @@ class ChatDetailScreen extends StatefulWidget {
 class _ChatDetailScreen extends State<ChatDetailScreen> {
   final RequestService _requestService = RequestService(); // 함 추가 11/16
   StreamSubscription<RequestModel?>? _requestSub;          // 함 추가 11/16
+    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _chatSub;
 
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -78,16 +60,23 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   String? _myProfileUrl;
   String? _otherProfileUrl;
   bool _isLoadingProfiles = true;
-  late RequestModel _originalRequest;
+  
+  // 결제하기 활성화 여부 검사용 (상대방이 보낸 사진이 하나라도 있으면 true가 됨)
+  bool _canPay = false;
+  bool _canDownload = false;
 
 
   // 채팅방 정보 [추가됨]
+  late RequestModel _originalRequest;
+
   late final String _chatRoomId;
   late final String _requestId;
   late final String _requesterUid;
   late final String _requesterNickname;
-  late final String _requestTitle;
-  late final int _requestPrice;
+  late  String _requestTitle;
+  late  int _requestPrice;
+  bool _isPaied = false;
+
   // 리퀘스트 상태(의뢰중, 거래중, 의뢰완료) 이건 request_model에 필드 만들면 수정해야 함
   String _requestStatement= '의뢰중';
 
@@ -122,8 +111,8 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
     _requesterNickname = _originalRequest.nickname;
     _requestTitle = _originalRequest.title;
     _requestPrice = _originalRequest.price;
-
     _requestStatement = _originalRequest.status ?? '의뢰중';
+    _isPaied = _originalRequest.isPaied;
 
     // [수정됨] 채팅방 ID 생성 규칙 (requestId로 고정)
     _chatRoomId = 'chat_${widget.request.requestId}';
@@ -137,16 +126,20 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
     final me = _myUid ?? 'dummy_me';
     _isOwner = _myUid == _requesterUid; 
 
+    _canDownload = !_isOwner || _originalRequest.isPaied; // 수락자의 경우 조건 없이 사진 다운로드 가능
+                                                          // 의뢰자의 경우 돈을 지불했을 때만 다운로드 가능
 
 
     // 의뢰글 실시간으로 가져옴
     _requestSub = _requestService.watchRequest(_requestId).listen((req) {
     if (req == null) return; // 삭제된 경우 등 방어
+    if (!mounted) return;
     setState(() {
           _originalRequest = req;
           _requestTitle   = req.title;
           _requestPrice   = req.price;
           _requestStatement = req.status;  // 상태 필드
+          _isPaied = req.isPaied;
         });
       });
 
@@ -154,46 +147,33 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
     // 두 사용자 프로필 미리 로드
     _loadProfiles();
 
-//=====================================
-// 함이 만들어뒀던 더미 채팅터데이터
-//=====================================
-/*
-    // 더미 채팅 데이터 _messages
-    _messages.addAll([
-      ChatMessage(
-        id: 'm1',
-        senderId: me,
-        text: '동미대 학식 바로 찍어드릴게여',
-        image:null,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 3)),
-      ),
-      ChatMessage(
-        id: 'm2',
-        senderId: otherUid,
-        text: '감사링 복받으셈',
-        image:null,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 2, seconds: 40)),
-      ),
-      ChatMessage(
-        id: 'm3',
-        senderId: otherUid,
-        text: null,
-        image: XFile('assets/images/sellPhoto5.JPG'),
-        createdAt: DateTime.now().subtract(const Duration(minutes: 2, seconds: 40)),
-      ),
-    ]);
-*/
 
     // Firestore 메시지 스트림 구독
-      _db .collection('chats')
-          .doc(_chatRoomId)
-          .collection('messages')
-          .orderBy('createdAt', descending: false)
-          .snapshots()
-          .listen((snapshot) {
-        setState(() {
-          _messages = snapshot.docs.map((d) => Message.fromDoc(d)).toList();
-        });
+    _chatSub = _db
+        .collection('chats')
+        .doc(_chatRoomId)
+        .collection('messages')
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .listen((snapshot) {
+      // 위젯이 이미 dispose된 상태면 더 이상 setState 하지 않도록 방어
+      if (!mounted) return;
+
+      final msgs = snapshot.docs.map((d) => Message.fromDoc(d)).toList();
+
+      final myUid = _myUid;
+      final hasOpponentImage = msgs.any((m) {
+        if (!m.hasImage) return false;
+        if (myUid == null) return true;
+        return m.senderId != myUid;
+      });
+
+      setState(() {
+        _messages = msgs;
+        _canPay = hasOpponentImage;
+      });
+
+
 });
 
         
@@ -205,6 +185,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
      _requestSub?.cancel(); 
     _scrollController.dispose();
     _messageController.dispose();
+    _chatSub?.cancel(); 
     super.dispose();
   }
 
@@ -380,10 +361,10 @@ Future<void> _ensureChatRoomExists() async {
  // ===========================================================================
 
   // [프로필 사진] 위젯
-  Widget _buildAvatar({required bool isMe}) {
+  Widget _buildAvatar({required bool loginProfile}) {
     // 내 프로필을 안 보이고 싶다면 isMe일때 SizedBox.shrink() 리턴
     // isMe면 빈 공간 (말풍선 정렬을 맞춤)
-    if (isMe) return const SizedBox(width: 36);
+    if (loginProfile) return const SizedBox(width: 36);
 
     final url = _otherProfileUrl;
     return Padding(
@@ -451,6 +432,7 @@ Future<void> _ensureChatRoomExists() async {
                         isAsset: false,                  // 네트워크니까 false
                         heroTag: 'chat_image_${msg.id}',
                         photoOwnerNickname: _requesterNickname,
+                        canDownload: _canDownload,
                       ),
                     ),
                   );
@@ -467,6 +449,8 @@ Future<void> _ensureChatRoomExists() async {
                         isAsset: isAsset,
                         heroTag: 'chat_image_${msg.id}',
                         photoOwnerNickname: _requesterNickname,
+                        canDownload: _canDownload,
+
                       ),
                     ),
                   );
@@ -509,7 +493,45 @@ Future<void> _ensureChatRoomExists() async {
       ),
     );
   }
+  
 
+  // [결제 요청] 메세지 보내기
+
+  Future<void> _sendPaymentRequestMessage() async {
+    await _ensureChatRoomExists();
+
+    final senderId = _myUid ?? 'unknown';
+    final text = '[결제 요청] 사진 확인 후 "구매하기" 버튼을 눌러 결제를 진행해 주세요.';
+
+    try {
+      debugPrint('💬 결제 요청 메시지 전송 시도: $senderId');   // <-- 디버깅용
+      debugPrint('💬 로그인 사용자: $_myUid');
+      debugPrint('💬 의뢰자: $_requesterUid');
+        
+      await _db
+          .collection('chats')
+          .doc(_chatRoomId)
+          .collection('messages')
+          .add({
+        'senderId': senderId,
+        'text': text,
+        'imageUrl': null,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      await _db.collection('chats').doc(_chatRoomId).update({
+        'participants': [_myUid, _requesterUid],
+        'lastMessage': text,
+        'lastSenderId': senderId,
+        'lastTimestamp': FieldValue.serverTimestamp(),
+      });
+
+      Fluttertoast.showToast(msg: '결제 요청 메시지를 보냈어요!');
+    } catch (e) {
+      debugPrint('결제 요청 메시지 전송 오류: $e');
+      Fluttertoast.showToast(msg: '결제 요청 메시지를 보내는 중 오류가 발생했어요.');
+    }
+  }
 
  // =========================================================================== 
  // 이미지 선택 관련 함수들
@@ -905,7 +927,22 @@ Future<void> _ensureChatRoomExists() async {
                     child: SizedBox(
                       width: double.infinity, // 화면 가로 꽉 차게
                       child: ElevatedButton(
-                        onPressed: _showPaymentDialog, // 팝업 띄우는 함수
+                        onPressed: () {
+                          // 1) 수락자가 "결제 요청하기"를 누른 경우 → 결제 요청 메시지만 보내기 (수락자는 돈을 받아야 함)
+                          if (!_isOwner) {
+                            _sendPaymentRequestMessage();
+                            return;
+                          }
+
+                          // 2) 의뢰자 사진 받기 전이면 토스트
+                          if (!_canPay) {
+                            Fluttertoast.showToast(msg: '사진을 받은 후에 결제할 수 있어요!');
+                            return;
+                          }
+
+                          // 3) 의뢰자이고, 사진도 받은 상태면 결제 다이얼로그
+                          _showPaymentDialog();
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor:  const Color(0xFFDFF1D5), // 배경색 흰색
                           shape: RoundedRectangleBorder(
@@ -920,8 +957,7 @@ Future<void> _ensureChatRoomExists() async {
                           children: [
                             Icon(Icons.payment, color: const Color.fromARGB(221, 30, 30, 30)),
                             const SizedBox(width: 5),
-                            const Text(
-                              '결제하기',
+                            Text( _isOwner ? '구매하기': '결제 요청 하기',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Color.fromARGB(255, 53, 53, 53),
@@ -967,7 +1003,7 @@ Future<void> _ensureChatRoomExists() async {
                                 isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
                                 children: [
                                     if(isMe) Text((msg.createdAt).toKoreanAMPM(), style: TextStyle(fontSize: 10, color: Colors.grey)),
-                                    if(!isMe) _buildAvatar(isMe: false),
+                                    if(!isMe) _buildAvatar(loginProfile: false),
                                     _buildBubble(context, msg, isMe),
                                     if(!isMe) Text((msg.createdAt).toKoreanAMPM(), style: TextStyle(fontSize: 10, color: Colors.grey)),
                                     // if (isMe) const SizedBox(width: 36),

@@ -103,8 +103,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => ChatDetailScreen(
-                          request: request,           
-                            
+                          request: request,         
                         ),
                       ),
                     );

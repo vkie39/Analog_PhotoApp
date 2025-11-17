@@ -29,6 +29,8 @@ import 'package:flutter_application_sajindongnae/models/chat_list_model.dart';
 
 // 채팅 상세 페이지 import
 import 'package:flutter_application_sajindongnae/screen/chat/chat_detail.dart';
+import 'package:flutter_application_sajindongnae/screen/chat/chat_list.dart';
+
 
 enum MoreAction { report, edit, delete }
 
@@ -148,6 +150,7 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
 
         // 항상 최신 Firestore 데이터를 사용
         final request = snapshot.data!;
+        dev.log('request.status = "${request.status}" (${request.status.runtimeType})');
         final isOwner = request.uid == FirebaseAuth.instance.currentUser?.uid;
 
         // 북마크 여부도 실시간 데이터로 계산
@@ -423,14 +426,22 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                     } else {
                       dev.log('기존 채팅방 존재: $chatRoomId');
                     }
-
+                    
                     // 채팅 상세 화면으로 이동
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ChatDetailScreen(request: request),
-                      ),
-                    );
+                    if(isOwner){                // 1. 의뢰 작성자일 경우 -> 채팅 리스트 화면으로 이동
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ChatListScreen()),
+                      );
+                    }
+                    else{                       // 2. 의뢰 수락자일 경우 -> 채팅 화면으로 이동
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatDetailScreen(request: request),
+                        ),
+                      );
+                    }
                   },
                   style: ButtonStyle(
                     backgroundColor: WidgetStateProperty.resolveWith<Color>(
@@ -448,7 +459,10 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                     ),
                   ),
                   child:
-                      const Text('수락하기', style: TextStyle(color: Colors.black)),
+                    Text(
+                      isOwner ? '대화중인 채팅' : '수락하기',
+                      style: const TextStyle(color: Colors.black),
+                    ),
                 ),
               ],
             ),

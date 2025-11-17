@@ -98,6 +98,7 @@ class RequestModel {
       'acceptedBy': acceptedBy,
       'likedBy': likedBy,
       'likeCount': likeCount,
+      'isPaied': isPaied,
     };
   }
 }
