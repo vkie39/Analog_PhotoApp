@@ -173,9 +173,14 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
         location: location,
         position: pickedPos!,
         bookmarkedBy: [],
+        status: '의뢰중',
         isFree: _feeTypeIsSelected[0],
+        isPaied: false,
         reportCount: 0,
       );
+    
+      dev.log('request 모델 생성 완료 *********************');
+    
 
       // 등록
       await RequestService().addRequest(request);
@@ -184,43 +189,9 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
         const SnackBar(content: Text("의뢰글이 등록되었습니다.")),
       );
 
-    dev.log('유효성 검사 완료 *********************');
-
-    final photoName = requestTitleController.text.trim();
-    final price =
-        int.parse(priceController.text.replaceAll(',', '').trim());
-    final description = descriptionController.text.trim();
-    final location = locationController.text.trim();
-    dev.log('데이터 공백 처리 완료 *********************');
-
-
-    final request = RequestModel(
-      requestId: const Uuid().v4(),
-      uid: user.uid,
-      nickname: user.displayName ?? '사용자',
-      profileImageUrl: user.photoURL ?? '',
-      category: null,
-      dateTime: DateTime.now(),
-      title: photoName,
-      description: description,
-      price: price,
-      location: location,
-      position: pickedPos!,
-      bookmarkedBy: [],
-      isFree: _feeTypeIsSelected[0],
-      isPaied: false,
-    );
-
-    dev.log('request 모델 생성 완료 *********************');
-    
-    try{
-      await RequestService().addRequest(request);
-    } catch (e){
-      dev.log('request_upload_error: ${e}');
-    }
-    
     dev.log('request 업로드 완료 *********************');
-
+    }
+  }
 
 
   // 유료-무료 선택했을 때 호출
@@ -265,7 +236,7 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
   }
 
   // 공통 InputDecoration 스타일 정의 (입력칸 스타일)
-  static final baseDecoration = InputDecoration(
+  final baseDecoration = InputDecoration(
     labelStyle: TextStyle(fontSize: 14, color: Color.fromARGB(255, 136, 136, 136)),
     hintStyle: TextStyle(fontSize: 10, color: Color.fromARGB(255, 136, 136, 136)),
     enabledBorder: UnderlineInputBorder( borderSide: BorderSide(color: Color.fromARGB(255, 221, 221, 221), width: 1.5)),
@@ -520,3 +491,5 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
     );
   }
 }
+
+  
