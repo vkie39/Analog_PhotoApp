@@ -76,48 +76,80 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 const Divider(height: 1, color: Color(0xFFEFEFEF)),
             itemBuilder: (context, index) {
               final room = chatRooms[index];
+              dev.log('${room.requestId}');
 
               return ChatCard(
                 chatRoom: room,
-                onTap: () async {
-                  dev.log('🔥 room.requestId = ${room.requestId}');  
-                  try {
-                    // 1) requestId로 해당 의뢰글 Firestore에서 조회
-                    final request =
-                        await _requestService.getRequestById(room.requestId);
-                    dev.log('request ID 받아오기 *********************');
+                // 채팅방 클릭 시 처리
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChatDetailScreen(
+                        request: RequestModel(
+                          requestId: room.requestId,
+                          uid: room.lastSenderId,
+                          nickname: room.requesterNickname,
+                          title: room.lastMessage,
+                          profileImageUrl: room.requesterProfileImageUrl,
+                          dateTime: room.lastTimestamp,
+                          description: '',
+                          price: 0,
+                          isFree: true,         
+                          location: '',
+                          position: const LatLng(0, 0),
+                          bookmarkedBy: [],
+                          isPaied: false,
+                        )
+                      )
+                    )
+                  );
+                }
+                      // -----------------------------------------------------
+                      // 함 수정
+                      // 가짜 데이터(request) 만들어서 넘기던 방식 
+                      // -> chat에 저장된 requestId로 request 모델 검색해서 넘김
+                      // -----------------------------------------------------
+                                      
+                /*onTap: () async {
+                    dev.log('🔥 room.requestId = ${room.requestId}');  
+                    try {
+                      // 1) requestId로 해당 의뢰글 Firestore에서 조회
+                      final request =
+                          await _requestService.getRequestById(room.requestId);
+                      dev.log('request ID 받아오기 *********************');
+                        
                       
-                    
 
-                    if (request == null) {
-                      // 의뢰글이 삭제됐거나 없는 경우
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('해당 의뢰글을 찾을 수 없습니다.')),
-                      );
-                      return;
-                    }
-                    // -----------------------------------------------------
-                    // 함 11/26 수정
-                    // 가짜 데이터(request) 만들어서 넘기던 방식 
-                    // -> chat에 저장된 requestId로 request 모델 검색해서 넘김
-                    // -----------------------------------------------------
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ChatDetailScreen(
-                          request: request,         
+                      if (request == null) {
+                        // 의뢰글이 삭제됐거나 없는 경우
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('해당 의뢰글을 찾을 수 없습니다.')),
+                        );
+                        return;
+                      }
+                      // -----------------------------------------------------
+                      // 함 11/26 수정
+                      // 가짜 데이터(request) 만들어서 넘기던 방식 
+                      // -> chat에 저장된 requestId로 request 모델 검색해서 넘김
+                      // -----------------------------------------------------
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatDetailScreen(
+                            request: request,         
+                          ),
+
                         ),
-
-                      ),
-                    );
-                  }
-                  catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('의뢰 정보를 불러오지 못했습니다.')),
-                    );
-                    dev.log('의뢰 정보 오류 :  ${e}');
-                  }
-                },
+                      );
+                    }
+                    catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('의뢰 정보를 불러오지 못했습니다.')),
+                      );
+                      dev.log('의뢰 정보 오류 : ${e}');
+                    }
+                }, */
               );
             },
           );
