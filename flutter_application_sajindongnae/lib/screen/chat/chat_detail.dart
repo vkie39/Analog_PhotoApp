@@ -402,19 +402,24 @@ Future<void> _ensureChatRoomExists() async {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 텍스트 메시지
-          if (msg.hasText)
+          // ───────────── 텍스트 메시지 ─────────────
+          if (msg.text != null && msg.text!.isNotEmpty)
             Text(
               msg.text!,
               style: const TextStyle(fontSize: 15, color: Colors.black),
             ),
-          if (msg.hasText && msg.hasImage) const SizedBox(height: 8),
 
-          // 이미지 메시지
-          if (msg.hasImage)
+          if ((msg.text != null && msg.text!.isNotEmpty) &&
+              ((msg.imageUrl != null && msg.imageUrl!.isNotEmpty) ||
+                  msg.image != null))
+            const SizedBox(height: 8),
+
+          // ───────────── 이미지 + 워터마크 (말풍선 안) ─────────────
+          if ((msg.imageUrl != null && msg.imageUrl!.isNotEmpty) ||
+              msg.image != null)
             GestureDetector(
               onTap: () {
-                // 1) Firestore에 올라간 네트워크 이미지
+                // 1) Firestore 네트워크 이미지일 때 → 전체보기로 이동
                 if (msg.imageUrl != null && msg.imageUrl!.isNotEmpty) {
                   Navigator.push(
                     context,
@@ -430,7 +435,8 @@ Future<void> _ensureChatRoomExists() async {
                   );
                   return;
                 }
-                // 2) (옵션) 로컬 XFile용
+
+                // 2) 로컬/에셋 이미지 (혹시 있을 경우 대비용)
                 if (msg.image != null) {
                   final isAsset = msg.image!.path.startsWith('assets/');
                   Navigator.push(
@@ -453,8 +459,8 @@ Future<void> _ensureChatRoomExists() async {
                   borderRadius: BorderRadius.circular(8),
                   child: Stack(
                     children: [
-                      // 1) 원본 이미지
-                      if (msg.imageUrl != null && msg.imageUrl!.startsWith('http'))
+                      // 1) 실제 이미지
+                      if (msg.imageUrl != null && msg.imageUrl!.isNotEmpty)
                         Image.network(
                           msg.imageUrl!,
                           width: 200,
@@ -476,7 +482,7 @@ Future<void> _ensureChatRoomExists() async {
                         else
                           const SizedBox.shrink(),
 
-                      // 2) 워터마크
+                      // 2) 워터마크 (이미지 위에만)
                       Positioned(
                         right: 6,
                         bottom: 4,
@@ -484,13 +490,13 @@ Future<void> _ensureChatRoomExists() async {
                           '사진동네',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withOpacity(0.95),
                             fontWeight: FontWeight.bold,
                             shadows: [
                               Shadow(
                                 offset: const Offset(0, 0),
                                 blurRadius: 3,
-                                color: Colors.black.withOpacity(0.6),
+                                color: Colors.black.withOpacity(0.7),
                               ),
                             ],
                           ),
@@ -506,7 +512,7 @@ Future<void> _ensureChatRoomExists() async {
     );
   }
 
-  
+
 
   // [결제 요청] 메세지 보내기
 
