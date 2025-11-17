@@ -613,34 +613,81 @@ class _SignupDetailScreenState extends State<SignupDetailScreen> {
                 const SizedBox(height: 16),
 
                 // ✅ 이메일 입력 + 중복확인 버튼 (이 화면에서 직접 구현)
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        autofillHints: const [AutofillHints.email],
-                        onChanged: _validateEmail,
-                        decoration: InputDecoration(
-                          labelText: '이메일',
-                          errorText: emailErrorText,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            onChanged: _validateEmail,
+                            decoration: InputDecoration(
+                              hintText: '이메일 입력',
+                              hintStyle: const TextStyle(
+                                color: Color.fromARGB(255, 128, 128, 128),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(4),
+                                borderSide: BorderSide(
+                                  color: emailErrorText != null
+                                      ? Colors.red
+                                      : const Color(0xFFC0C0C0),
+                                  width: 1.5,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(4),
+                                borderSide: BorderSide(
+                                  color: emailErrorText != null ? Colors.red : Colors.black,
+                                  width: 1.5,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: (isLoading || isCheckingEmail) ? null : _checkEmailDup,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFDBEFC4),
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          child: isCheckingEmail
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Text('중복 확인'),
+                        ),
+                      ],
+                    ),
+                    if (emailErrorText != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        emailErrorText!,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: (isLoading || isCheckingEmail) ? null : _checkEmailDup,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFDBEFC4),
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                      ),
-                      child: isCheckingEmail
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Text('중복 확인'),
-                    ),
+                    ]
                   ],
                 ),
 

@@ -26,6 +26,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_application_sajindongnae/models/request_model.dart';
 import 'package:flutter_application_sajindongnae/services/request_service.dart';
 import 'package:flutter_application_sajindongnae/models/chat_list_model.dart';
+import 'package:flutter_application_sajindongnae/screen/post/report.dart';
 
 // 채팅 상세 페이지 import
 import 'package:flutter_application_sajindongnae/screen/chat/chat_detail.dart';
@@ -188,6 +189,7 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                       PopupMenuItem<MoreAction>(
                         value: MoreAction.edit,
                         child: Text('수정하기'),
+
                       ),
                       PopupMenuDivider(height: 5),
                       PopupMenuItem<MoreAction>(

@@ -3,20 +3,19 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:flutter_application_sajindongnae/screen/post/update.dart'; // ✅ main 브랜치에서 추가된 수정 화면
+import 'package:flutter_application_sajindongnae/screen/post/update.dart';
 import 'package:flutter_application_sajindongnae/models/post_model.dart';
 import 'package:flutter_application_sajindongnae/component/comment_list.dart';
 import 'package:flutter_application_sajindongnae/models/comment_model.dart';
 import 'package:flutter_application_sajindongnae/services/comment_service.dart';
 import 'package:flutter_application_sajindongnae/services/post_service.dart';
 import 'package:flutter_application_sajindongnae/screen/post/report.dart';
-import 'dart:developer';
 import 'dart:developer' as dev;
 
 enum MoreAction { report, edit, delete }
 
 class PostDetailScreen extends StatefulWidget {
-  final PostModel post; // 게시글 객체 받아옴
+  final PostModel post;
   const PostDetailScreen({super.key, required this.post});
 
   @override
@@ -25,20 +24,7 @@ class PostDetailScreen extends StatefulWidget {
 
 class _PostDetailScreenState extends State<PostDetailScreen> {
   final TextEditingController _commentController = TextEditingController();
-  bool isLiked = false; // 좋아요 상태
-  int likeCount = 0; // 좋아요 수
   final uid = FirebaseAuth.instance.currentUser?.uid;
-
-  @override
-  void initState() {
-    super.initState();
-    likeCount = widget.post.likeCount;
-
-    // 브랜치에서 있던 좋아요 초기화 로직 유지
-    if (uid != null && widget.post.likedBy.contains(uid)) {
-      isLiked = true;
-    }
-  }
 
   @override
   void dispose() {
@@ -46,88 +32,44 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     super.dispose();
   }
 
+  // ---------------------------------------------------------------------------------
+  //
+  // HEAD 브랜치에서 개선된 likedBy 기반 좋아요 토글 로직의 주석은 유지하지만,
+  // 실제 구현은 min-branch 구조에 맞게 Firestore에 반영 후 StreamBuilder가 UI를 업데이트함.
+  //
+  // setState로 즉시 UI를 조작하는 부분은 Firestore 실시간 데이터와 충돌하므로 제거하였음.
+  //
+  // ----------------------------------------------------------------------------------
 
-  // ✅ HEAD 브랜치에서 개선된 likedBy 기반 좋아요 토글 로직 반영
   void _toggleLike(BuildContext ctx, PostModel post) async {
 
     // ---------------------------------------------------------------------------------
-    //
-    // 함경민이 11-16일에 수정한 부분
-    //
-    // : 좋아요 클릭 이벤트에 대한 UI를 즉시 반영하기 위해
-    // : UI 업데이트를 위한 setState를 비동기 작업과 분리하여, 비동기 작업 이전에 실행되도록 함
-    // : 11-15일 확인했을 때 좋아요에 대한 firestore 권한 문제? 같은게 있었는데
-    // : firestore에서 에러나면 그 이후 UI업데이트 로직도 실행이 안되는 문제가 있었음
-    // : 그래서 UI를 먼저하고, firestore작업을 다음에 하도록 함
-    // : 아직 권한 문제가 완전히 해결된 건 아니라 이전 페이지 갔다가 다시 오면 좋아요 반영이 안됨
-    // 
-    // ----------------------------------------------------------------------------------
-    
-    try {
+    // 함경민이 11-16일에 수정한 부분 (주석 유지)
+    // ---------------------------------------------------------------------------------
 
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          const SnackBar(
-            content: Text('로그인 후 이용해주세요.'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        dev.log('로그인 않은 사용자의 좋아요 시도: $uid');
-        return;
-      }
-      dev.log('로그인 사용자의 좋아요 시도: $uid');
-      
-      // UI 즉시 반영(디자인만) -> 실제 데이터는 아래의 비동기 작업 PostService.toggleLike이후에 반영됨 (파이어베이스에서 작업 오류나면 반영 안됨)
-/*
-  // 브랜치에서 개선된 likedBy 기반 좋아요 토글 로직 반영
-  void _toggleLike(PostModel post) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('로그인이 필요합니다.')));
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        const SnackBar(
+          content: Text('로그인 후 이용해주세요.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
       return;
     }
+
     try {
-      // Firestore 좋아요 토글
       await PostService.toggleLike(post.postId);
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) return;
-*/
-      setState(() {
-        if (isLiked) {
-          likeCount -= 1;
-          isLiked = false;
-        } else {
-          likeCount += 1;
-          isLiked = true;
-        }
-      });
-
-      await PostService.toggleLike(post.postId);
-      if (post.likedBy.contains(uid)) {
-          post.likedBy.remove(uid);
-        } else {
-          post.likedBy.add(uid);
-        }
-
     } catch (e) {
       dev.log('좋아요 토글 실패: $e');
-      // 사용자 안내
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('좋아요 업데이트에 실패했습니다. 잠시 후 다시 시도해주세요.')),
       );
-
     }
 
     // ---------------------------------------------------------------------------------
-    //
-    // 함경민이 11-16일에 수정한 부분 !!!!!!!!!!! 여기까지 !!!!!!!!!!!!!!!
-    // 
+    // 수정 끝
     // ----------------------------------------------------------------------------------
-
-
   }
 
   // 댓글 등록
@@ -136,14 +78,27 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     final commentText = _commentController.text.trim();
     if (commentText.isEmpty) return;
 
-    final commentId = const Uuid().v4();
     final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final commentId = const Uuid().v4();
+
+    // [수정] Firestore users 컬렉션에서 nickname, profileImageUrl 가져오기
+    final userDoc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .get();
+
+    final nickname = userDoc.data()?["nickname"] ?? "사용자";                 // [수정]
+    final profileImageUrl = userDoc.data()?["profileImageUrl"]
+                              ?? user.photoURL
+                              ?? "";                                        // [수정]
 
     final newComment = CommentModel(
       commentId: commentId,
-      uid: user?.uid ?? 'guest',
-      nickname: user?.email ?? '익명',
-      profileImageUrl: '',
+      uid: user.uid,
+      nickname: nickname,                // [수정]
+      profileImageUrl: profileImageUrl,  // [수정]
       content: commentText,
       timestamp: DateTime.now(),
     );
@@ -152,22 +107,20 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       await CommentService.addComment(post.postId, newComment);
       _commentController.clear();
     } catch (e) {
-      print('댓글 업로드 실패: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('댓글 등록에 실패했어요. 다시 시도해주세요.')));
+      dev.log('댓글 업로드 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('댓글 등록에 실패했어요. 다시 시도해주세요.')),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot>(
-      //자동 갱신 방식 (Firestore 실시간 스트림)
-      stream:
-          FirebaseFirestore.instance
-              .collection('posts')
-              .doc(widget.post.postId)
-              .snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('posts')
+          .doc(widget.post.postId)
+          .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Scaffold(
@@ -175,13 +128,17 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           );
         }
 
-        final isOwner = widget.post.uid == uid;
         final post = PostModel.fromDocument(snapshot.data!);
+        final isOwner = post.uid == uid;
+
+        final bool isLiked = uid != null && post.likedBy.contains(uid);
+        final int likeCount = post.likeCount;
+
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => FocusScope.of(context).unfocus(),
           child: Scaffold(
-            backgroundColor: const Color(0xFFFFFFFF),
+            backgroundColor: Colors.white,
             appBar: AppBar(
               title: Text('${post.category} 게시판'),
               centerTitle: true,
@@ -191,101 +148,86 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
               actions: [
                 PopupMenuButton<MoreAction>(
-                  icon: const Icon(Icons.more_vert), // 점 3개 아이콘 명시
+                  icon: const Icon(Icons.more_vert),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
                   ),
-                  color: Colors.white, // 메뉴 배경색
-                  elevation: 6, // 그림자 깊이
-                  position: PopupMenuPosition.under, // 메뉴가 버튼 아래에 나타나도록 설정
-                  // 메뉴 항목 선택 시 처리
+                  color: Colors.white,
+                  elevation: 6,
+                  position: PopupMenuPosition.under,
+
                   onSelected: (MoreAction action) async {
                     switch (action) {
                       case MoreAction.report:
-                        // 신고하기 화면으로 이동
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) => ReportPostScreen(postId: post.postId),
+                            builder: (_) =>
+                                ReportPostScreen(
+                                  postId: post.postId,
+                                  postType: 'posts',
+                                ),
                           ),
                         );
                         break;
+
                       case MoreAction.edit:
-                        dev.log('수정하기 선택됨');
-                        // 수정하기 로직 추가
-                        final updatedPost = await Navigator.of(
-                          context,
-                        ).push<PostModel>(
+                        await Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder:
-                                (context) => UpdateScreen(existingPost: post),
+                            builder: (_) =>
+                                UpdateScreen(existingPost: post),
                           ),
                         );
-                        if (updatedPost != null) {
-                          // 자동 갱신이 있으니 여기선 setState 불필요
-                        }
                         break;
+
                       case MoreAction.delete:
-                        dev.log('삭제하기 선택됨');
-                        // 삭제 확인 다이얼로그 표시
                         final shouldDelete = await showDialog<bool>(
                           context: context,
-                          builder:
-                              (context) => AlertDialog(
-                                shape: RoundedRectangleBorder(
-                                  // 모서리 둥글게
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                backgroundColor: Colors.white, // 배경색
-                                title: const Text('정말로 이 판매글을 삭제하시겠습니까?'), // 제목
-                                content: const Text('삭제 후에는 복구할 수 없습니다.'), // 내용
-                                actions: [
-                                  TextButton(
-                                    onPressed:
-                                        () => Navigator.of(context).pop(false),
-                                    child: const Text(
-                                      '취소',
-                                      style: TextStyle(color: Colors.black),
-                                    ),
-                                  ),
-                                  TextButton(
-                                    onPressed:
-                                        () => Navigator.of(context).pop(true),
-                                    child: const Text(
-                                      '삭제',
-                                      style: TextStyle(color: Colors.red),
-                                    ),
-                                  ),
-                                ],
+                          builder: (_) => AlertDialog(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            backgroundColor: Colors.white,
+                            title: const Text('정말로 이 판매글을 삭제하시겠습니까?'),
+                            content: const Text('삭제 후에는 복구할 수 없습니다.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(context).pop(false),
+                                child: const Text('취소', style: TextStyle(color: Colors.black)),
                               ),
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(context).pop(true),
+                                child: const Text('삭제', style: TextStyle(color: Colors.red)),
+                              ),
+                            ],
+                          ),
                         );
-                        // 사용자가 삭제를 확인했을 때 삭제 로직 실행
+
                         if (shouldDelete == true) {
-                          dev.log('삭제 로직 실행됨');
                           await PostService.deletePostWithImage(post);
-                          Navigator.of(context).pop(); // 삭제 후 이전 화면으로 돌아감
+                          Navigator.of(context).pop();
                         }
                         break;
                     }
                   },
 
-                  // 메뉴 항목. 작성자와 비작성자에 따라 다르게 표시
-                  itemBuilder: (BuildContext context) {
+                  itemBuilder: (_) {
                     if (isOwner) {
                       return const [
-                        PopupMenuItem<MoreAction>(
+                        PopupMenuItem(
                           value: MoreAction.edit,
                           child: Text('수정하기'),
                         ),
-                        PopupMenuDivider(height: 5), // 구분선
-
-                        PopupMenuItem<MoreAction>(
+                        PopupMenuDivider(height: 5),
+                        PopupMenuItem(
                           value: MoreAction.delete,
                           child: Text('삭제하기'),
                         ),
                       ];
                     } else {
                       return const [
-                        PopupMenuItem<MoreAction>(
+                        PopupMenuItem(
                           value: MoreAction.report,
                           child: Text('신고하기'),
                         ),
@@ -295,8 +237,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 ),
               ],
             ),
+
             body: Builder(
-              builder: (innerContext){
+              builder: (innerCtx) {
                 return ListView(
                   padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                   children: [
@@ -310,27 +253,39 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(post.nickname,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 14)),
-                            Text(_getFormattedTime(post.timestamp),
-                                style: const TextStyle(
-                                    color: Colors.grey, fontSize: 12)),
+                            Text(
+                              post.nickname,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14),
+                            ),
+                            Text(
+                              _getFormattedTime(post.timestamp),
+                              style: const TextStyle(
+                                  color: Colors.grey, fontSize: 12),
+                            ),
                           ],
                         ),
                       ],
                     ),
+
                     const Divider(
-                        height: 32,
-                        thickness: 0.5,
-                        color: Color.fromARGB(255, 180, 180, 180)),
+                      height: 32,
+                      thickness: 0.5,
+                      color: Color.fromARGB(255, 180, 180, 180),
+                    ),
+
                     const SizedBox(height: 10),
-                    Text(post.title,
-                        style: const TextStyle(
-                            fontSize: 22, fontWeight: FontWeight.bold)),
+                    Text(
+                      post.title,
+                      style: const TextStyle(
+                          fontSize: 22, fontWeight: FontWeight.bold),
+                    ),
+
                     const SizedBox(height: 12),
                     Text(post.content,
                         style: const TextStyle(fontSize: 15)),
+
                     if (post.imageUrl != null) ...[
                       const SizedBox(height: 12),
                       ClipRRect(
@@ -338,12 +293,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         child: Image.network(
                           post.imageUrl!,
                           fit: BoxFit.fitWidth,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return const Center(
-                                child: CircularProgressIndicator());
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return const Center(child: CircularProgressIndicator());
                           },
-                          errorBuilder: (context, error, stackTrace) => Container(
+                          errorBuilder: (_, __, ___) => Container(
                             height: 200,
                             color: Colors.grey[200],
                             child: const Center(
@@ -354,15 +308,18 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         ),
                       ),
                     ],
+
                     const SizedBox(height: 16),
                     const Divider(
-                        height: 32,
-                        thickness: 0.5,
-                        color: Color.fromARGB(255, 180, 180, 180)),
+                      height: 32,
+                      thickness: 0.5,
+                      color: Color.fromARGB(255, 180, 180, 180),
+                    ),
+
                     Row(
                       children: [
                         InkWell(
-                          onTap: () => _toggleLike(innerContext, post),
+                          onTap: () => _toggleLike(innerCtx, post),
                           child: Row(
                             children: [
                               Icon(
@@ -375,9 +332,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                                     : const Color.fromARGB(255, 161, 161, 161),
                               ),
                               const SizedBox(width: 6),
-                              Text('$likeCount',
-                                  style: const TextStyle(
-                                      color: Color.fromARGB(255, 161, 161, 161))),
+                              Text(
+                                '$likeCount',
+                                style: const TextStyle(
+                                  color: Color.fromARGB(255, 161, 161, 161),
+                                ),
+                              )
                             ],
                           ),
                         ),
@@ -386,121 +346,22 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                             size: 30,
                             color: Color.fromARGB(255, 191, 191, 191)),
                         const SizedBox(width: 6),
-                        Text('${post.commentCount}',
-                            style: const TextStyle(
-                                color: Color.fromARGB(255, 161, 161, 161))),
+                        Text(
+                          '${post.commentCount}',
+                          style: const TextStyle(
+                            color: Color.fromARGB(255, 161, 161, 161),
+                          ),
+                        )
                       ],
                     ),
+
                     const SizedBox(height: 18),
                     CommentList(postId: post.postId),
-/*
-                        Text(
-                          post.nickname,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        Text(
-                          _getFormattedTime(post.timestamp),
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const Divider(
-                  height: 32,
-                  thickness: 0.5,
-                  color: Color.fromARGB(255, 180, 180, 180),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  post.title,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(post.content, style: const TextStyle(fontSize: 15)),
-                if (post.imageUrl != null) ...[
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.network(
-                      post.imageUrl!,
-                      fit: BoxFit.fitWidth,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(child: CircularProgressIndicator());
-                      },
-                      errorBuilder:
-                          (context, error, stackTrace) => Container(
-                            height: 200,
-                            color: Colors.grey[200],
-                            child: const Center(
-                              child: Icon(
-                                Icons.broken_image,
-                                color: Colors.grey,
-                                size: 40,
-                              ),
-                            ),
-                          ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                const Divider(
-                  height: 32,
-                  thickness: 0.5,
-                  color: Color.fromARGB(255, 180, 180, 180),
-                ),
-                Row(
-                  children: [
-                    InkWell(
-                      onTap: () => _toggleLike(post),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isLiked ? Icons.favorite : Icons.favorite_border,
-                            size: 30,
-                            color:
-                                isLiked
-                                    ? const Color.fromARGB(255, 102, 204, 105)
-                                    : const Color.fromARGB(255, 161, 161, 161),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '$likeCount',
-                            style: const TextStyle(
-                              color: Color.fromARGB(255, 161, 161, 161),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 80),
-                    const Icon(
-                      Icons.comment,
-                      size: 30,
-                      color: Color.fromARGB(255, 191, 191, 191),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${post.commentCount}',
-                      style: const TextStyle(
-                        color: Color.fromARGB(255, 161, 161, 161),
-                      ),
-                    ),
-*/
                   ],
                 );
               },
             ),
+
             bottomNavigationBar: Container(
               color: Colors.white,
               padding: EdgeInsets.only(
@@ -526,9 +387,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                               color: Color.fromARGB(255, 189, 189, 189),
                               fontSize: 14,
                             ),
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16,
-                            ),
+                            contentPadding:
+                                EdgeInsets.symmetric(horizontal: 16),
                             border: InputBorder.none,
                           ),
                         ),
@@ -541,7 +401,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         color: Color.fromARGB(255, 102, 204, 105),
                       ),
                       onPressed: () => _submitComment(post),
-                    ),
+                    )
                   ],
                 ),
               ),

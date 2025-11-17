@@ -49,7 +49,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: _db
             .collection('chats')
-            //.where('participants', arrayContains: currentUid)
             .orderBy('lastTimestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
@@ -61,7 +60,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
           // 데이터 없을 때
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             print('현재 로그인 UID: $currentUid');
-
             return const Center(child: Text('진행 중인 채팅이 없습니다.'));
           }
 
@@ -78,7 +76,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
             itemBuilder: (context, index) {
               final room = chatRooms[index];
 
-              // ChatCard에 ChatRoom 직접 전달
               return ChatCard(
                 chatRoom: room,
                 onTap: () async {
@@ -105,6 +102,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         builder: (_) => ChatDetailScreen(
                           request: request,         
                         ),
+
                       ),
                     );
                   }
