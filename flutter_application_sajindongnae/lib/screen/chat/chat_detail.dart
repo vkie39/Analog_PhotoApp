@@ -1005,6 +1005,7 @@ Future<void> _ensureChatRoomExists() async {
                                     if(isMe) Text((msg.createdAt).toKoreanAMPM(), style: TextStyle(fontSize: 10, color: Colors.grey)),
                                     if(!isMe) _buildAvatar(loginProfile: false),
                                     _buildBubble(context, msg, isMe),
+
                                     if(!isMe) Text((msg.createdAt).toKoreanAMPM(), style: TextStyle(fontSize: 10, color: Colors.grey)),
                                     // if (isMe) const SizedBox(width: 36),
 /*

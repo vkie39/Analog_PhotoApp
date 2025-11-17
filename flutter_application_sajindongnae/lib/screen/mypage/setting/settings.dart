@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage/setting/profileEdit.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage/setting/mypagePwfound.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage/setting/deleteAccount.dart';
+import 'package:flutter_application_sajindongnae/screen/mypage/setting/infomodify.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -37,6 +38,16 @@ class SettingsScreen extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (_) => const ProfileEditScreen(),
                     ),
+                  );
+                },
+              ),
+              const Divider(),
+              ListTile(
+                title: const Text("개인정보관리"),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const infoModifyScreen()),
                   );
                 },
               ),
