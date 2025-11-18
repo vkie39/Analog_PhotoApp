@@ -15,6 +15,7 @@ import 'package:flutter_application_sajindongnae/screen/chat/chat_image_viewer.d
 import 'package:flutter_application_sajindongnae/models/message_model.dart'; // Firestore Message 모델
 import 'package:flutter_application_sajindongnae/services/image_service.dart';
 import 'package:flutter_application_sajindongnae/services/request_service.dart';
+import 'package:flutter_application_sajindongnae/services/trade_BottomSheet_service.dart';
 
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
@@ -113,6 +114,12 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
     final otherUid = widget.chatRoom.participants.firstWhere(
       (id) => id != myUid,
     );
+    
+    // 상대방 UID 저장
+    _otherUid = otherUid;
+
+    // 프로필/닉네임 불러오기
+    _loadProfiles();
 
     final sorted = [myUid, otherUid]..sort();
     _chatRoomId = sorted.join('_');
