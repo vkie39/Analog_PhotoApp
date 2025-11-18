@@ -380,6 +380,16 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                         await chatRef.set(newChatRoom.toMap());
                         dev.log('새 채팅방 생성 완료: $chatRoomId');
 
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ChatDetailScreen(
+                              request: request,
+                              chatRoom: newChatRoom,   // ⭐ 여기!!!!
+                            ),
+                          ),
+                        );
+
                       } else {
                         // 기존 채팅방 읽기
                         final existingRoom =

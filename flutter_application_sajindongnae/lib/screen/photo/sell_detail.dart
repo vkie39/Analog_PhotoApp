@@ -6,6 +6,10 @@ import 'package:flutter_application_sajindongnae/screen/post/report.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/sell_write.dart';
 import 'package:flutter_application_sajindongnae/screen/chat/chat_image_viewer.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage/mypage.dart';
+import 'package:flutter_application_sajindongnae/screen/photo/watermarked_image.dart';
+import 'package:flutter_application_sajindongnae/screen/photo/watermarked_single.dart';
+
+
 
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -73,6 +77,47 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
       errorBuilder: (_, __, ___) => fallback,
     );
   }
+
+  // 사진 위에 중앙 워터마크 한 번만 찍는 빌더
+  Widget _waterMarkedImage(String url) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 화면 너비 기준으로 글자 크기 계산
+        final double baseWidth = constraints.maxWidth;
+        final double fontSize = (baseWidth * 0.6).clamp(16.0, 80.0);
+
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            // 원본 비율 유지하면서 가로 꽉 채우기
+            Image.network(
+              url,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+            // 중앙 워터마크 텍스트
+            Text(
+              '${photo.nickname} \n사진동네',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.bold,
+                color: Colors.white.withOpacity(0.15),
+                shadows: [
+                  Shadow(
+                    blurRadius: 4,
+                    offset: const Offset(1, 1),
+                    color: Colors.black.withOpacity(0.3),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
 
 
@@ -677,7 +722,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                 // 사진
                 SizedBox(
                   width: double.infinity,
-                  child: _buildNetworkImage(photo.imageUrl),
+                  child: _waterMarkedImage(photo.imageUrl),
                 ),
 
                 const SizedBox(height: 10),

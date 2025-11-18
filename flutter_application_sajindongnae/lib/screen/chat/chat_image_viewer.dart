@@ -8,7 +8,10 @@ import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:intl/intl.dart';
 // 권한
 import 'package:flutter_application_sajindongnae/services/image_service.dart';
+import 'package:flutter_application_sajindongnae/screen/photo/watermarked_image.dart';
+
 import 'package:http/http.dart' as http;  
+import 'dart:typed_data';
 
  // ---------------------------------------------------------------------------
  // 채팅 이미지 전체화면 뷰어
@@ -111,31 +114,71 @@ class ChatImageViewer extends StatelessWidget {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
+    // canDownload == false 일 때만 워터마크 사용
+    final bool useWatermark = !canDownload;
+
     late final Widget imageWidget;
 
-    if (imagePath.startsWith('http')) {
-      // 네트워크 이미지 -> firestore용 이것만 빼고 나중에 지워도 됨
-      imageWidget = Image.network(
-        imagePath,
-        fit: BoxFit.contain,
-      );
-    } else if (isAsset) {
-      // 에셋
-      imageWidget = Image.asset(
-        imagePath,
-        fit: BoxFit.contain,
-      );
+    if (useWatermark) {
+      // ===========================
+      // 워터마크 버전
+      // ===========================
+      if (imagePath.startsWith('http')) {
+        // 네트워크 이미지
+        imageWidget = WatermarkedImage.network(
+          imagePath,
+          fit: BoxFit.contain,
+          watermarkText: '사진동네',
+          opacity: 0.18,
+          paddingFactor: 2.5,
+          angleDeg: -45,
+        );
+      } else if (isAsset) {
+        // 에셋 이미지
+        imageWidget = WatermarkedImage.asset(
+          imagePath,
+          fit: BoxFit.contain,
+          watermarkText: '사진동네',
+          opacity: 0.18,
+          paddingFactor: 2.5,
+          angleDeg: -45,
+        );
+      } else {
+        // 로컬 파일
+        imageWidget = WatermarkedImage.file(
+          File(imagePath),
+          fit: BoxFit.contain,
+          watermarkText: '사진동네',
+          opacity: 0.18,
+          paddingFactor: 2.5,
+          angleDeg: -45,
+        );
+      }
     } else {
-      // 로컬 파일
-      imageWidget = Image.file(
-        File(imagePath),
-        fit: BoxFit.contain,
-      );
-    } 
+      // ===========================
+      // 원본 버전 (워터마크 없음)
+      // ===========================
+      if (imagePath.startsWith('http')) {
+        imageWidget = Image.network(
+          imagePath,
+          fit: BoxFit.contain,
+        );
+      } else if (isAsset) {
+        imageWidget = Image.asset(
+          imagePath,
+          fit: BoxFit.contain,
+        );
+      } else {
+        imageWidget = Image.file(
+          File(imagePath),
+          fit: BoxFit.contain,
+        );
+      }
+    }
 
+    // 여기서 항상 한 번만 return
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -147,7 +190,6 @@ class ChatImageViewer extends StatelessWidget {
         ),
         centerTitle: true,
         actions: [
-          // 다운로드 가능한 경우 (다운로드 버튼 표시)
           if (canDownload)
             IconButton(
               icon: const Icon(Icons.download),
@@ -155,18 +197,16 @@ class ChatImageViewer extends StatelessWidget {
                 await _saveImageToGallery(context);
               },
             )
-          // 다운로드 불가능한 경우 (결제 후 다운 버튼 표시- 버튼 누르면 왜 다운 못하는지 설명문 보여줄까 함)
           else
             TextButton(
               onPressed: () {
-                // 나중에 결제 화면으로 이동시키고 싶으면 여기서 Navigator.push로 연결해도 됨
                 Fluttertoast.showToast(msg: '결제 후 다운로드 가능해요.');
               },
               child: const Text(
                 '결제후 다운로드 가능해요',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 12, // 필요하면 글씨 조금 작게
+                  fontSize: 12,
                 ),
               ),
             ),
@@ -185,3 +225,4 @@ class ChatImageViewer extends StatelessWidget {
     );
   }
 }
+
