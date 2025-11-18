@@ -52,15 +52,18 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
       appBar: AppBar(
         backgroundColor: Colors.white, // 앱 바 배경색 
         elevation: 0,                    // 그림자
-        title: SearchBarWidget(          // Appbar의 title자리에 search.dart에서 정의한 검색창 배치
-          controller: searchController,  // 위에서 정의한 검색창 컨트롤러
-          onChanged: (value){
-            // 이후에 Firestore 쿼리 또는 리스트 필터링 로직 추가 필요함
-            // 검색어 업데이트
-            setState(() {
-              searchKeyword = value.trim().toLowerCase();
-            });
-          },
+        leadingWidth: 40, // 메뉴 버튼 공간만 확보
+        titleSpacing: 0,  // title 좌우 간격 최소화
+        title: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: SearchBarWidget(
+            controller: searchController,
+            onChanged: (value) {
+              setState(() {
+                searchKeyword = value.trim().toLowerCase();
+              });
+            },
+          ),
         ),
       ),
 
@@ -77,23 +80,37 @@ class _ListScreenState extends State<ListScreen> with SingleTickerProviderStateM
           color: Colors.white,
           child: Column(
             children: [
-              TabBar(
-                controller: _tabController,
-                labelColor: Colors.black,
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: Colors.black,
-                tabs: tabs.map((label) => Tab(text: label)).toList() // map의 결과는 Iterable임. 위젯은 List를 보통 써서 toList로 형변환이 필요요
-                /*indicator: const BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Colors.black,
-                      width: 2.5,
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 0),
+                child: TabBar(
+                  controller: _tabController,
+                  labelColor: Colors.black,
+                  labelStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontSize: 15,
+                  ),
+                  unselectedLabelColor: Colors.grey,
+
+                  // 3개 탭에 최적화된 인디케이터 길이
+                  indicator: const UnderlineTabIndicator(
+                    borderSide: BorderSide(width: 3, color: Colors.black),
+                    insets: EdgeInsets.symmetric(
+                      horizontal: 90,   // 3개일 때 딱 예쁘게 나옴
                     ),
                   ),
+
+                  indicatorWeight: 2,
+                  isScrollable: false, // 균등 분배
+                  tabs: [
+                    SizedBox(width: 80, child: Tab(text: '자유')),
+                    SizedBox(width: 80, child: Tab(text: '카메라추천')),
+                    SizedBox(width: 80, child: Tab(text: 'QnA')),
+                  ],
                 ),
-                indicatorSize: TabBarIndicatorSize.tab, */
               ),
-            
 
               Expanded(                                  // 남은 공간을 모두 차지하도록 하는 위젯
                 child: TabBarView(

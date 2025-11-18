@@ -29,6 +29,10 @@ class LocationSelectScreenState extends State<LocationSelectScreen>{
   CameraPosition? _initialCamera;                      // 지도 초기 위치 설정용 
   bool _initialized = false;                           // 지도를 처음 켤 때만 초기 위치를 세팅해주도록 하는 bool
 
+  // 동양미래대학교 좌표 (서울 구로구) - 필요하면 살짝 조정 가능
+  static const LatLng _dongyangMiraeLatLng = LatLng(37.4665, 126.9326);
+
+
   Marker? _selectedMarker;                             // 마커 
   String? _selectedAddress;                            // sell_write로 넘겨줄 주소
   LatLng? _selectedLatLng;                             // 위경도값
@@ -75,6 +79,7 @@ class LocationSelectScreenState extends State<LocationSelectScreen>{
     // 이전 선택이 없으면 현재 위치로 초기화
     CameraPosition target;
     try{
+      /* 현재 위치를 초기값으로
       dev.log('현재 위치 찾는중');
       final pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
@@ -82,6 +87,22 @@ class LocationSelectScreenState extends State<LocationSelectScreen>{
         )
       ).timeout(const Duration(seconds: 8));
       target = CameraPosition(target: LatLng(pos.latitude, pos.longitude), zoom:14.0);
+    */
+    
+      // 동양미래대학교를 초기 위치로
+      final LatLng defaultPos = _dongyangMiraeLatLng;
+      final String? defaultAddr = await _getAddressFromLatLng(defaultPos);
+
+      _selectedLatLng = defaultPos;
+      _selectedAddress = defaultAddr;
+
+      _initialCamera = CameraPosition(target: defaultPos, zoom: 16.0);
+      _setMarker(
+        defaultPos,
+        title: '동양미래대학교',
+        snippet: defaultAddr ?? '동양미래대학교',
+      );
+
     }
     catch(e){
       target = CameraPosition(target: LatLng(37.4665, 126.9326), zoom:14.0);
@@ -89,7 +110,7 @@ class LocationSelectScreenState extends State<LocationSelectScreen>{
     }
     if(!mounted) return;
     setState(() {
-      _initialCamera = target;    
+      //_initialCamera = target;    
     });
   
   }

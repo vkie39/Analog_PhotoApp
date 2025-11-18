@@ -181,6 +181,26 @@ class PhotoTradeService {
     }
   }
 
+ // 🔥 static으로도 바로 접근할 수 있게 별도 레퍼런스 추가
+  static final CollectionReference _staticRef =
+      FirebaseFirestore.instance.collection('photo_trades');
+
+  // ... 기존 메서드들(addTrade, updateTrade 등)
+
+  // 🔥 좋아요 수 기준 상위 4개의 판매글 Stream (static)
+  static Stream<List<PhotoTradeModel>> getTopLikedPhotosStream() {
+    return _staticRef
+        .orderBy('likeCount', descending: true)
+        .limit(4)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => PhotoTradeModel.fromSnapshot(doc))
+              .toList(),
+        );
+  }
+
+
   // 좋아요 내역 (마이페이지용)
   Stream<List<PhotoTradeModel>> getLikedTrades(String uid) {
     return _ref

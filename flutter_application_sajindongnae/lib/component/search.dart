@@ -17,8 +17,8 @@ class SearchBarWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 0),
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 245, 245, 244),
         borderRadius: BorderRadius.circular(30),
@@ -33,12 +33,12 @@ class SearchBarWidget extends StatelessWidget {
             child: TextField(
               controller: controller,
               onChanged: onChanged,
-              textAlign: TextAlign.center,
+              textAlign: TextAlign.left,
               decoration: const InputDecoration(
                 hintText: '검색어를 입력하세요',
                 border: InputBorder.none,
                 isDense: true,
-                contentPadding: EdgeInsets.symmetric(vertical: 10),
+                contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 24,),
               ),
             ),
           ),

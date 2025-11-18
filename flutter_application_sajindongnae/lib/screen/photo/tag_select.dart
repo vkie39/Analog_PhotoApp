@@ -77,187 +77,163 @@ const List<TagSection> tagSections = [
 /// - title : 화면 제목 ('태그 검색'으로도 설정될 수 있음)
 /// - 선택된 태그들은 SeletedTagState 모델로 관리하여 이전 화면으로 전달
 /// --------------------------------------------------------------
+
 class TagSelectionScreen extends StatefulWidget {
   const TagSelectionScreen({
-    super.key, 
+    super.key,
     required this.initialState,
-    this.sections = tagSections, // 기본값은 전체 태그 섹션 리스트 
-    this.forceMultiSelect = false, // 기본은 섹션 규칙 따름
+    this.sections = tagSections,
+    this.forceMultiSelect = false,
     this.title = '태그 선택',
     this.showAppBar = true,
   });
 
-  final SelectedTagState initialState; // 선택된 태그 상태 관리 모델을 전달받음
+  final SelectedTagState initialState;
   final List<TagSection> sections;
   final bool forceMultiSelect;
   final String title;
   final bool showAppBar;
 
   @override
-  State<TagSelectionScreen> createState() => _TagSelectionScreenState();  
+  State<TagSelectionScreen> createState() => _TagSelectionScreenState();
 }
 
-
 class _TagSelectionScreenState extends State<TagSelectionScreen> {
-
-  /// 2. 내부에서 조작 가능한 태그 상태 관리 맵(UI 반영)
-  /// - _singleSelectedTags : 단일 선택 태그 저장용 맵 (섹션 아이디 -> 선택된 태그 _singleSelectedTags[section.id] == tag)
-  /// - _multiSelectedTags : 다중 선택 태그 저장용 맵 (섹션 아이디 -> 선택된 태그 집합)
-  /// ---------------------------------------------------------------------------
   final Map<String, String> _singleSelectedTags = {};
   final Map<String, Set<String>> _multiSelectedTags = {};
 
-  // 태그 상태 모델 초기화
   @override
   void initState() {
     super.initState();
-    // 초기 상태 복사(가변화)
-    _singleSelectedTags.addAll(widget.initialState.singleTags); // 단일 선택 태그들 복사
-    _multiSelectedTags.addAll(widget.initialState.multiTags.map((key, value) => MapEntry(key, Set<String>.from(value)))); // 다중 선택 태그들 복사 (Set도 복사)
-
+    _singleSelectedTags.addAll(widget.initialState.singleTags);
+    _multiSelectedTags.addAll(widget.initialState.multiTags.map(
+      (key, value) => MapEntry(key, Set<String>.from(value)),
+    ));
   }
-    // 태그가 선택되어 있는지 확인하는 함수 
-    bool _isSelected(String sectionId, String tag, bool isMultiSelect)
-    {
-      if (isMultiSelect){
-        return _multiSelectedTags[sectionId]?.contains(tag) ?? false; // 다중 선택일 때, _multiSelectedTags[section.id]?.은 null이 아닐때만 contains(tag) 호출, null이면 null반환.
-      }
-      else{
-        return _singleSelectedTags[sectionId] == tag;                 // 단일 선택
-      }
-    }  
 
-    // 태그 선택 / 헤제 함수
-    void _toggleSelection(String sectionId, String tag, bool isMultiSelect, bool selected)
-    {
-      setState(() { // 다중선택시
-        if (isMultiSelect) {
-          if (selected) { // 태그 선택 
-            _multiSelectedTags.putIfAbsent(sectionId, () => <String>{}).add(tag); // 맵에 해당 섹션 아이디가 없으면 빈 집합을 추가하고, 그 집합에 태그 추가
-          } else {        // 태그 선택 해제
-            _multiSelectedTags[sectionId]?.remove(tag);
-            if (_multiSelectedTags[sectionId]?.isEmpty ?? true) {  // 선택된 태그가 없으면 맵에서 해당 섹션 아이디 제거. 쉽게 하면 _multiSelectedTags[section.id] == null || _multiSelectedTags[section.id]! == isEmpty
-              _multiSelectedTags.remove(sectionId);                // _multiSelectedTags[section.id]?가 null이면 null, null이 아니면 isEmpty의 결과값 반환
-            }                                                       // ?? true에 의해 null이면 true, true/false면 그 값 반환
-          }
-        } 
-        else {      // 단일선택시
-          if (selected) {
-            _singleSelectedTags[sectionId] = tag;  // 태그 추가
-          } else {
-            _singleSelectedTags.remove(sectionId); // 태그 제거
+  bool _isSelected(String sectionId, String tag, bool isMultiSelect) {
+    if (isMultiSelect) {
+      return _multiSelectedTags[sectionId]?.contains(tag) ?? false;
+    } else {
+      return _singleSelectedTags[sectionId] == tag;
+    }
+  }
+
+  void _toggleSelection(
+      String sectionId, String tag, bool isMultiSelect, bool selected) {
+    setState(() {
+      if (isMultiSelect) {
+        if (selected) {
+          _multiSelectedTags.putIfAbsent(sectionId, () => <String>{}).add(tag);
+        } else {
+          _multiSelectedTags[sectionId]?.remove(tag);
+          if (_multiSelectedTags[sectionId]?.isEmpty ?? true) {
+            _multiSelectedTags.remove(sectionId);
           }
         }
-      });
-    }
+      } else {
+        if (selected) {
+          _singleSelectedTags[sectionId] = tag;
+        } else {
+          _singleSelectedTags.remove(sectionId);
+        }
+      }
+    });
+  }
 
-    // 현재 선택된 태그 상태 모델 생성. 반환하기 위한 함수
-    SelectedTagState _currentSelectedTagState() => SelectedTagState( 
-      singleTags: Map<String, String>.from(_singleSelectedTags),
-      multiTags: _multiSelectedTags.map((key, value) => MapEntry(key, Set<String>.from(value))),
-    );
+  SelectedTagState _currentSelectedTagState() => SelectedTagState(
+        singleTags: Map<String, String>.from(_singleSelectedTags),
+        multiTags: _multiSelectedTags.map(
+          (key, value) => MapEntry(key, Set<String>.from(value)),
+        ),
+      );
 
-
-  
-  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-
-      appBar: AppBar(
-        title: const Text('태그 선택', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0.5,
-        scrolledUnderElevation: 0,
-      ),
-
-      // 화면의 본문 (태그 목록)
-      body: SingleChildScrollView(                            // 내용이 많을 경우 스크롤 가능
-        padding: const EdgeInsets.all(16.0),                  // 패딩
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,       // 왼쪽 정렬
-          children: [
-            for (final section in widget.sections) ...[             // 각 섹션에 대해
-              // 섹션 제목
-              Text(section.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), 
-              const SizedBox(height: 8.0),   
-
-              // 공통 디자인
-              Theme(
-                data: Theme.of(context).copyWith(
-                  chipTheme: ChipThemeData(                                         // 칩 위젯의 테마 설정
-                    backgroundColor: Colors.white,                                // 기본 배경색
-                    selectedColor: const Color.fromARGB(255, 18, 18, 18),         // 선택된 칩의 배경색
-                    labelStyle: const TextStyle(color: Colors.black),             // 기본 텍스트 스타일
-                    secondaryLabelStyle: const TextStyle(color: Colors.white),    // 선택된 칩의 텍스트 스타일
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0), // 칩 내부 패딩
-                    shape: RoundedRectangleBorder(       // 칩의 모양 설정 (둥근 모서리)
-                      borderRadius: BorderRadius.circular(20.0),
-                    ),
-                  ),
-                ), 
-
-                // 태그
-                child: Wrap(                         // 태그들을 감싸는 위젯 (자동 줄바꿈)           
-                  spacing: 8.0,                      // 태그들 사이 가로 간격
-                  runSpacing: 0.0,                   // 태그들 사이 세로 간격
-
-                  children: section.tags.map((tag) {           // 각 태그에 대해
-                    final isMultiSelect = widget.forceMultiSelect ? true : section.isMultiSelect; // 다중 선택 강제 여부에 따라 다중 선택 모드 결정
-                    final isSelected = _isSelected(section.id, tag, isMultiSelect)   // 이미 선택된 태그인지 여부 -> isSelected는 bool 타입
-                      ? (_multiSelectedTags[section.id]?.contains(tag) ?? false) // 다중 선택일 때, _multiSelectedTags[section.id]?.은 null이 아닐때만 contains(tag) 호출, null이면 null반환. 그리고 ?? false에 의해 false 반환
-                      : (_singleSelectedTags[section.id] == tag);                // 단일 선택
-
-                    return isMultiSelect 
-                      ? FilterChip( // 다중 선택용 칩
-                          label: Text(tag),
-                          selected: isSelected,   // 현재 선택 상태
-                          labelStyle: TextStyle(  // 선택 상태에 따른 텍스트 스타일
-                            color: isSelected ? Colors.white : Colors.black,
-                          ),
-                          onSelected: (selecte) { // 선택 상태 변경 시 호출
-                            _toggleSelection(section.id, tag, true, selecte);
-                          },
-                        )
-                      : ChoiceChip( // 단일 선택용 칩
-                          label: Text(tag),
-                          selected: isSelected,
-                          onSelected: (selecte) {
-                            _toggleSelection(section.id, tag, false, selecte);
-                          },
-                        );
-                  }).toList(),
+      appBar: widget.showAppBar
+          ? AppBar(
+                title: Text(
+                widget.title, 
+                style: TextStyle(
+                  fontSize: 20,        
+                  fontWeight: FontWeight.bold, 
+                  color: Colors.black, 
                 ),
               ),
-              const SizedBox(height: 8.0), // 섹션 간 간격
-              const Divider(),             // 구분선
-              const SizedBox(height: 8.0), // 섹션 간 간격
-            ],
+              centerTitle: true,
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              elevation: 0.5,
+            )
+          : null,
+          backgroundColor: Colors.white,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final section in widget.sections) ...[
+              Text(
+                section.title,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: section.tags.map((tag) {
+                  final isSelected = _multiSelectedTags[section.id]?.contains(tag) ?? false;
 
+                  return FilterChip(
+                    label: Text(
+                      tag,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : Colors.grey[700],
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                    selected: isSelected,
+                    backgroundColor: Colors.white,
+                    selectedColor: Color(0xFFBBD18B),
+                    checkmarkColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          _multiSelectedTags.putIfAbsent(section.id, () => <String>{}).add(tag);
+                        } else {
+                          _multiSelectedTags[section.id]?.remove(tag);
+                          if (_multiSelectedTags[section.id]?.isEmpty ?? true) {
+                            _multiSelectedTags.remove(section.id);
+                          }
+                        }
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
+
+
+              const SizedBox(height: 8),
+              const Divider(),
+              const SizedBox(height: 8),
+            ],
           ],
         ),
       ),
-
-      bottomNavigationBar: Padding( // 하단의 완료 버튼
-        padding: const EdgeInsets.all(16.0),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16),
         child: ElevatedButton(
           onPressed: () {
-            // 선택된 태그들을 sell_write 화면으로 전달
-            final result = _currentSelectedTagState();
-            Navigator.pop(context, result); // 이전 화면으로 돌아가면서 선택된 태그 리스트 전달
+            Navigator.pop(context, _currentSelectedTagState());
           },
-
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF8BC34A),
             foregroundColor: Colors.white,
-            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            minimumSize: const Size(double.infinity, 50), // 가로 꽉 채우기
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8.0),
-            ),
+            minimumSize: const Size(double.infinity, 50),
           ),
           child: const Text('선택 완료'),
         ),
