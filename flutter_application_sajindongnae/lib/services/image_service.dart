@@ -1,11 +1,15 @@
+
 // image_service.dart
 // 각주: 워터마크 생성 + 이미지 선택/권한/크롭/압축 유틸을 모아둔 서비스 파일
+import 'package:flutter/material.dart' show TextDirection;
 
 import 'dart:developer';
 import 'dart:io'; // 각주: Android/iOS 네이티브 파일 접근용 (웹에서는 사용 불가)
 import 'dart:math' as math;
 import 'dart:ui' as ui; // 각주: Canvas, PictureRecorder 등 로우레벨 드로잉
 
+import 'package:flutter_application_sajindongnae/services/image_service.dart';
+import 'package:http/http.dart' as http;
 import 'package:device_info_plus/device_info_plus.dart'; // 각주: SDK 버전 확인
 import 'package:file_picker/file_picker.dart';            // 각주: 파일 선택 (갤러리 외)
 import 'package:firebase_storage/firebase_storage.dart';  // 각주: 이미지 업로드
@@ -13,15 +17,18 @@ import 'package:flutter/material.dart';                   // 각주: TextPainter
 import 'package:flutter/widgets.dart';                   // 각주: UI 위젯 기본 (중복 import 허용)
 import 'package:flutter_image_compress/flutter_image_compress.dart'; // 이미지 압축
 import 'package:image_cropper/image_cropper.dart';                     // 이미지 크롭
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:image_picker/image_picker.dart';                       // 카메라/갤러리
+import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;                               // 경로/확장자
 import 'package:path_provider/path_provider.dart';                     // 임시 디렉토리
 import 'package:permission_handler/permission_handler.dart';           // 권한
 import 'package:flutter/foundation.dart' show kIsWeb;                  // 웹 가드
+import 'package:fluttertoast/fluttertoast.dart';
+
 
 // 기존 import들 아래에 추가
 import 'package:flutter/painting.dart' as painting; // Future<ui.Image> decodeImageFromList 사용
-
 
 final ImagePicker _picker = ImagePicker(); // 각주: image_picker 인스턴스
 
@@ -359,7 +366,7 @@ Future<String> uploadChatImage(XFile imageFile, String chatRoomId) async {
               letterSpacing: 0.5,
             ),
           ),
-          textDirection: TextDirection.ltr,
+          textDirection: ui.TextDirection.ltr,  // 여기 라이브러리 추가하니까 오류나서 ui. 붙임
           textAlign: TextAlign.left,
         )..layout();
       }
@@ -416,6 +423,8 @@ Future<String> uploadChatImage(XFile imageFile, String chatRoomId) async {
     }
   }
 }
+
+
 
 // ===== 공용 다이얼로그/토스트 =====
 Future<bool> _showGoToSettingsDialog(

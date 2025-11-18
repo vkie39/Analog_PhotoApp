@@ -85,6 +85,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
                     if (request == null) {
                       // 의뢰글이 삭제됐거나 없는 경우
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('해당 의뢰글을 찾을 수 없습니다.')),
                       );
