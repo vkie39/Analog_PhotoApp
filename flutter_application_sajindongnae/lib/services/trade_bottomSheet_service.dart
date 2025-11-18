@@ -1,4 +1,5 @@
-// lib/widgets/purchase_bottom_sheet.dart
+//import 'package:flutter_application_sajindongnae/services/trade_BottomSheet_service.dart';
+
 import 'package:flutter/material.dart';
 
 /// 결제 완료 후 띄우는 공용 바텀 시트
@@ -38,7 +39,7 @@ Future<void> tradeBottomSheetService({
                 children: [
                   // 1. 안내 문구 영역
                   const Text(
-                    '사진 구매 완료',
+                    '의뢰 완료',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -46,7 +47,7 @@ Future<void> tradeBottomSheetService({
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '구매한 사진은 마이페이지에서 확인할 수 있습니다.',
+                    '의뢰 내역을 확인하세요',
                     textAlign: TextAlign.start,
                   ),
                   const SizedBox(height: 10),
@@ -57,11 +58,11 @@ Future<void> tradeBottomSheetService({
                   ),
                   const SizedBox(height: 10),
 
-                  // 2. 구매한 사진 정보 영역
+                  // 2. 거래한 사진(혹은 의뢰) 정보 영역
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 구매한 사진 썸네일
+                      // 거래한 사진 썸네일
                       ClipRRect(
                         borderRadius: BorderRadius.circular(0),
                         child: SizedBox(

@@ -87,6 +87,8 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   // 리퀘스트 상태(의뢰중, 거래중, 의뢰완료)
   String _requestStatement = '의뢰중';
 
+  String? _lastNonRequesterImageUrl; // 의뢰자가 아닌 사람이 보낸 마지막 이미지 URL
+
   // 선택한 이미지 파일
   XFile? _originalImage;
   XFile? _selectedImage; 
@@ -180,9 +182,20 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
         return m.senderId != myUid;
       });
 
+        String? lastNonRequesterImageUrl;
+        for (final m in msgs) {
+          if (m.hasImage &&
+              m.senderId != _requesterUid &&          // 의뢰인이 아닌 사람
+              m.imageUrl != null &&
+              m.imageUrl!.isNotEmpty) {
+            lastNonRequesterImageUrl = m.imageUrl;    // 계속 덮어쓰기 → 결국 마지막 값
+          }
+        }
+
       setState(() {
         _messages = msgs;
         _canPay = hasOpponentImage;
+        _lastNonRequesterImageUrl = lastNonRequesterImageUrl;
       });
     });
   }
@@ -581,16 +594,34 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   }
 
   // [결제 완료] 메세지 내용
-  Widget _buildPaymentCompleteCard(Message msg, bool isMe) {
+  Widget _buildPaymentCompleteCard(BuildContext context, Message msg, bool isMe) {
     final amount = msg.paymentAmount ?? _requestPrice;
+    
+    // ✅ 결제한 사람 닉네임 계산
+    // 메시지를 보낸 사람이 의뢰자면 -> 의뢰자 닉네임
+    // 아니면 -> 상대방 닉네임
+    String payerNickname;
+    if (msg.senderId == _requesterUid) {
+      payerNickname = _requesterNickname;
+    } else {
+      payerNickname = _otherNickname ?? '알 수 없음';
+    }
+    
+    // 더미 데이터 (결제완료 메세지는 의뢰자가 보냄. 의뢰자일 경우와 아닐 경우로 나누어 각각의 잔액을 표시)
+    final int remainingBalance = isMe ? 43210 : 98765;
+
+    // 썸네일로 쓸 이미지 (없으면 더미 이미지)
+    final thumbUrl = _lastNonRequesterImageUrl ??
+    'https://via.placeholder.com/150'; // TODO: 나중에 플레이스홀더 바꾸기
+
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF4E0), // 연한 주황 느낌
+        color: const Color(0xFFDFF1D5), // 연한 초록 느낌
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFCC80), width: 1),
+        border: Border.all(color: Color(0xFF7BC67B), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -616,8 +647,8 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                '송금 완료',
+              Text(
+                 '[${payerNickname}] 님의 송금',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -635,16 +666,27 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
             '상대방과의 거래를 마무리해주세요.',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           SizedBox(
             height: 36,
             child: ElevatedButton(
               onPressed: () {
-                // TODO: 결제 내역 페이지로 이동하거나, 나중에 사용
-                Fluttertoast.showToast(msg: '이용내역 보기(추후 구현 예정)');
+              // 여기서 바텀시트 호출
+                tradeBottomSheetService(
+                  context: context,
+                  postId: _requestId,              // 어떤 의뢰/거래인지 구분용 (지금은 그냥 넘겨만 주기)
+                  imageUrl: thumbUrl,         
+                  title: _requestTitle,            // 의뢰 제목
+                  price: amount,                   // 결제 금액
+                  remainingBalance: remainingBalance, // 더미 잔액
+                  onTapMyPage: () {
+                    // TODO: 마이페이지로 이동하는 로직 나중에 구현
+                    Fluttertoast.showToast(msg: '마이페이지로 이동(추후 구현)');
+                  },
+                );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF9800),
+                backgroundColor: Colors.lightGreen,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -652,7 +694,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
                 elevation: 0,
               ),
               child: const Text(
-                '이용내역 보기',
+                '의뢰 내역 보기',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
               ),
             ),
@@ -1108,7 +1150,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
 
                         // ★ 결제 완료 카드
                         if (msg.isPaymentComplete) {
-                          return _buildPaymentCompleteCard(msg, isMe);
+                          return _buildPaymentCompleteCard(context, msg, isMe);
                         }
 
                         // ★ 일반 말풍선

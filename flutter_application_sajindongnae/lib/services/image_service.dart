@@ -7,8 +7,6 @@ import 'dart:developer';
 import 'dart:io'; // 각주: Android/iOS 네이티브 파일 접근용 (웹에서는 사용 불가)
 import 'dart:math' as math;
 import 'dart:ui' as ui; // 각주: Canvas, PictureRecorder 등 로우레벨 드로잉
-
-import 'package:flutter_application_sajindongnae/services/image_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:device_info_plus/device_info_plus.dart'; // 각주: SDK 버전 확인
 import 'package:file_picker/file_picker.dart';            // 각주: 파일 선택 (갤러리 외)
@@ -25,6 +23,9 @@ import 'package:path_provider/path_provider.dart';                     // 임시
 import 'package:permission_handler/permission_handler.dart';           // 권한
 import 'package:flutter/foundation.dart' show kIsWeb;                  // 웹 가드
 import 'package:fluttertoast/fluttertoast.dart';
+import 'dart:typed_data';                       
+import 'package:flutter/services.dart' show rootBundle; 
+
 
 
 // 기존 import들 아래에 추가
@@ -178,6 +179,93 @@ Future<XFile?> pickImageFromFileSystem(BuildContext context) async {
 }
 
 class ImageService {
+
+
+    /// -------------------------------------------------------------
+  /// 선택한 이미지를 갤러리에 저장하는 공용 함수
+  /// - imagePath: http / asset / 로컬 파일 경로 모두 지원
+  /// - isAsset: true면 에셋 기준으로 처리
+  /// - photoOwnerNickname: 파일명에 붙일 닉네임(없으면 sajindongnae만 사용)
+  /// -------------------------------------------------------------
+  Future<bool> saveImageToGallery2({
+    required BuildContext context,
+    required String imagePath,
+    bool isAsset = false,
+    String? photoOwnerNickname,
+  }) async {
+    try {
+      // 1) Android SDK 32 이하에서는 기존 storage 권한 사용
+      if (!kIsWeb) {
+        final sdk = await androidSdkInt();
+        if (sdk != null && sdk <= 32) {
+          final ok = await ensureLegacyStoragePermission(context);
+          if (!ok) {
+            // Fluttertoast.showToast(msg: '저장소 권한이 필요합니다.');
+            return false;
+          }
+        }
+      }
+
+      // 2) 이미지 바이트 읽기 (http / asset / file)
+      Uint8List bytes;
+      if (imagePath.startsWith('http')) {
+        // 네트워크 이미지 (Firestore downloadUrl)
+        final uri = Uri.parse(imagePath);
+        final resp = await http.get(uri);
+        if (resp.statusCode != 200) {
+          Fluttertoast.showToast(msg: '이미지를 불러오지 못했습니다.');
+          return false;
+        }
+        bytes = resp.bodyBytes;
+      } else if (isAsset) {
+        // 에셋 이미지
+        final bd = await rootBundle.load(imagePath);
+        bytes = bd.buffer.asUint8List();
+      } else {
+        // 로컬 파일
+        final file = File(imagePath);
+        if (!file.existsSync()) {
+          Fluttertoast.showToast(msg: '이미지 파일을 찾을 수 없습니다.');
+          return false;
+        }
+        bytes = await file.readAsBytes();
+      }
+
+      // 3) 파일 이름 만들기
+      //    - 한글 허용: 상대방닉네임_sajindongnae_YYYYMMDD_HHmmss
+      //    - 닉네임 비어있으면: sajindongnae_YYYYMMDD_HHmmss
+      final now = DateTime.now();
+      final ts = DateFormat('yyyyMMdd_HHmmss').format(now);
+      final trimmedNick = (photoOwnerNickname ?? '').trim();
+      final fileNameBase = trimmedNick.isNotEmpty
+          ? '${trimmedNick}_sajindongnae_$ts'
+          : 'sajindongnae_$ts';
+
+      // 4) 갤러리에 저장
+      final result = await ImageGallerySaverPlus.saveImage(
+        bytes,
+        name: fileNameBase,
+      );
+      log('save result: $result');
+
+      final isSuccess =
+          (result['isSuccess'] == true || result['isSuccess'] == 1);
+
+      if (isSuccess) {
+        Fluttertoast.showToast(msg: '갤러리에 저장되었습니다.');
+      } else {
+        Fluttertoast.showToast(
+            msg: '저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
+      }
+      return isSuccess;
+    } catch (e, st) {
+      debugPrint('갤러리 저장 중 오류: $e\n$st');
+      Fluttertoast.showToast(msg: '저장 중 오류가 발생했습니다.');
+      return false;
+    }
+  }
+
+
   // 접근 권한 요청 일괄
   Future<bool> requestPermission() async {
     bool storage = await Permission.storage.request().isGranted;
@@ -423,7 +511,6 @@ Future<String> uploadChatImage(XFile imageFile, String chatRoomId) async {
     }
   }
 }
-
 
 
 // ===== 공용 다이얼로그/토스트 =====

@@ -11,7 +11,7 @@ class PhotoTradeModel {
   final String nickname; // 판매자 닉네임
   final String profileImageUrl; // 판매자 프로필 이미지
   final bool isSold; // 판매 완료 여부
-  final String? buyerUid; // 구매자 UID (거래 완료 시 저장)
+  final List<String> buyerUid; // 구매자 UID (거래 완료 시 저장)
   final List<String> tags; // 사진 태그 리스트
   final DateTime createdAt; // 업로드 시각
   final String category; // 사진 카테고리
@@ -38,7 +38,7 @@ class PhotoTradeModel {
     required this.nickname,
     required this.profileImageUrl,
     required this.isSold,
-    this.buyerUid,
+    this.buyerUid = const [],
     required this.tags,
     required this.createdAt,
     required this.category,
@@ -80,7 +80,11 @@ class PhotoTradeModel {
       nickname: data['nickname'] ?? '',
       profileImageUrl: data['profileImageUrl'] ?? '',
       isSold: data['isSold'] ?? false,
-      buyerUid: data['buyerUid'],
+      
+       buyerUid: data['buyerUid'] is String
+        ? [data['buyerUid']]
+        : List<String>.from(data['buyerUid'] ?? []),
+
       tags: List<String>.from(data['tags'] ?? []),
       createdAt: (data['createdAt'] is Timestamp)
           ? (data['createdAt'] as Timestamp).toDate()

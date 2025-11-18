@@ -246,7 +246,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(5),
                                       child: Image.network(
                                         photo.imageUrl,
                                         fit: BoxFit.cover,
@@ -255,11 +255,14 @@ class _PhotoSellScreenState extends State<PhotoSellScreen>
                                     const SizedBox(height: 2),
                                     Align(
                                       alignment: Alignment.centerRight,
-                                      child: Text(
-                                        "₩${photo.price}",
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w300,
-                                          fontSize: isSmallScreen ? 10 : 12,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(right: 4.0), // 오른쪽 패딩 
+                                        child: Text(
+                                          "⭐${photo.price}",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w300,
+                                            fontSize: isSmallScreen ? 10 : 12,
+                                          ),
                                         ),
                                       ),
                                     ),
