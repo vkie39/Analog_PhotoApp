@@ -4,7 +4,6 @@ import 'package:flutter_application_sajindongnae/component/action_button.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // 파이어베이스 연동
 import 'package:flutter_application_sajindongnae/models/photo_trade_model.dart';
 
-
 /// 사진동네 관리자 페이지 (BottomNavigationBar 버전)
 /// 대표색: #DBEFC4
 class AdminPage extends StatefulWidget {
@@ -44,8 +43,6 @@ class _AdminPageState extends State<AdminPage> {
         iconTheme: const IconThemeData(color: kTextColor),
       ),
       body: _pages[_selectedIndex],
-
-      // ── bottomNavigationBar ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         selectedItemColor: const Color.fromARGB(255, 33, 165, 13),
@@ -72,23 +69,6 @@ class _AdminPageState extends State<AdminPage> {
           ),
         ],
       ),
-      // floatingActionButton: ExpandableFab(
-      //   distance: 80,
-      //   children: const [
-      //     ActionButton(
-      //       onPressed: _AdminActions.onTapAddAdmin,
-      //       icon: Icons.admin_panel_settings_outlined,
-      //     ),
-      //     ActionButton(
-      //       onPressed: _AdminActions.onTapReportedPosts,
-      //       icon: Icons.report_problem_outlined,
-      //     ),
-      //     ActionButton(
-      //       onPressed: _AdminActions.onTapUnansweredQna,
-      //       icon: Icons.mark_unread_chat_alt_outlined,
-      //     ),
-      //   ],
-      // ),
     );
   }
 }
@@ -108,14 +88,15 @@ class _AdminActions {
   }
 }
 
-
+/// ─────────────────────────────────────────────
+///  계정 관리 탭
+/// ─────────────────────────────────────────────
 class _AccountManageTab extends StatefulWidget {
   const _AccountManageTab();
 
   @override
   State<_AccountManageTab> createState() => _AccountManageTabState();
 }
-
 
 class _AccountManageTabState extends State<_AccountManageTab> {
   String _keyword = '';
@@ -147,14 +128,11 @@ class _AccountManageTabState extends State<_AccountManageTab> {
                 return const Center(child: CircularProgressIndicator());
               }
               if (snapshot.hasError) {
-
                 return const Center(child: Text('계정 목록을 불러오는 중 오류가 발생했어요 😢'));
-
               }
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                 return const Center(child: Text('등록된 계정이 없습니다.'));
               }
-
 
               final allDocs = snapshot.data!.docs;
 
@@ -177,7 +155,8 @@ class _AccountManageTabState extends State<_AccountManageTab> {
               }
 
               return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 itemCount: filteredDocs.length,
                 itemBuilder: (context, index) {
                   final doc = filteredDocs[index];
@@ -208,7 +187,8 @@ class _AccountManageTabState extends State<_AccountManageTab> {
                           icon: const Icon(Icons.more_vert, size: 20),
                           onPressed: () async {
                             try {
-                              final newStatus = isBanned ? 'normal' : 'banned';
+                              final newStatus =
+                              isBanned ? 'normal' : 'banned';
 
                               await FirebaseFirestore.instance
                                   .collection('users')
@@ -217,7 +197,9 @@ class _AccountManageTabState extends State<_AccountManageTab> {
 
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('회원 상태가 "$newStatus" 로 변경되었습니다.'),
+                                  content: Text(
+                                    '회원 상태가 "$newStatus" 로 변경되었습니다.',
+                                  ),
                                   duration: const Duration(seconds: 1),
                                 ),
                               );
@@ -237,7 +219,6 @@ class _AccountManageTabState extends State<_AccountManageTab> {
                   );
                 },
               );
-
             },
           ),
         ),
@@ -246,7 +227,9 @@ class _AccountManageTabState extends State<_AccountManageTab> {
   }
 }
 
-// ── 게시글 관리 (커뮤니티/사진판매/사진거래) ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────
+///  게시글 관리 탭 (커뮤니티 / 판매 사진 / 구매 사진) + 검색
+/// ─────────────────────────────────────────────
 class _PostManageTab extends StatefulWidget {
   const _PostManageTab();
 
@@ -254,8 +237,10 @@ class _PostManageTab extends StatefulWidget {
   State<_PostManageTab> createState() => _PostManageTabState();
 }
 
-class _PostManageTabState extends State<_PostManageTab> with TickerProviderStateMixin {
+class _PostManageTabState extends State<_PostManageTab>
+    with TickerProviderStateMixin {
   bool showReportedOnly = false;
+  String _keyword = ''; // ★ 검색어 상태 추가
 
   late final TabController _tabController;
 
@@ -268,30 +253,36 @@ class _PostManageTabState extends State<_PostManageTab> with TickerProviderState
   Stream<QuerySnapshot<Map<String, dynamic>>> _postStream() {
     final collection = FirebaseFirestore.instance.collection('posts');
     if (showReportedOnly) {
-      return collection.where('reportCount', isGreaterThan: 0).orderBy('reportCount', descending: true).snapshots();
+      return collection
+          .where('reportCount', isGreaterThan: 0)
+          .orderBy('reportCount', descending: true)
+          .snapshots();
     } else {
-      return collection.orderBy('createdAt', descending: true).snapshots();
+      return collection
+          .orderBy('createdAt', descending: true)
+          .snapshots();
     }
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> _photoTradeStream() {
-    final collection = FirebaseFirestore.instance.collection('photo_trades');
+    final collection =
+    FirebaseFirestore.instance.collection('photo_trades');
     if (showReportedOnly) {
-      // 신고가 1건 이상인 글만, 신고순 + 최신순 정렬
       return collection
           .where('reportCount', isGreaterThan: 0)
           .orderBy('reportCount', descending: true)
           .orderBy('createdAt', descending: true)
           .snapshots();
     } else {
-      // 전체 보기, 최신순
-      return collection.orderBy('createdAt', descending: true).snapshots();
+      return collection
+          .orderBy('createdAt', descending: true)
+          .snapshots();
     }
   }
 
-  // ── 구매 사진 스트림 메서드 ──
   Stream<QuerySnapshot<Map<String, dynamic>>> _requestStream() {
-    final collection = FirebaseFirestore.instance.collection('requests');
+    final collection =
+    FirebaseFirestore.instance.collection('requests');
     if (showReportedOnly) {
       return collection
           .where('reportCount', isGreaterThan: 0)
@@ -299,10 +290,11 @@ class _PostManageTabState extends State<_PostManageTab> with TickerProviderState
           .orderBy('dateTime', descending: true)
           .snapshots();
     } else {
-      return collection.orderBy('dateTime', descending: true).snapshots();
+      return collection
+          .orderBy('dateTime', descending: true)
+          .snapshots();
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -311,31 +303,36 @@ class _PostManageTabState extends State<_PostManageTab> with TickerProviderState
 
     return Column(
       children: [
-        const _SearchBar(hintText: '제목, 닉네임, 태그로 검색'),
+        _SearchBar(
+          hintText: '제목, 닉네임, 태그로 검색',
+          onChanged: (value) {
+            setState(() {
+              _keyword = value.trim().toLowerCase();
+            });
+          },
+        ),
 
         // 내부 탭바
         TabBar(
           controller: _tabController,
-          // 선택된 탭 텍스트 스타일
           labelStyle: const TextStyle(
-            fontSize: 16,           // 선택된 탭 글자 크기
-            fontWeight: FontWeight.bold, // 선택된 탭 글자 굵기
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
           ),
-          // 선택되지 않은 탭 텍스트 스타일
           unselectedLabelStyle: const TextStyle(
-            fontSize: 14,           // 선택되지 않은 탭 글자 크기
-            fontWeight: FontWeight.normal, // 선택되지 않은 탭 글자 굵기
+            fontSize: 14,
+            fontWeight: FontWeight.normal,
           ),
-          labelColor: Colors.black,          // 선택된 탭 텍스트 색상
-          unselectedLabelColor: Colors.grey, // 선택되지 않은 탭 텍스트 색상
+          labelColor: Colors.black,
+          unselectedLabelColor: Colors.grey,
           indicator: const UnderlineTabIndicator(
             borderSide: BorderSide(
-              width: 3,       // 인디케이터 굵기
+              width: 3,
               color: Colors.black,
             ),
-            insets: EdgeInsets.symmetric(horizontal: 10), // 인디케이터 길이를 탭에 맞게
+            insets: EdgeInsets.symmetric(horizontal: 10),
           ),
-          indicatorSize: TabBarIndicatorSize.tab, // 인디케이터가 탭 전체 폭
+          indicatorSize: TabBarIndicatorSize.tab,
           tabs: const [
             Expanded(child: Tab(text: '게시물')),
             Expanded(child: Tab(text: '판매 사진')),
@@ -343,10 +340,10 @@ class _PostManageTabState extends State<_PostManageTab> with TickerProviderState
           ],
         ),
 
-
         // 신고글 필터
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+          padding:
+          const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -357,7 +354,7 @@ class _PostManageTabState extends State<_PostManageTab> with TickerProviderState
                   });
                 },
                 child: Text(
-                  showReportedOnly ? "전체 보기" : "신고 게시글만",
+                  showReportedOnly ? '전체 보기' : '신고 게시글만',
                   style: const TextStyle(
                     color: Colors.red,
                     fontWeight: FontWeight.bold,
@@ -372,51 +369,104 @@ class _PostManageTabState extends State<_PostManageTab> with TickerProviderState
           child: TabBarView(
             controller: _tabController,
             children: [
-              // ── 커뮤니티 ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+              /// ── 1) 커뮤니티 게시물 ─────────────────
               StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: _postStream(),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Center(
+                        child: CircularProgressIndicator());
                   }
                   if (snapshot.hasError) {
-                    return const Center(child: Text('게시글을 불러오는 중 오류가 발생했어요'));
+                    return const Center(
+                        child: Text('게시글을 불러오는 중 오류가 발생했어요'));
                   }
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(child: Text('게시글이 없습니다.'));
+                  if (!snapshot.hasData ||
+                      snapshot.data!.docs.isEmpty) {
+                    return const Center(
+                        child: Text('게시글이 없습니다.'));
                   }
 
-                  final docs = snapshot.data!.docs;
+                  final allDocs = snapshot.data!.docs;
+
+                  // 🔍 검색 필터링 (제목, 닉네임, 태그)
+                  final docs = allDocs.where((doc) {
+                    if (_keyword.isEmpty) return true;
+
+                    final data = doc.data();
+                    final title =
+                    (data['title'] ?? '').toString().toLowerCase();
+                    final nickname = (data['nickname'] ?? '')
+                        .toString()
+                        .toLowerCase();
+                    final tagsField = data['tags'];
+                    String tags = '';
+                    if (tagsField is List) {
+                      tags = tagsField
+                          .map((e) => e.toString())
+                          .join(' ')
+                          .toLowerCase();
+                    } else if (tagsField is String) {
+                      tags = tagsField.toLowerCase();
+                    }
+
+                    return title.contains(_keyword) ||
+                        nickname.contains(_keyword) ||
+                        tags.contains(_keyword);
+                  }).toList();
+
+                  if (docs.isEmpty && _keyword.isNotEmpty) {
+                    return const Center(child: Text('검색 결과가 없습니다.'));
+                  }
+
                   return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 0),
                     itemCount: docs.length,
                     itemBuilder: (context, index) {
                       final doc = docs[index];
                       final data = doc.data();
-                      final title = data['title'] ?? '제목 없음';
-                      final author = data['nickname'] ?? '작성자 없음';
-                      final authorId = data['authorId'] ?? '';
-                      final reportCount = (data['reportCount'] ?? 0) as int;
-                      final bool canDelete = isAdmin || (currentUserId == authorId);
+                      final title =
+                          data['title'] ?? '제목 없음';
+                      final author =
+                          data['nickname'] ?? '작성자 없음';
+                      final authorId =
+                          data['authorId'] ?? '';
+                      final reportCount =
+                      (data['reportCount'] ?? 0) as int;
+                      final bool canDelete =
+                          isAdmin || (currentUserId == authorId);
 
                       return _AdminCard(
                         title: title,
-                        subtitle: '작성자: $author · 신고 $reportCount건',
+                        subtitle:
+                        '작성자: $author · 신고 $reportCount건',
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.visibility_outlined, size: 20),
+                              icon: const Icon(
+                                Icons.visibility_outlined,
+                                size: 20,
+                              ),
                               onPressed: () {},
                             ),
                             if (canDelete)
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, size: 20),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  size: 20,
+                                ),
                                 onPressed: () async {
                                   try {
-                                    await FirebaseFirestore.instance.collection('posts').doc(doc.id).delete();
+                                    await FirebaseFirestore.instance
+                                        .collection('posts')
+                                        .doc(doc.id)
+                                        .delete();
                                   } catch (e) {
-                                    debugPrint('게시글 삭제 실패: $e');
+                                    debugPrint(
+                                        '게시글 삭제 실패: $e');
                                   }
                                 },
                               ),
@@ -428,97 +478,137 @@ class _PostManageTabState extends State<_PostManageTab> with TickerProviderState
                 },
               ),
 
-              // ── 판매 사진 ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+              /// ── 2) 판매 사진 ─────────────────
               StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: _photoTradeStream(),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Center(
+                        child: CircularProgressIndicator());
                   }
                   if (snapshot.hasError) {
-                    return const Center(child: Text('판매 사진을 불러오는 중 오류가 발생했어요'));
+                    return const Center(
+                        child: Text('판매 사진을 불러오는 중 오류가 발생했어요'));
                   }
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(child: Text('판매 사진이 없습니다.'));
+                  if (!snapshot.hasData ||
+                      snapshot.data!.docs.isEmpty) {
+                    return const Center(
+                        child: Text('판매 사진이 없습니다.'));
                   }
 
-                  final docs = snapshot.data!.docs;
+                  final allDocs = snapshot.data!.docs;
+
+                  final docs = allDocs.where((doc) {
+                    if (_keyword.isEmpty) return true;
+
+                    final data = doc.data();
+                    final title =
+                    (data['title'] ?? '').toString().toLowerCase();
+                    final nickname = (data['nickname'] ?? '')
+                        .toString()
+                        .toLowerCase();
+
+                    return title.contains(_keyword) ||
+                        nickname.contains(_keyword);
+                  }).toList();
+
+                  if (docs.isEmpty && _keyword.isNotEmpty) {
+                    return const Center(child: Text('검색 결과가 없습니다.'));
+                  }
+
                   return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
                     itemCount: docs.length,
                     itemBuilder: (context, index) {
-                      final model = PhotoTradeModel.fromSnapshot(docs[index]);
-                      final bool canDelete = isAdmin || (currentUserId == model.uid);
+                      final model =
+                      PhotoTradeModel.fromSnapshot(docs[index]);
+                      final bool canDelete = isAdmin ||
+                          (currentUserId == model.uid);
 
                       return Container(
-                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        margin: const EdgeInsets.symmetric(
+                            vertical: 6),
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius:
+                          BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
                               blurRadius: 4,
                               offset: const Offset(0, 2),
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black
+                                  .withOpacity(0.05),
                             ),
                           ],
                         ),
                         child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                          CrossAxisAlignment.start,
                           children: [
-                            // 정사각형 이미지
                             Container(
                               width: 80,
                               height: 80,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius:
+                                BorderRadius.circular(8),
                                 color: Colors.grey[200],
                                 image: model.imageUrl.isNotEmpty
                                     ? DecorationImage(
-                                        image: NetworkImage(model.imageUrl),
-                                        fit: BoxFit.cover,
-                                      )
+                                  image: NetworkImage(
+                                      model.imageUrl),
+                                  fit: BoxFit.cover,
+                                )
                                     : null,
                               ),
                             ),
                             const SizedBox(width: 12),
-                            // 제목 + 작성자·신고
                             Expanded(
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment:
+                                CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     model.title,
                                     style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight:
+                                      FontWeight.bold,
                                       fontSize: 14,
                                     ),
-                                    overflow: TextOverflow.ellipsis,
+                                    overflow:
+                                    TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
                                     '작성자: ${model.nickname} · 신고 ${model.reportCount}건',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey[700],
+                                      color: Colors
+                                          .grey[700],
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            // 삭제 버튼
                             if (canDelete)
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, size: 22),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  size: 22,
+                                ),
                                 onPressed: () async {
                                   try {
-                                    await FirebaseFirestore.instance
-                                        .collection('photo_trades')
+                                    await FirebaseFirestore
+                                        .instance
+                                        .collection(
+                                        'photo_trades')
                                         .doc(model.id)
                                         .delete();
                                   } catch (e) {
-                                    debugPrint('사진 삭제 실패: $e');
+                                    debugPrint(
+                                        '사진 삭제 실패: $e');
                                   }
                                 },
                               ),
@@ -530,59 +620,94 @@ class _PostManageTabState extends State<_PostManageTab> with TickerProviderState
                 },
               ),
 
-
-              // 세 번째 탭: 구매 사진
-              // ── 구매 사진 탭 ──
+              /// ── 3) 구매 사진 ─────────────────
               StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: FirebaseFirestore.instance
-                    .collection('requests')
-                    .orderBy('dateTime', descending: true)
-                    .snapshots(),
+                stream: _requestStream(),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Center(
+                        child: CircularProgressIndicator());
                   }
                   if (snapshot.hasError) {
-                    return const Center(child: Text('구매 사진(게시글)을 불러오는 중 오류가 발생했어요'));
+                    return const Center(
+                        child: Text('구매 사진(게시글)을 불러오는 중 오류가 발생했어요'));
                   }
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(child: Text('구매 사진(게시글)이 없습니다.'));
+                  if (!snapshot.hasData ||
+                      snapshot.data!.docs.isEmpty) {
+                    return const Center(
+                        child: Text('구매 사진(게시글)이 없습니다.'));
                   }
 
-                  final docs = snapshot.data!.docs;
+                  final allDocs = snapshot.data!.docs;
+
+                  final docs = allDocs.where((doc) {
+                    if (_keyword.isEmpty) return true;
+
+                    final data = doc.data();
+                    final title =
+                    (data['title'] ?? '').toString().toLowerCase();
+                    final nickname = (data['nickname'] ?? '')
+                        .toString()
+                        .toLowerCase();
+
+                    return title.contains(_keyword) ||
+                        nickname.contains(_keyword);
+                  }).toList();
+
+                  if (docs.isEmpty && _keyword.isNotEmpty) {
+                    return const Center(child: Text('검색 결과가 없습니다.'));
+                  }
+
                   return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 0),
                     itemCount: docs.length,
                     itemBuilder: (context, index) {
                       final doc = docs[index];
                       final data = doc.data();
-                      final title = data['title'] ?? '제목 없음';
-                      final author = data['nickname'] ?? '작성자 없음';
-                      final authorId = data['uid'] ?? '';
-                      final reportCount = (data['reportCount'] ?? 0) as int;
-                      final bool canDelete = isAdmin || (currentUserId == authorId);
+                      final title =
+                          data['title'] ?? '제목 없음';
+                      final author =
+                          data['nickname'] ?? '작성자 없음';
+                      final authorId =
+                          data['uid'] ?? '';
+                      final reportCount =
+                      (data['reportCount'] ?? 0) as int;
+                      final bool canDelete =
+                          isAdmin || (currentUserId == authorId);
 
                       return _AdminCard(
                         title: title,
-                        subtitle: '작성자: $author · 신고 $reportCount건',
+                        subtitle:
+                        '작성자: $author · 신고 $reportCount건',
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.visibility_outlined, size: 20),
+                              icon: const Icon(
+                                Icons.visibility_outlined,
+                                size: 20,
+                              ),
                               onPressed: () {},
                             ),
                             if (canDelete)
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, size: 20),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  size: 20,
+                                ),
                                 onPressed: () async {
                                   try {
-                                    await FirebaseFirestore.instance
-                                        .collection('requests')
+                                    await FirebaseFirestore
+                                        .instance
+                                        .collection(
+                                        'requests')
                                         .doc(doc.id)
                                         .delete();
                                   } catch (e) {
-                                    debugPrint('구매 사진(게시글) 삭제 실패: $e');
+                                    debugPrint(
+                                        '구매 사진(게시글) 삭제 실패: $e');
                                   }
                                 },
                               ),
@@ -593,7 +718,6 @@ class _PostManageTabState extends State<_PostManageTab> with TickerProviderState
                   );
                 },
               ),
-
             ],
           ),
         ),
@@ -602,35 +726,92 @@ class _PostManageTabState extends State<_PostManageTab> with TickerProviderState
   }
 }
 
-// ── 1:1 문의 관리 ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-class _QnaManageTab extends StatelessWidget {
+/// ─────────────────────────────────────────────
+///  1:1 문의 관리 탭 + 검색
+/// ─────────────────────────────────────────────
+class _QnaManageTab extends StatefulWidget {
   const _QnaManageTab();
 
   @override
+  State<_QnaManageTab> createState() => _QnaManageTabState();
+}
+
+class _QnaManageTabState extends State<_QnaManageTab> {
+  String _keyword = '';
+
+  @override
   Widget build(BuildContext context) {
+    // TODO: 나중에 Firestore 연동 시 여기서 snapshot 데이터로 대체
+    final allItems = List.generate(10, (index) {
+      final bool answered = index % 2 == 0;
+      final String title = 'Q&A 제목 $index';
+      final String user = 'user_$index';
+      return {
+        'answered': answered,
+        'title': title,
+        'user': user,
+      };
+    });
+
+    final filteredItems = allItems.where((item) {
+      if (_keyword.isEmpty) return true;
+      final t =
+      (item['title'] as String).toLowerCase();
+      final u = (item['user'] as String).toLowerCase();
+      return t.contains(_keyword) || u.contains(_keyword);
+    }).toList();
+
     return Column(
       children: [
-        const _SearchBar(hintText: '제목, 내용, 닉네임으로 검색'),
+        _SearchBar(
+          hintText: '제목, 내용, 닉네임으로 검색',
+          onChanged: (value) {
+            setState(() {
+              _keyword = value.trim().toLowerCase();
+            });
+          },
+        ),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount: 10,
+          child: filteredItems.isEmpty && _keyword.isNotEmpty
+              ? const Center(child: Text('검색 결과가 없습니다.'))
+              : ListView.builder(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 16, vertical: 8),
+            itemCount: filteredItems.length,
             itemBuilder: (context, index) {
-              final bool answered = index % 2 == 0;
+              final item = filteredItems[index];
+              final bool answered =
+              item['answered'] as bool;
+              final title =
+              item['title'] as String;
+              final user =
+              item['user'] as String;
               return _AdminCard(
-                title: 'Q&A 제목 $index',
-                subtitle: answered ? '답변 완료 · user_$index' : '미답변 · user_$index',
+                title: title,
+                subtitle: answered
+                    ? '답변 완료 · $user'
+                    : '미답변 · $user',
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _ChipLabel(
-                      label: answered ? '답변 완료' : '미답변',
-                      color: answered ? Colors.blue.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-                      textColor: answered ? Colors.blue[700]! : Colors.orange[800]!,
+                      label:
+                      answered ? '답변 완료' : '미답변',
+                      color: answered
+                          ? Colors.blue
+                          .withOpacity(0.1)
+                          : Colors.orange
+                          .withOpacity(0.1),
+                      textColor: answered
+                          ? Colors.blue[700]!
+                          : Colors.orange[800]!,
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(Icons.edit_note_outlined, size: 22),
+                      icon: const Icon(
+                        Icons.edit_note_outlined,
+                        size: 22,
+                      ),
                       onPressed: () {},
                     ),
                   ],
@@ -647,23 +828,27 @@ class _QnaManageTab extends StatelessWidget {
 /// ----------------------
 /// 공통 위젯들
 /// ----------------------
-
 class _SearchBar extends StatelessWidget {
   final String hintText;
+  final ValueChanged<String>? onChanged;
 
-  final ValueChanged<String>? onChanged; //검색
-
-  const _SearchBar({required this.hintText, this.onChanged, });
+  const _SearchBar({
+    required this.hintText,
+    this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding:
+      const EdgeInsets.fromLTRB(16, 12, 16, 8),
       color: const Color(0xFFDBEFC4),
       child: TextField(
-        onChanged: onChanged, //콜백 함수
+        onChanged: onChanged,
         decoration: InputDecoration(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          contentPadding:
+          const EdgeInsets.symmetric(
+              horizontal: 16, vertical: 10),
           hintText: hintText,
           filled: true,
           fillColor: Colors.white,
@@ -682,13 +867,20 @@ class _AdminCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final Widget? trailing;
-  const _AdminCard({required this.title, required this.subtitle, this.trailing});
+
+  const _AdminCard({
+    required this.title,
+    required this.subtitle,
+    this.trailing,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      margin:
+      const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(
+          horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -697,7 +889,8 @@ class _AdminCard extends StatelessWidget {
             blurRadius: 4,
             spreadRadius: 0,
             offset: const Offset(0, 2),
-            color: Colors.black.withOpacity(0.05),
+            color:
+            Colors.black.withOpacity(0.05),
           ),
         ],
       ),
@@ -705,11 +898,28 @@ class _AdminCard extends StatelessWidget {
         children: [
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14), overflow: TextOverflow.ellipsis),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                  overflow:
+                  TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 4),
-                Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey[700]), overflow: TextOverflow.ellipsis),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[700],
+                  ),
+                  overflow:
+                  TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
@@ -724,14 +934,31 @@ class _ChipLabel extends StatelessWidget {
   final String label;
   final Color color;
   final Color textColor;
-  const _ChipLabel({required this.label, required this.color, required this.textColor});
+
+  const _ChipLabel({
+    required this.label,
+    required this.color,
+    required this.textColor,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
-      child: Text(label, style: TextStyle(color: textColor, fontSize: 10, fontWeight: FontWeight.w500)),
+      padding: const EdgeInsets.symmetric(
+          horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius:
+        BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 }
