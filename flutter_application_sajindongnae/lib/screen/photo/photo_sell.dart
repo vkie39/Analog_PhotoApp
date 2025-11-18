@@ -60,7 +60,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen>
         final double baseWidth = constraints.maxWidth;
 
         // 너무 크지 않게 적당히 조절 (예: 10% 정도)
-        final double fontSize = (baseWidth * 0.10).clamp(16.0, 40.0);
+        final double fontSize = (baseWidth * 0.10).clamp(16.0, 30.0);
 
         return Stack(
           alignment: Alignment.center,
@@ -78,12 +78,12 @@ class _PhotoSellScreenState extends State<PhotoSellScreen>
               style: TextStyle(
                 fontSize: fontSize,
                 fontWeight: FontWeight.bold,
-                color: Colors.white.withOpacity(0.25),
+                color: Colors.white.withOpacity(0.35),
                 shadows: [
                   Shadow(
                     blurRadius: 4,
                     offset: const Offset(1, 1),
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withOpacity(0.5),
                   ),
                 ],
               ),

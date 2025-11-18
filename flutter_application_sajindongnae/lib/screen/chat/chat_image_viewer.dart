@@ -190,26 +190,20 @@ class ChatImageViewer extends StatelessWidget {
         ),
         centerTitle: true,
         actions: [
-          if (canDownload)
-            IconButton(
-              icon: const Icon(Icons.download),
-              onPressed: () async {
-                await _saveImageToGallery(context);
-              },
-            )
-          else
-            TextButton(
-              onPressed: () {
-                Fluttertoast.showToast(msg: '결제 후 다운로드 가능해요.');
-              },
-              child: const Text(
-                '결제후 다운로드 가능해요',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                ),
-              ),
+          IconButton(
+            icon: Icon(
+              Icons.download,
+              color: canDownload ? Colors.white : Colors.white.withOpacity(0.3), 
+              // 다운로드 불가일 때만 흐리게
             ),
+            onPressed: () async {
+              if (canDownload) {
+                await _saveImageToGallery(context);
+              } else {
+                Fluttertoast.showToast(msg: '결제 후 다운로드 가능해요.');
+              }
+            },
+          ),
         ],
       ),
       body: Center(

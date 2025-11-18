@@ -35,6 +35,9 @@ class LocationSelectScreenState extends State<LocationSelectScreen>{
   final MarkerId _pickedId = const MarkerId('picked');
   static const String _googleApiKey = 'AIzaSyD08a7ITr6A8IgDYt4zDcmeXHvyYKhZrdE'; // TODO: 여긴 나중에 보안을 위해 수정해야 함
   
+  List<dynamic> _placePredictions = []; // 검색 자동완성 목록
+  bool _isSearching = false;            // 검색 중 로딩
+
 
   @override
   void initState(){
@@ -47,6 +50,10 @@ class LocationSelectScreenState extends State<LocationSelectScreen>{
     _searchController.dispose();
     super.dispose();
   }
+
+  //---------------------------------------------------
+  // 초기 카메라 위치 설정 
+  //---------------------------------------------------
 
   Future<void> _setInitialCameraToCurrentLocation() async{
 
@@ -88,6 +95,76 @@ class LocationSelectScreenState extends State<LocationSelectScreen>{
   }
 
 
+  //---------------------------------------------------
+  // 주소 검색 
+  //---------------------------------------------------
+
+  // Google Places API 자동완성 요청 함수
+  Future<void> _searchPlaces(String input) async {
+    if (input.isEmpty) {
+      setState(() {
+        _placePredictions = [];
+      });
+      return;
+    }
+
+    final url = Uri.parse(
+      'https://maps.googleapis.com/maps/api/place/autocomplete/json'
+      '?input=$input'
+      '&language=ko'
+      '&key=$_googleApiKey'
+    );
+
+    final response = await http.get(url);
+    print("Autocomplete API response: ${response.body}");
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      setState(() {
+        _placePredictions = data['predictions'];
+      });
+    }
+  }
+  
+
+  // 주소 → 좌표 찾기 (Place Detail API)
+  Future<LatLng?> _getLatLngFromPlaceId(String placeId) async {
+    final url = Uri.parse(
+      'https://maps.googleapis.com/maps/api/place/details/json'
+      '?place_id=$placeId'
+      '&fields=geometry'
+      '&key=$_googleApiKey'
+    );
+
+    final res = await http.get(url);
+    // ⭐ 여기!!
+    print("Autocomplete API response: ${res.body}");
+
+    if (res.statusCode != 200) return null;
+
+    final data = json.decode(res.body);
+    final location = data['result']['geometry']['location'];
+
+    return LatLng(location['lat'], location['lng']);
+  }
+
+
+  // 검색된 위치로 이동 + 마커 찍는 함수
+  void _moveToSearchedLocation(LatLng pos, String address) async {
+    _selectedLatLng = pos;
+    _selectedAddress = address;
+
+    _setMarker(pos, title: '검색된 위치', snippet: address);
+
+    await _mapController?.animateCamera(
+      CameraUpdate.newLatLng(pos),
+    );
+
+    Future.delayed(const Duration(milliseconds: 50), () {
+      _mapController?.showMarkerInfoWindow(_pickedId);
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -104,39 +181,82 @@ class LocationSelectScreenState extends State<LocationSelectScreen>{
           scrolledUnderElevation: 0,
         ),
 
-        body: Column(
+        body: Stack(
           children: [
-            SearchBarWidget(
-              controller: _searchController,
-              onChanged: (value) {
-                print('검색어 : $value');
-              },
-              leadingIcon: IconButton(
-                icon: const Icon(Icons.menu, color: Colors.black54),
-                onPressed: () {
-                  print('photo_sell 메뉴 클릭');
-                },
-              ),
+            Column(
+              children: [
+                SearchBarWidget(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    print('검색어 입력됨: $value');   // ① 확인용
+                    _searchPlaces(value);           // ② API 호출
+                  },
+                  leadingIcon: IconButton(
+                    icon: const Icon(Icons.menu, color: Colors.black54),
+                    onPressed: () {},
+                  ),
+                ),
+                Expanded(
+                  child: _initialCamera == null
+                      ? const Center(child: CircularProgressIndicator())
+                      : GoogleMap(
+                          initialCameraPosition: _initialCamera!,
+                          onMapCreated: (c) => _mapController = c,
+                          myLocationButtonEnabled: true,
+                          myLocationEnabled: true,
+                          zoomControlsEnabled: false,
+                          markers: {
+                            if (_selectedMarker != null) _selectedMarker!,
+                          },
+                          onTap: _onMapTap,
+                        ),
+                ),
+              ],
             ),
-            Expanded(
-              child: _initialCamera == null
-                  ? const Center(child: CircularProgressIndicator())
-                  : GoogleMap(
-                      initialCameraPosition: _initialCamera!,
-                      onMapCreated: (c) => _mapController = c,  // animateCamera 불필요    
-                      myLocationButtonEnabled: true,            // 버튼 클릭시 내 위치로 카메라 이동
-                      myLocationEnabled: true,                  // 지도 위에 내 위치 표시
-                      zoomControlsEnabled: false,               // 줌 버튼(없어도 제스쳐로 줌 가능)
-                      markers: {
-                          if(_selectedMarker != null) _selectedMarker!,  // setSate에서 생성되는 마커
-                      },
-                      // 지도 탭하면 마커 갱신
-                      onTap: _onMapTap,
+
+            // 🔥 검색결과 리스트
+            if (_placePredictions.isNotEmpty)
+              Positioned(
+                top: 60,
+                left: 15,
+                right: 15,
+                child: Material(
+                  elevation: 6,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
                     ),
-            ),
-            
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: _placePredictions.length,
+                      itemBuilder: (context, index) {
+                        final p = _placePredictions[index];
+                        return ListTile(
+                          title: Text(p['description']),
+                          onTap: () async {
+                            FocusScope.of(context).unfocus();
+
+                            final placeId = p['place_id'];
+                            final description = p['description'];
+
+                            final latLng = await _getLatLngFromPlaceId(placeId);
+                            if (latLng != null) {
+                              _moveToSearchedLocation(latLng, description);
+                            }
+                            
+                            setState(() => _placePredictions = []);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
           ],
-        ), 
+        ),
+
           
         bottomNavigationBar: Padding( // 하단의 완료 버튼
           padding: const EdgeInsets.all(16.0),
