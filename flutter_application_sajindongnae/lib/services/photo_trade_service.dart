@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter_application_sajindongnae/models/tag_model.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/photo_trade_model.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart'; 
@@ -216,5 +217,35 @@ class PhotoTradeService {
       });
     });
   }
+  /// 🔍 태그 기반 검색 (OR 검색)
+Stream<List<PhotoTradeModel>> searchTradeByTags(SelectedTagState state) {
+  // 선택된 모든 태그(flat)
+  final List<String> allSelectedTags = [
+    ...state.singleTags.values,                     // 단일 선택 태그
+    ...state.multiTags.values.expand((s) => s),      // 다중 선택 태그
+  ];
+
+  // 선택 태그가 없으면 전체 가져오기
+  if (allSelectedTags.isEmpty) {
+    return _ref
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((doc) => PhotoTradeModel.fromSnapshot(doc))
+            .toList());
+  }
+
+  // 태그 포함된 trade만 가져오기 (OR 검색)
+  return _ref
+      .where("tags", arrayContainsAny: allSelectedTags)
+      .orderBy('createdAt', descending: true)
+      .snapshots()
+      .map((snap) => snap.docs
+          .map((doc) => PhotoTradeModel.fromSnapshot(doc))
+          .toList());
+}
+
+
+  
 
 } 
