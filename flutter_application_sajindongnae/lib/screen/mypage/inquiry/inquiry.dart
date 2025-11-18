@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage/inquiry/inquiryList.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage/inquiry/inquiryForm.dart';
 

@@ -1,19 +1,12 @@
 import 'dart:developer' as dev;
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:intl/intl.dart';
-import 'package:permission_handler/permission_handler.dart';           // 권한
-import 'package:flutter_application_sajindongnae/models/request_model.dart';
-import 'package:flutter_application_sajindongnae/screen/photo/request_detail.dart';
+// 권한
 import 'package:flutter_application_sajindongnae/services/image_service.dart';
 import 'package:http/http.dart' as http;  
 

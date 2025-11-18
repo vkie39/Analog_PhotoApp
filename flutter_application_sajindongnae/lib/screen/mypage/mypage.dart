@@ -62,10 +62,10 @@ class _MyPageScreenState extends State<MyPageScreen> {
         }, SetOptions(merge: true));
         return;
       }
-
       final data = snap.data() as Map<String, dynamic>?;
       final hasPoint =
           (data?['point'] is Map) &&
+
           ((data!['point'] as Map).containsKey('balance'));
 
       if (!hasPoint) {

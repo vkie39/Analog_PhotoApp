@@ -34,7 +34,6 @@ import 'package:flutter_application_sajindongnae/screen/post/report.dart';
 import 'package:flutter_application_sajindongnae/screen/chat/chat_detail.dart';
 import 'package:flutter_application_sajindongnae/screen/chat/chat_list.dart';
 
-
 enum MoreAction { report, edit, delete }
 
 class RequestDetailScreen extends StatefulWidget {
@@ -52,14 +51,9 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
   // 현재 로그인한 사용자 uid
   String? get _myUid => FirebaseAuth.instance.currentUser?.uid;
 
-  // 실시간으로 바꾸며 제거 : widget 접근 편의를 위한 getter
-  // RequestModel get request => widget.request;
-
-  // 의뢰글 서비스 함수들이 들어있는 클래스 가져옴 RequestService
+  // 의뢰글 서비스
   final RequestService _requestService = RequestService();
 
-  // 북마크 상태를 나타내는 변수
-  // 실시간으로 바꾸며 제거 :bool isMarkedRequest = false;
   int markCount = 0;
 
   GoogleMapController? _requestDetailMapController;
@@ -70,7 +64,11 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
     super.initState();
   }
 
-
+  @override
+  void dispose() {
+    super.dispose();
+    _requestDetailMapController?.dispose();
+  }
   // 북마크 상태를 토글하고 Firestore에 반영
   Future<void> _toggleBookmark(RequestModel request) async {
     if (_myUid == null) {
@@ -92,18 +90,12 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
   }
 
   @override
-  void dispose() {
-    super.dispose();
-    _requestDetailMapController?.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
 
-    final initialRequest = widget.request;      // 전 페이지에서 받아온 request
-    final requestId = initialRequest.requestId; // 그 request의 ID를 requestId에 저장
+    final initialRequest = widget.request;
+    final requestId = initialRequest.requestId;
 
-    return StreamBuilder<RequestModel?>(        // requestId를 통해 실시간으로 해당 request에 대한 수정사항 반영
+    return StreamBuilder<RequestModel?>(
       stream: _requestService.watchRequest(requestId),
       builder: (context, snapshot) {
         // 로딩
@@ -125,15 +117,12 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
           );
         }
 
-        // 항상 최신 Firestore 데이터를 사용
         final request = snapshot.data!;
-        dev.log('request.status = "${request.status}" (${request.status.runtimeType})');
         final isOwner = request.uid == FirebaseAuth.instance.currentUser?.uid;
 
-        // 북마크 여부도 실시간 데이터로 계산
-        final bookmarkedBy = (request.bookmarkedBy ?? <String>[]); 
-        final isMarkedRequest =                                    // 로그인 사용자가 해당 request에 북마크를 한 사용자인지 확인
-            _myUid != null && bookmarkedBy.contains(_myUid);       // 북마크 했으면 true
+        final bookmarkedBy = request.bookmarkedBy ?? <String>[];
+        final isMarkedRequest =
+            _myUid != null && bookmarkedBy.contains(_myUid);
 
         return Scaffold(
           backgroundColor: Colors.white,
@@ -147,8 +136,6 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
             elevation: 0.5,
             scrolledUnderElevation: 0,
 
-            // 더보기 버튼
-            // uid를 확인하여 isOwner일 경우 '수정하기', '삭제하기' 버튼을 보여줌. isOwner가 아니면 '신고하기'
             actions: [
               PopupMenuButton<MoreAction>(
                 icon: const Icon(Icons.more_vert),
@@ -158,14 +145,12 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                 color: Colors.white,
                 elevation: 6,
                 position: PopupMenuPosition.under,
-
                 itemBuilder: (BuildContext context) {
                   if (isOwner) {
                     return const [
                       PopupMenuItem<MoreAction>(
                         value: MoreAction.edit,
                         child: Text('수정하기'),
-
                       ),
                       PopupMenuDivider(height: 5),
                       PopupMenuItem<MoreAction>(
@@ -200,7 +185,6 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                       );
                       break;
                     case MoreAction.delete:
-                      dev.log('삭제하기 선택됨');
                       final shouldDelete = await showDialog<bool>(
                         context: context,
                         builder: (context) => AlertDialog(
@@ -225,7 +209,6 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                         ),
                       );
                       if (shouldDelete == true) {
-                        dev.log('삭제 로직 실행됨');
                         Navigator.of(context).pop();
                       }
                       break;
@@ -235,7 +218,6 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
             ],
           ),
 
-          // 의뢰글 작성자 정보와 작성 내용
           body: Padding(
             padding: const EdgeInsets.all(1.0),
             child: ListView(
@@ -248,7 +230,6 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                       radius: 20,
                     ),
                     const SizedBox(width: 10),
-
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -270,7 +251,6 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                   thickness: 0.5,
                   color: Color.fromARGB(255, 180, 180, 180),
                 ),
-                const SizedBox(height: 10),
 
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -283,35 +263,6 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                       const SizedBox(height: 12),
                       Text(request.description!,
                           style: const TextStyle(fontSize: 18)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Divider(
-                  height: 32,
-                  thickness: 0.5,
-                  color: Color.fromARGB(255, 180, 180, 180),
-                ),
-                const SizedBox(height: 10),
-
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.location_on,
-                          color: Color.fromARGB(255, 133, 133, 133)),
-                      const SizedBox(width: 5),
-                      Expanded(
-                        child: Text(
-                          request.location!,
-                          style: const TextStyle(
-                              fontSize: 15,
-                              color: Color.fromARGB(255, 133, 133, 133)),
-                          softWrap: true,
-                          overflow: TextOverflow.visible,
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -338,9 +289,9 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
             ),
           ),
 
-          // 북마크 + 가격 + 수락버튼
           bottomNavigationBar: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 18),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 18),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -354,51 +305,46 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                             ? const Color.fromARGB(255, 102, 204, 105)
                             : const Color.fromARGB(255, 161, 161, 161),
                       ),
-                      onPressed:() => _toggleBookmark(request),
+                      onPressed: () => _toggleBookmark(request),
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      request.price == 0 ? '무료 의뢰' : '${request.price}원',
-                      style: const TextStyle(),
+                      request.price == 0
+                          ? '무료 의뢰'
+                          : '${request.price}원',
                     ),
                   ],
                 ),
-                // 현재 의뢰 상태 표시 - 텍스트
+
                 Text(
-                  request.status ?? '의뢰중', // 텍스트 자체를 트리거로 사용
+                  request.status ?? '의뢰중',
                   style: const TextStyle(
-                    color: Color.fromARGB(255, 0, 0, 0),
+                    color: Colors.black,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(width: 4),
 
                 ElevatedButton(
                   onPressed: () async {
                     dev.log('수락하기 버튼 클릭됨');
 
-                    final currentUid = FirebaseAuth.instance.currentUser?.uid;
-                    // 로그인 사용자 확인
-                    if (currentUid == null) {
-                      dev.log('로그인이 필요합니다.');
-                      return;
-                    }
-                    //본인 의뢰 수락 금지
+                    final currentUid =
+                        FirebaseAuth.instance.currentUser?.uid;
+                    if (currentUid == null) return;
+
                     if (isOwner) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('본인 의뢰는 수락할 수 없습니다.'),
-                          ),
-                          );
-                          return; // ← 더 이상 아래 로직 실행 안 됨
-                        }
+                        ),
+                      );
+                      return;
+                    }
 
-
-                    // Firestore 및 채팅방 생성 로직
                     final db = FirebaseFirestore.instance;
                     final requesterUid = request.uid;
 
-                    // 두 UID를 정렬하여 항상 같은 chatRoomId를 생성
+                    // 항상 동일한 chatRoomId 생성
                     final sortedIds = [currentUid, requesterUid]..sort();
                     final chatRoomId = sortedIds.join('_');
 
@@ -406,6 +352,7 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                     final existingChat = await chatRef.get();
 
                     if (!existingChat.exists) {
+                      // 신규 채팅방 생성
                       final newChatRoom = ChatRoom(
                         chatRoomId: chatRoomId,
                         participants: [currentUid, requesterUid],
@@ -419,28 +366,35 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
 
                       await chatRef.set(newChatRoom.toMap());
                       dev.log('새 채팅방 생성 완료: $chatRoomId');
-                    } else {
-                      dev.log('기존 채팅방 존재: $chatRoomId');
-                    }
-                    
-                    // 채팅 상세 화면으로 이동
-                    if(isOwner){                // 1. 의뢰 작성자일 경우 -> 채팅 리스트 화면으로 이동
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ChatListScreen()),
-                      );
-                    }
-                    else{                       // 2. 의뢰 수락자일 경우 -> 채팅 화면으로 이동
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ChatDetailScreen(request: request),
+                          builder: (_) => ChatDetailScreen(
+                            request: request,
+                            chatRoom: newChatRoom,   // ⭐ 정답!
+                          ),
+                        ),
+                      );
+                    } else {
+                      // 기존 채팅방 읽기
+                      final existingRoom =
+                          ChatRoom.fromDoc(existingChat);
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatDetailScreen(
+                            request: request,
+                            chatRoom: existingRoom,   // ⭐ 정답!
+                          ),
                         ),
                       );
                     }
                   },
                   style: ButtonStyle(
-                    backgroundColor: WidgetStateProperty.resolveWith<Color>(
+                    backgroundColor:
+                        WidgetStateProperty.resolveWith<Color>(
                       (Set<WidgetState> states) {
                         if (states.contains(WidgetState.pressed)) {
                           return const Color.fromARGB(255, 198, 211, 178);
@@ -448,23 +402,23 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                         return const Color(0xFFDDECC7);
                       },
                     ),
-                    shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+                    shape: WidgetStateProperty.all<
+                        RoundedRectangleBorder>(
                       RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10.0),
                       ),
                     ),
                   ),
-                  child:
-                    Text(
-                      isOwner ? '대화중인 채팅' : '수락하기',
-                      style: const TextStyle(color: Colors.black),
-                    ),
+                  child: Text(
+                    isOwner ? '대화중인 채팅' : '수락하기',
+                    style: const TextStyle(color: Colors.black),
+                  ),
                 ),
               ],
             ),
           ),
         );
-      }
+      },
     );
   }
 }
