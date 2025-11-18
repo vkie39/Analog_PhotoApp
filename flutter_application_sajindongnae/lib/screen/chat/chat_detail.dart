@@ -865,6 +865,88 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   }
 
   // =======================================================================
+  // 실제 포인트 결제 처리 (의뢰자 -> 수락자)
+  // =======================================================================
+  Future<void> _processPayment() async {
+    final buyerUid = _requesterUid; // 결제(포인트 차감) 주체: 의뢰자
+    final sellerUid = _otherUid;    // 포인트 받는 사람: 의뢰 수락자
+    final amount = _requestPrice;
+
+    if (buyerUid.isEmpty || sellerUid.isEmpty) {
+      Fluttertoast.showToast(msg: '결제 대상 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    try {
+      await _db.runTransaction((transaction) async {
+        final buyerRef = _db.collection('users').doc(buyerUid);
+        final sellerRef = _db.collection('users').doc(sellerUid);
+        final requestRef = _db.collection('requests').doc(_requestId);
+
+        final buyerSnap = await transaction.get(buyerRef);
+        final sellerSnap = await transaction.get(sellerRef);
+
+        if (!buyerSnap.exists || !sellerSnap.exists) {
+          throw Exception('유저 정보를 찾을 수 없습니다.');
+        }
+
+        final buyerData = buyerSnap.data() as Map<String, dynamic>;
+        final sellerData = sellerSnap.data() as Map<String, dynamic>;
+
+        // 현재 포인트 (없으면 0으로 간주)
+        final buyerPoint = ((buyerData['point'] ?? {})['balance'] ?? 0) as int;
+        final sellerPoint = ((sellerData['point'] ?? {})['balance'] ?? 0) as int;
+
+        if (buyerPoint < amount) {
+          throw Exception('잔액이 부족합니다.');
+        }
+
+        final newBuyerPoint = buyerPoint - amount;
+        final newSellerPoint = sellerPoint + amount;
+
+        // 의뢰자 포인트 차감
+        transaction.update(buyerRef, {
+          'point.balance': newBuyerPoint,
+        });
+
+        // 수락자 포인트 가산
+        transaction.update(sellerRef, {
+          'point.balance': newSellerPoint,
+        });
+
+        // 의뢰 상태 / 결제 여부 업데이트
+        transaction.update(requestRef, {
+          'isPaied': true,
+          'status': '의뢰완료',
+          'paidAt': FieldValue.serverTimestamp(),
+        });
+      });
+
+      // 상태 반영
+      if (mounted) {
+        setState(() {
+          _isPaied = true;
+          _canDownload = true;
+          _requestStatement = '의뢰완료';
+        });
+      }
+
+      // 결제 완료 메시지 전송 (채팅용)
+      await _sendPaymentCompleteMessage();
+
+      Fluttertoast.showToast(msg: '결제가 완료되었습니다!');
+    } catch (e) {
+      debugPrint('결제 처리 실패: $e');
+      if (e.toString().contains('잔액이 부족')) {
+        Fluttertoast.showToast(msg: '포인트가 부족하여 결제할 수 없습니다.');
+      } else {
+        Fluttertoast.showToast(msg: '결제 처리 중 오류가 발생했습니다.');
+      }
+    }
+  }
+
+
+  // =======================================================================
   // 결제 다이얼로그
   // =======================================================================
 
@@ -900,9 +982,8 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
             TextButton(
               onPressed: () async{
                 Navigator.pop(context);
-                // TODO: 실제 포인트 차감 + isPaied 처리
                 Fluttertoast.showToast(msg: '결제가 완료되었습니다!');
-                await _sendPaymentCompleteMessage();
+                await _processPayment();
               },
               style: TextButton.styleFrom(
                 backgroundColor: Colors.lightGreen,
