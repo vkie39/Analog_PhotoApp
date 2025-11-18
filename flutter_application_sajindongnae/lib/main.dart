@@ -27,6 +27,8 @@ import 'package:flutter_application_sajindongnae/screen/home.dart';
 import 'component/bottom_nav.dart'; // bottom_nav.dart에서 UI 분리한 하단바
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_application_sajindongnae/services/user_service.dart';
+import 'package:flutter_application_sajindongnae/services/location_service.dart';
+import 'package:flutter_application_sajindongnae/services/notification_service.dart';
 
 
 
@@ -36,18 +38,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("📩 백그라운드 메시지: ${message.notification?.title}");
 }
 
-
-Future<void> initFcmToken() async {
-  final token = await FirebaseMessaging.instance.getToken();
-  if (token != null) {
-    await UserService.updateFcmToken(token);
-  }
-
-  // 토큰이 갱신될 때 Firestore에 자동 반영
-  FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
-    UserService.updateFcmToken(newToken);
-  });
-}
 
 
 void main() async {
@@ -60,7 +50,9 @@ void main() async {
   await NotificationService.requestPermission();
 
   // 🔥 (4) FCM 토큰 저장
-  await initFcmToken();
+  await NotificationService.initFcmToken();
+
+  await LocationService.updateUserLocation();
 
   // 🔥 (5) 앱이 켜져 있을 때(포그라운드) 받는 메시지 처리
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
