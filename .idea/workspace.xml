@@ -11,10 +11,7 @@
   <component name="ChangeListManager">
     <list default="true" id="dbe5c5ef-6d8d-40ff-9099-696faacbabed" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/admin/admin_main.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/admin/admin_main.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/mypage/inquiry/inquiryForm.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/mypage/inquiry/inquiryForm.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/macos/Flutter/GeneratedPluginRegistrant.swift" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/macos/Flutter/GeneratedPluginRegistrant.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/pubspec.lock" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/pubspec.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/models/photo_trade_model.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/models/photo_trade_model.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
