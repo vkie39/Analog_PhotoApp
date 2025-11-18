@@ -22,7 +22,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 final _formKey = GlobalKey<FormState>();
 
 class SellWriteScreen extends StatefulWidget {      // 화면이 바뀌는 경우가 많으므로 StatefulWidget 사용
-  const SellWriteScreen({super.key});
+  final PhotoTradeModel? initialPhoto;
+  const SellWriteScreen({
+    super.key,
+    this.initialPhoto,   // null이면 새 글 작성, not null이면 수정 모드
+  });
+
+  bool get isEditing => initialPhoto != null; // 편하게 쓰기 위한 getter
+
 
   @override
   State<SellWriteScreen> createState() => _SellWriteScreenState();
@@ -166,11 +173,61 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
     locationController.dispose();
     super.dispose();
   }
+
   @override
   void initState() {
     super.initState();
     _imageService = ImageService();
+
+    final initial = widget.initialPhoto;
+    if (initial != null) {
+      // 1) 기본 텍스트 필드들
+      photoNameController.text = initial.title;
+      priceController.text = initial.price.toString();
+      descriptionController.text = initial.description;
+      locationController.text = initial.location;
+      pos = initial.position;
+
+      // 2) 태그 복원: section id를 'restored' 같은 가짜가 아니라
+      //    실제 tagSections에서 찾아서 제대로 나누기
+      final Map<String, String> restoredSingle = {};
+      final Map<String, Set<String>> restoredMulti = {};
+
+      for (final tag in initial.tags) {
+        // 이 태그가 포함된 섹션 찾기
+        final section = tagSections.firstWhere(
+          (s) => s.tags.contains(tag),
+          orElse: () => TagSection(
+            id: 'unknown',
+            title: '알 수 없는 섹션',
+            tags: const [],
+          ),
+        );
+
+        if (section.tags.isEmpty) {
+          // 매칭되는 섹션이 전혀 없으면 그냥 무시
+          continue;
+        }
+
+        final bool isMultiSelect = section.isMultiSelect; 
+        // (혹시 SellWriteScreen에서 forceMultiSelect를 true로 넘기면,
+        //  그걸 같이 고려하도록 수정할 수도 있음)
+
+        if (isMultiSelect) {
+          restoredMulti.putIfAbsent(section.id, () => <String>{}).add(tag);
+        } else {
+          // 단일 선택 섹션은 마지막 태그 기준으로 덮어씀
+          restoredSingle[section.id] = tag;
+        }
+      }
+
+      _selectedTagState = SelectedTagState(
+        singleTags: restoredSingle,
+        multiTags: restoredMulti,
+      );
+    }
   }
+
 
 
   // 유효성 검사 함수 (빈칸)
@@ -195,29 +252,29 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
 
   // 폼 제출 함수 (입력칸 검증 후 업로드 처리)
   Future<void> _submitForm() async {
-  // 1) 사진이 선택되지 않았을 경우
-    if (_selectedImage == null) {
+    final bool isEditing = widget.isEditing;
+    final initial = widget.initialPhoto;
+    
+    // 1) 사진이 선택되지 않았을 경우 (로컬 or 기존)
+    //  - 새 글 작성: _selectedImage 가 있어야만 통과
+    //  - 수정 모드: _selectedImage 가 없더라도 initial.imageUrl 이 있으면 통과
+    final bool hasLocalImage = _selectedImage != null;
+    final bool hasExistingImage =
+        isEditing && (initial?.imageUrl.isNotEmpty ?? false);
+    final bool hasImage = hasLocalImage || hasExistingImage;
+
+    if (!hasImage) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('사진을 업로드하세요.')),
       );
-      return; // 사진이 선택되지 않았으면 함수 종료
+      return;
     }
 
     // 2) FormState 접근 가능 여부 확인
     if (_formKey.currentState == null) return; // Form 위젯을 연결해야 FormState에 접근 가능. null이면 함수 종료
     
     // 현재 로그인된 유저 정보 가져오기
-     final user = FirebaseAuth.instance.currentUser;
-
-    if(_formKey.currentState!.validate()){
-      
-      if (user == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('로그인 후 이용해주세요.')),
-        );
-        return; // 로그인 안 되어 있으면 종료
-      }
-    }
+    final user = FirebaseAuth.instance.currentUser;
 
     // Firestore users 컬렉션에서 현재 로그인된 유저 닉네임 가져오기
     final uid = user!.uid;
@@ -240,38 +297,81 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
       final price = int.parse(priceController.text.replaceAll(',', '').trim());  // 가격 (콤마 제거 후 정수 변환)
       final description = descriptionController.text.trim();                     // 추가 설명
       final location = locationController.text.trim();                           // 위치
-      final tags = tagList;                                                      // 선택된 태그 리스트
-
+      
+      // 태그: 새로 선택한 게 있으면 그걸, 아니면 기존 글의 태그 유지
+      final List<String> tags = tagList.isNotEmpty
+          ? tagList
+          : (widget.initialPhoto?.tags ?? <String>[]);
+        
       try {
-        print("🔥 위치 값: $_selectedLocation");
-        print("🔥 userDoc exists: ${userDoc.exists}");
-        print("🔥 userDoc keys = ${userDoc.data()?.keys}");
-        print("🔥 nickname raw = ${userDoc.data()?['nickname']}");
+        if (isEditing) {
+          // ─────────────────────────────
+          // 수정 모드: updateTrade 호출
+          // ─────────────────────────────
+          final original = widget.initialPhoto!;
+          final tradeId = original.id;
+          if (tradeId == null) {
+            throw Exception('tradeId가 없습니다. (수정 불가)');
+          }
 
-        // 5) Firestore + Storage 업로드 (사진 업로드 후 문서 생성)
-        await PhotoTradeService().addTrade(
-          imageFile: File(_selectedImage!.path),               // 선택된 이미지 파일
-          title: photoName,                                    // 사진명
-          description: description,                            // 추가 설명
-          price: price,                                        // 가격
-          uid: user.uid,                                       // 작성자 UID
-          nickname: nickname,                                  // 닉네임
-          profileImageUrl: user.photoURL ?? '',                // 프로필 이미지
-          tags: tags,                                          // 선택된 태그들                      
-          position: pos,
-          location: location,
-        );
+          await PhotoTradeService().updateTrade(
+            tradeId: tradeId,
+            title: photoName,
+            description: description,
+            price: price,
+            tags: tags,
+            newImageFile: _selectedImage != null
+                ? File(_selectedImage!.path)
+                : null, // 새 이미지 있으면 전달, 없으면 null
+            uid: original.uid, // 스토리지 경로는 원래 작성자의 uid 사용
+          );
 
-        // 6) 성공 메시지 출력
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('판매글이 등록되었습니다.')),
-        );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('판매글이 수정되었습니다.')),
+          );
+          if (mounted) {
+            Navigator.pop(context);
+          }
+          
+        } else {
+          // ─────────────────────────────
+          // 새 글 작성 모드: addTrade 호출
+          // ─────────────────────────────
+          print("🔥 위치 값: $_selectedLocation");
+          print("🔥 userDoc exists: ${userDoc.exists}");
+          print("🔥 userDoc keys = ${userDoc.data()?.keys}");
+          print("🔥 nickname raw = ${userDoc.data()?['nickname']}");
 
-        // 7) 작성 완료 후 이전 화면으로 돌아가기
-        Navigator.pop(context);
-      } catch (e, st) {
+          // 5) Firestore + Storage 업로드 (사진 업로드 후 문서 생성)
+          await PhotoTradeService().addTrade(
+            imageFile: File(_selectedImage!.path),               // 선택된 이미지 파일
+            title: photoName,                                    // 사진명
+            description: description,                            // 추가 설명
+            price: price,                                        // 가격
+            uid: user.uid,                                       // 작성자 UID
+            nickname: nickname,                                  // 닉네임
+            profileImageUrl: user.photoURL ?? '',                // 프로필 이미지
+            tags: tags,                                          // 선택된 태그들                      
+            position: pos,
+            location: location,
+          );
+
+          // 6) 성공 메시지 출력
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('판매글이 등록되었습니다.')),
+          );
+
+          // 7) 작성 완료 후 이전 화면으로 돌아가기
+          // Navigator.pop(context);
+          // 성공 시 이전 화면으로 돌아가기
+          if (mounted) {
+            Navigator.pop(context);
+          }
+        } 
+      }
+      catch (e, st) {
         // 8) 오류 발생 시 콘솔 및 사용자 알림
-        debugPrint('업로드 실패: $e\n$st');
+        debugPrint('업로드/수정 실패: $e\n$st');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('업로드 중 오류가 발생했습니다.')),
         );
@@ -362,12 +462,19 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isEditing = widget.isEditing; // [11/18 추가]
+    final initial = widget.initialPhoto;     // 수정해야 할 정보를 sell_detail에서 받아와서 사진이 존재하는지 검사
+    final bool hasAnyImage =                 
+        _selectedImage != null || (isEditing && initial?.imageUrl.isNotEmpty == true);
+
     return Scaffold(
       backgroundColor: Colors.white,    // 전체 배경색
 
       // AppBar: 뒤로가기 버튼, 제목
       appBar: AppBar(
-        title: const Text('사진 판매글 작성', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),),
+        title: Text(
+          isEditing ? '사진 판매글 수정' : '사진 판매글 작성',  // [11/18 수정]
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),),
         centerTitle: true,                // 제목 가운데 정렬
         backgroundColor: Colors.white,  // AppBar 배경색
         foregroundColor: Colors.black,  // AppBar 글자색
@@ -386,17 +493,44 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
             child: Column( 
               crossAxisAlignment: CrossAxisAlignment.start,  // 왼쪽 정렬
               children: [
+                // [11/18 수정] 선택된 사진 혹은 기존 사진(수정 모드) 표시
+                Builder(
+                  builder: (context) {
+                    final initial = widget.initialPhoto;
+                    final hasLocalImage = _selectedImage != null;
+                    final hasRemoteImage = !hasLocalImage &&
+                        initial != null &&
+                        initial.imageUrl.isNotEmpty;
 
-                // 선택한 사진
-                if (_selectedImage != null) 
-                  ClipRRect( 
-                    child: Image.file(
-                      File(_selectedImage!.path), // 선택된 이미지 파일 표시
-                      width: double.infinity,     // 가로 꽉 채우기
-                      fit: BoxFit.fitWidth,       // 가로 기준으로 맞춤
-                    ),
-                  ),
-                  const SizedBox(height: 10), // 사진과 버튼 사이 간격
+                    if (!hasLocalImage && !hasRemoteImage) {
+                      return const SizedBox.shrink();
+                    }
+
+                    Widget imageWidget;
+
+                    if (hasLocalImage) {
+                      imageWidget = Image.file(
+                        File(_selectedImage!.path),
+                        width: double.infinity,
+                        fit: BoxFit.fitWidth,
+                      );
+                    } else {
+                      imageWidget = Image.network(
+                        initial!.imageUrl,
+                        width: double.infinity,
+                        fit: BoxFit.fitWidth,
+                      );
+                    }
+
+                    return Column(
+                      children: [
+                        ClipRRect(child: imageWidget),
+                        const SizedBox(height: 10),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 10), // 사진과 버튼 사이 간격
                 
                 if (_selectedImage != null)  // 사진 삭제 버튼
                   TextButton(
@@ -429,7 +563,6 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
                   
                   
 
-
                 // 사진 업로드 버튼 (다시 선택 버튼)
                 ElevatedButton(
                   onPressed:() async{
@@ -442,9 +575,9 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
                       }
                       return const Color.fromARGB(255, 238, 238, 238);                         // 기본색
                     }), 
-                   minimumSize:  _selectedImage == null 
-                        ? WidgetStateProperty .all<Size>(const Size(double.infinity, 150))       // '사진 업로드' 버튼 크기 (가로 꽉 채우기, 세로 150)
-                        : WidgetStateProperty .all<Size>(const Size(double.infinity, 30)),       // '다시 선택' 버튼 크기 (가로 꽉 채우기, 세로 30)
+                   minimumSize:  hasAnyImage
+                        ? WidgetStateProperty .all<Size>(const Size(double.infinity, 30))       // '사진 업로드' 버튼 크기 (가로 꽉 채우기, 세로 150)
+                        : WidgetStateProperty .all<Size>(const Size(double.infinity, 150)),       // '다시 선택' 버튼 크기 (가로 꽉 채우기, 세로 30)
 
                     shape: WidgetStateProperty .all<RoundedRectangleBorder>(
                       RoundedRectangleBorder(
@@ -455,11 +588,34 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
                   ) ,
                   child: Column(
                     children: [
-                      _selectedImage == null ? Icon( Icons.upload_rounded, size: 50, color: Color.fromARGB(255, 136, 136, 136)): const SizedBox.shrink(), // 이미지 선택 전 아이콘, 후 빈칸
-                      _selectedImage == null ? const SizedBox(height: 10): const SizedBox.shrink(),                                                         // 아이콘과 텍스트 사이 간격
-                      _selectedImage == null ? const Text("사진 업로드", style: TextStyle(fontSize: 15, color: Color.fromARGB(255, 136, 136, 136)))        // 선택된 이미지가 없을 땐 '사진 업로드' 텍스트
-                                             : Text("다시 선택하기", style: TextStyle(fontSize: 12, color: Color.fromARGB(255, 136, 136, 136))),           // 선택된 이미지가 있으면 '다시 선택하기' 텍스트
+                      if (!hasAnyImage) ...[
+                        const Icon(
+                          Icons.upload_rounded,
+                          size: 50,
+                          color: Color.fromARGB(255, 136, 136, 136),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          "사진 업로드",
+                          style: TextStyle(
+                              fontSize: 15,
+                              color: Color.fromARGB(255, 136, 136, 136)),
+                        ),
+                      ] else ...[
+                        Text(
+                          "다시 선택하기",
+                          style: const TextStyle(
+                              fontSize: 12,
+                              color: Color.fromARGB(255, 136, 136, 136)),
+                        ),
+                      ],
                     ],
+                    /*children: [
+                      hasAnyImage ? Icon( Icons.upload_rounded, size: 50, color: Color.fromARGB(255, 136, 136, 136)): const SizedBox.shrink(), // 이미지 선택 전 아이콘, 후 빈칸
+                      hasAnyImage ? const SizedBox(height: 10): const SizedBox.shrink(),                                                         // 아이콘과 텍스트 사이 간격
+                      hasAnyImage ? const Text("사진 업로드", style: TextStyle(fontSize: 15, color: Color.fromARGB(255, 136, 136, 136)))        // 선택된 이미지가 없을 땐 '사진 업로드' 텍스트
+                                             : Text("다시 선택하기", style: TextStyle(fontSize: 12, color: Color.fromARGB(255, 136, 136, 136))),           // 선택된 이미지가 있으면 '다시 선택하기' 텍스트
+                    ],*/
                   ),
                 ),
                 SizedBox(height: 20), // 사진 업로드 버튼과 입력칸 사이 간격

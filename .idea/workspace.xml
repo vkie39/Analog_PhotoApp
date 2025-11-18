@@ -10,9 +10,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="dbe5c5ef-6d8d-40ff-9099-696faacbabed" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/deploymentTargetSelector.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deploymentTargetSelector.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/photo/sell_detail.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/photo/sell_detail.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/chat/chat_detail.dart" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_application_sajindongnae/lib/screen/chat/chat_detail.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

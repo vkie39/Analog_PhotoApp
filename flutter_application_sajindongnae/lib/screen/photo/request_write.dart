@@ -1,7 +1,8 @@
 import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
+import 'dart:developer' as dev;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:firebase_auth/firebase_auth.dart'; 
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/request_service.dart';
 import '../../models/request_model.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/location_select.dart';
@@ -16,16 +17,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';   // [수정] Firestore i
 enum RequestFeeType {free, paid}
 
 class RequestWriteScreen extends StatefulWidget {
-  const RequestWriteScreen({super.key});
+  final RequestModel? existingRequest; 
+  const RequestWriteScreen({
+    super.key,
+    this.existingRequest,               // 선택 사항 (수정할 경우에만)
+  });
 
   @override
   State<RequestWriteScreen> createState() => RequestWriteScreenScreenState();
 }
 
-class RequestWriteScreenScreenState extends State<RequestWriteScreen> with SingleTickerProviderStateMixin {                
-  
+class RequestWriteScreenScreenState extends State<RequestWriteScreen> with SingleTickerProviderStateMixin {
+
   // 입력칸 컨트롤러
-  final TextEditingController requestTitleController = TextEditingController();  
+  final TextEditingController requestTitleController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController locationController = TextEditingController();
@@ -44,10 +49,47 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
   // 설명문 상태 관리용
   bool _showExplanation = false;
 
+  bool get isEditing => widget.existingRequest != null;
+
+
+  
+
   @override
   void initState() {
     super.initState();
-    priceController.value = const TextEditingValue(text: '0');
+
+    if (isEditing) {
+      // 수정 모드일 때: 기존 값 채우기
+      final r = widget.existingRequest!;
+
+      requestTitleController.text = r.title ?? '';
+      descriptionController.text   = r.description ?? '';
+      priceController.text         = r.price.toString();
+      locationController.text      = r.location ?? '';
+
+      pickedPos = r.position; // LatLng
+
+      // 무료/유료 토글 상태
+      _feeTypeIsSelected = [r.isFree, !r.isFree];
+
+      // 미니맵 원도 바로 그려주기
+      if (pickedPos != null) {
+        circles = {
+          Circle(
+            circleId: const CircleId('miniCircle'),
+            fillColor: const Color.fromARGB(54, 116, 235, 106),
+            center: pickedPos!,
+            radius: 2500,
+            strokeColor: const Color.fromARGB(54, 116, 235, 106),
+            strokeWidth: 1,
+            visible: true,
+          ),
+        };
+      }
+    } else {
+      // 수정이 아니라 새로운 의뢰글 작성일 경우에만 아무것도 안채움
+      priceController.value = const TextEditingValue(text: '0');
+    }
   }
 
   @override
@@ -62,24 +104,24 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
 
 
   // 위치 선택 화면으로 이동하고 선택된 위치를 받아오는 함수
-  Future<void> _openLocationSelector(BuildContext context) async {   
-    final result = await Navigator.push<LocationPickResult>(      
-      context,  
+  Future<void> _openLocationSelector(BuildContext context) async {
+    final result = await Navigator.push<LocationPickResult>(
+      context,
       MaterialPageRoute(
-        builder: (context) => LocationSelectScreen(
-          initialPosition: pickedPos, 
-          initialAddress: locationController.text.isEmpty
-                          ? locationController.text : null,
-        )
-      ), 
+          builder: (context) => LocationSelectScreen(
+            initialPosition: pickedPos,
+            initialAddress: locationController.text.isEmpty
+                ? locationController.text : null,
+          )
+      ),
     );
 
     // LocationSelectScreen 선택된 위치를 받아와서 상태 업데이트
-    if (result != null) {                  
+    if (result != null) {
       setState(() {
         locationController.text = result.address;        // 선택된 상태 업데이트
         pickedPos = result.position;
-        
+
         circles = {
           Circle(
             circleId: CircleId('miniCircle'),
@@ -104,7 +146,7 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
     if (value == null || value.trim().isEmpty) {
       return '$fieldName을(를) 입력하세요';
     }
-    return null; 
+    return null;
   }
 
   // 유효성 검사 함수 (숫자)
@@ -116,12 +158,11 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
     if (parsedValue == null || parsedValue <= 0) {
       return '유효한 숫자를 입력하세요';
     }
-    return null; 
+    return null;
   }
 
 
-
-  // 폼 제출 함수 수정
+  // 11/18 함 수정 (수정일 때 RequestService().updateRequest 로직 수행)
   Future<void> _submitForm() async {
     if (_formKey.currentState == null) return;
 
@@ -141,29 +182,57 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
         return;
       }
 
-      // [수정] Firestore users 컬렉션에서 닉네임과 프로필 이미지 가져오기
+      // 공통 입력 값들
+      final photoName   = requestTitleController.text.trim();
+      final price       = int.parse(priceController.text.replaceAll(',', '').trim());
+      final description = descriptionController.text.trim();
+      final location    = locationController.text.trim();
+      final isFree      = _feeTypeIsSelected[0];
+
+      // ✨ 수정 모드인 경우
+      if (isEditing) {
+        final old = widget.existingRequest!;
+
+        // 수정할 필드만 Map으로 구성 (필요하면 더 추가)
+        final updateData = {
+          'title': photoName,
+          'description': description,
+          'price': price,
+          'location': location,
+          'position': GeoPoint(pickedPos!.latitude, pickedPos!.longitude),
+          'isFree': isFree,
+          'isPaied': !isFree,
+        };
+
+        await RequestService().updateRequest(old.requestId, updateData);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("의뢰글이 수정되었습니다.")),
+        );
+
+        // 이전 화면으로 돌아가기
+        Navigator.of(context).pop();
+        return;
+      }
+
+      // ✨ 작성 모드인 경우 (기존 코드 유지)
+      // Firestore users 컬렉션에서 닉네임과 프로필 이미지 가져오기
       final userDoc = await FirebaseFirestore.instance
           .collection("users")
           .doc(user.uid)
           .get();
 
-      final nickname = userDoc.data()?["nickname"] ?? "사용자";                 // [수정]
-      final profileImageUrl = userDoc.data()?["profileImageUrl"] 
-                                ?? user.photoURL 
-                                ?? "";                                         // [수정]
-
-      final photoName = requestTitleController.text.trim();
-      final price =
-          int.parse(priceController.text.replaceAll(',', '').trim());
-      final description = descriptionController.text.trim();
-      final location = locationController.text.trim();
+      final nickname = userDoc.data()?["nickname"] ?? "사용자";
+      final profileImageUrl = userDoc.data()?["profileImageUrl"]
+          ?? user.photoURL
+          ?? "";
 
       // RequestModel 생성
       final request = RequestModel(
         requestId: const Uuid().v4(),
         uid: user.uid,
-        nickname: nickname,                // [수정]
-        profileImageUrl: profileImageUrl,  // [수정]
+        nickname: nickname,
+        profileImageUrl: profileImageUrl,
         category: null,
         dateTime: DateTime.now(),
         title: photoName,
@@ -172,9 +241,13 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
         location: location,
         position: pickedPos!,
         bookmarkedBy: [],
-        isFree: _feeTypeIsSelected[0],
+        status: '의뢰중',
+        isFree: isFree,
+        isPaied: false,
         reportCount: 0,
       );
+
+      dev.log('request 모델 생성 완료 *********************');
 
       // 등록
       await RequestService().addRequest(request);
@@ -183,12 +256,10 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
         const SnackBar(content: Text("의뢰글이 등록되었습니다.")),
       );
 
-      Navigator.pop(context);
-    } else {
-      print("폼 검증 실패");
+      dev.log('request 업로드 완료 *********************');
+      Navigator.of(context).pop(); // 작성 후에도 뒤로
     }
   }
-
 
 
 
@@ -204,11 +275,11 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
           text: '0',
         );
       } else {
-        if (_feeTypeIsSelected[1]) priceController.clear(); 
+        if (_feeTypeIsSelected[1]) priceController.clear();
       }
     });
   }
-  
+
   // 유료-무료 버튼 디자인
   Widget _feeChip(String label, bool selected){
     return AnimatedContainer(
@@ -218,7 +289,7 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
       decoration: BoxDecoration(
         color: selected ? const Color(0xFFE0E0E0) : Colors.transparent,
         borderRadius: BorderRadius.circular(5),
-      ), 
+      ),
       child: Text(
         label,
         style: const TextStyle(color: Colors.black87),
@@ -234,7 +305,7 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
   }
 
   // 공통 InputDecoration 스타일 정의 (입력칸 스타일)
-  static final baseDecoration = InputDecoration(
+  final baseDecoration = InputDecoration(
     labelStyle: TextStyle(fontSize: 14, color: Color.fromARGB(255, 136, 136, 136)),
     hintStyle: TextStyle(fontSize: 10, color: Color.fromARGB(255, 136, 136, 136)),
     enabledBorder: UnderlineInputBorder( borderSide: BorderSide(color: Color.fromARGB(255, 221, 221, 221), width: 1.5)),
@@ -249,7 +320,10 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
       backgroundColor: Colors.white,
 
       appBar: AppBar(
-        title: const Text('사진 의뢰글 작성', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+        title: Text(
+          isEditing ? '사진 의뢰글 수정' : '사진 의뢰글 작성',
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)
+        ),
         centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -285,7 +359,7 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
                       TextFormField(
                         controller: requestTitleController,
                         decoration: baseDecoration.copyWith(
-                          labelText: '의뢰 제목*', 
+                          labelText: '의뢰 제목*',
                           hintText: '제목을 입력하세요',
                         ),
                         validator: (value) => _validateNotEmpty(value, '의뢰 제목'),
@@ -295,10 +369,10 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
                       TextField(
                         controller: descriptionController,
                         decoration: baseDecoration.copyWith(
-                          labelText: '추가 설명', 
+                          labelText: '추가 설명',
                           hintText: '추가 설명을 입력하세요',
                           border: InputBorder.none,
-                          enabledBorder: InputBorder.none, 
+                          enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
                         ),
                         maxLines: 5,
@@ -342,7 +416,7 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
                         controller: priceController,
                         enabled: _feeTypeIsSelected[1],
                         decoration: baseDecoration.copyWith(
-                          labelText: '가격*', 
+                          labelText: '가격*',
                           hintText: '가격을 입력하세요',
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
@@ -360,7 +434,7 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
                 // 위치 입력칸
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 8.0),                 
+                  padding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 8.0),
                   decoration: BoxDecoration(
                     border: Border.all(
                       color: Color.fromARGB(255, 221, 221, 221),
@@ -381,8 +455,8 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
                       padding: const EdgeInsets.symmetric(vertical: 12.0),
                       child: Text(
                         locationController.text.isEmpty
-                          ? '의뢰자가 사진을 찍을 위치를 선택하세요'
-                          : locationController.text,
+                            ? '의뢰자가 사진을 찍을 위치를 선택하세요'
+                            : locationController.text,
                         style: const TextStyle(fontSize: 14, color: Color.fromARGB(255, 136, 136, 136)),
                       ),
                     ),
@@ -404,10 +478,10 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
                           onMapCreated: (c) => _miniMapController = c,
                           markers:{
                             Marker(
-                              markerId: const MarkerId('mini'),
-                              position: pickedPos!,
-                              infoWindow: const InfoWindow(title: '선택 위치'),
-                              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen)
+                                markerId: const MarkerId('mini'),
+                                position: pickedPos!,
+                                infoWindow: const InfoWindow(title: '선택 위치'),
+                                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen)
                             ),
                           },
                           myLocationEnabled: false,
@@ -430,11 +504,11 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
                   child: Container(
                     decoration: const BoxDecoration(
                       border: Border(
-                        bottom: BorderSide(color: Colors.black54, width: 1)
+                          bottom: BorderSide(color: Colors.black54, width: 1)
                       ),
                     ),
                     child: const Text('위치 지정은 왜 필요한 건가요?'),
-                  ), 
+                  ),
                 ),
 
                 if (_showExplanation) ...[
@@ -448,8 +522,8 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
                       const SizedBox(height: 15),
                       const Text(
                         '지정한 위치를 기준으로 반경 2.5km 이내의 이웃들에게 알림이 전달돼요.\n'
-                        '알림을 통해 의뢰한 사진을 더 빠르게 받아보실 수 있습니다.\n'
-                        '위치 정보는 알림 서비스 제공에만 사용되며, 다른 용도로 저장되거나 공유되지 않으니 안심하세요',
+                            '알림을 통해 의뢰한 사진을 더 빠르게 받아보실 수 있습니다.\n'
+                            '위치 정보는 알림 서비스 제공에만 사용되며, 다른 용도로 저장되거나 공유되지 않으니 안심하세요',
                         style: TextStyle(fontSize: 12, color: Colors.black54),
                         textAlign: TextAlign.left,
                       )
@@ -469,21 +543,24 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
             _submitForm();
           },
           style: ButtonStyle(
-            backgroundColor: WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
-              if (states.contains(WidgetState.pressed)) {
-                return const Color(0xFFDDECC7);
-              }
-              return const Color(0xFF8BC34A);
-            }),
-            minimumSize: WidgetStateProperty.all<Size>(const Size(double.infinity, 50)),
-            shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-              RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-                side: const BorderSide(color: Color(0xFF8BC34A))
+              backgroundColor: WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
+                if (states.contains(WidgetState.pressed)) {
+                  return const Color(0xFFDDECC7);
+                }
+                return const Color(0xFF8BC34A);
+              }),
+              minimumSize: WidgetStateProperty.all<Size>(const Size(double.infinity, 50)),
+              shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+                  RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: const BorderSide(color: Color(0xFF8BC34A))
+                  )
               )
-            )
           ),
-          child: const Text("등록", style: TextStyle(fontSize: 15, color: Colors.white)),
+          child: Text(
+            isEditing ? '수정 완료' : '등록',
+            style: const TextStyle(fontSize: 15, color: Colors.white)
+          ),
         ),
       ),
     );

@@ -15,7 +15,7 @@ class PostModel {
 
   // 변경: likedBy 추가 (좋아요 누른 uid 목록)
   final List<String> likedBy;
-
+  // 변경: reportCount 추가 (신고 횟수)
   final int reportCount;
 
   PostModel({
@@ -89,7 +89,8 @@ class PostModel {
       timestamp: (data['createdAt'] as Timestamp).toDate(),
       category: data['category'] ?? '' // Firestore 문서 필드 확인
       , likedBy: List<String>.from(data['likedBy'] ?? []
-      ), reportCount: data['reportCount'] ?? 0    
+      ), 
+      reportCount: data['reportCount'] ?? 0    
     );
   }
 

@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,6 +12,9 @@ import 'package:flutter_application_sajindongnae/component/chat_card.dart';
 
 // 채팅 상세 페이지
 import 'package:flutter_application_sajindongnae/screen/chat/chat_detail.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_application_sajindongnae/services/request_service.dart';
+
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -22,10 +26,11 @@ class ChatListScreen extends StatefulWidget {
 class _ChatListScreenState extends State<ChatListScreen> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final RequestService _requestService = RequestService();
 
   @override
   Widget build(BuildContext context) {
-    final currentUid = _auth.currentUser?.uid;
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -45,6 +50,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: _db
             .collection('chats')
+            .where('participants', arrayContains: currentUid)
             .orderBy('lastTimestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
@@ -71,36 +77,80 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 const Divider(height: 1, color: Color(0xFFEFEFEF)),
             itemBuilder: (context, index) {
               final room = chatRooms[index];
+              dev.log('${room.requestId}');
 
               return ChatCard(
                 chatRoom: room,
-
                 // 채팅방 클릭 시 처리
-                onTap: () async {
-                  final requestId = room.requestId;
-
-                  // 의뢰글 Firestore에서 불러오기
-                  final snap =
-                      await _db.collection('requests').doc(requestId).get();
-
-                  if (!snap.exists) {
-                    print("의뢰글이 존재하지 않습니다: $requestId");
-                    return;
-                  }
-
-                  // RequestModel로 변환
-                  final request = RequestModel.fromMap(snap.data()!, snap.id);
-
-                  // 채팅 상세 화면으로 이동
+                onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => ChatDetailScreen(
-                        request: request, // 이제 정확한 RequestModel 전달
-                      ),
-                    ),
+                        request: RequestModel(
+                          requestId: room.requestId,
+                          uid: room.lastSenderId,
+                          nickname: room.requesterNickname,
+                          title: room.lastMessage,
+                          profileImageUrl: room.requesterProfileImageUrl,
+                          dateTime: room.lastTimestamp,
+                          description: '',
+                          price: 0,
+                          isFree: true,         
+                          location: '',
+                          position: const LatLng(0, 0),
+                          bookmarkedBy: [],
+                          isPaied: false,
+                        )
+                      )
+                    )
                   );
-                },
+                }
+                      // -----------------------------------------------------
+                      // 함 수정
+                      // 가짜 데이터(request) 만들어서 넘기던 방식 
+                      // -> chat에 저장된 requestId로 request 모델 검색해서 넘김
+                      // -----------------------------------------------------
+                                      
+                /*onTap: () async {
+                    dev.log('🔥 room.requestId = ${room.requestId}');  
+                    try {
+                      // 1) requestId로 해당 의뢰글 Firestore에서 조회
+                      final request =
+                          await _requestService.getRequestById(room.requestId);
+                      dev.log('request ID 받아오기 *********************');
+                        
+                      
+
+                      if (request == null) {
+                        // 의뢰글이 삭제됐거나 없는 경우
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('해당 의뢰글을 찾을 수 없습니다.')),
+                        );
+                        return;
+                      }
+                      // -----------------------------------------------------
+                      // 함 11/26 수정
+                      // 가짜 데이터(request) 만들어서 넘기던 방식 
+                      // -> chat에 저장된 requestId로 request 모델 검색해서 넘김
+                      // -----------------------------------------------------
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatDetailScreen(
+                            request: request,         
+                          ),
+
+                        ),
+                      );
+                    }
+                    catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('의뢰 정보를 불러오지 못했습니다.')),
+                      );
+                      dev.log('의뢰 정보 오류 : ${e}');
+                    }
+                }, */
               );
             },
           );
