@@ -68,5 +68,8 @@ lib/screen/test_*
 **/flutter/generated_plugin_registrant.*
 **/flutter/generated_plugins.cmake
 
-/node_modules/
-/functions/node_modules/
+
+# Flutter generated plugin files (optional ignore)
+**/flutter/generated_plugin_registrant.*
+**/flutter/generated_plugins.*
+**/Flutter/GeneratedPluginRegistrant.*

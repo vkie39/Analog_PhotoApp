@@ -24,8 +24,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 // 모델 import
 import 'package:flutter_application_sajindongnae/models/request_model.dart';
-import 'package:flutter_application_sajindongnae/services/request_service.dart';
 import 'package:flutter_application_sajindongnae/models/chat_list_model.dart';
+
+import 'package:flutter_application_sajindongnae/services/request_service.dart';
+import 'package:flutter_application_sajindongnae/screen/photo/request_write.dart';
 import 'package:flutter_application_sajindongnae/screen/post/report.dart';
 
 // 채팅 상세 페이지 import
@@ -60,7 +62,6 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // 실시간으로 바꾸며 제거 : _loadBookmarkState();
   }
 
   @override
@@ -68,7 +69,6 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
     super.dispose();
     _requestDetailMapController?.dispose();
   }
-
   // 북마크 상태를 토글하고 Firestore에 반영
   Future<void> _toggleBookmark(RequestModel request) async {
     if (_myUid == null) {
@@ -91,6 +91,7 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+
     final initialRequest = widget.request;
     final requestId = initialRequest.requestId;
 
@@ -174,6 +175,14 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                       break;
                     case MoreAction.edit:
                       dev.log('수정하기 선택됨');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RequestWriteScreen(
+                            existingRequest: request, // StreamBuilder에서 받은 최신 request
+                          ),
+                        ),
+                      );
                       break;
                     case MoreAction.delete:
                       final shouldDelete = await showDialog<bool>(

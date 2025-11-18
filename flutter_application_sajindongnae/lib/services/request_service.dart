@@ -25,7 +25,7 @@ class RequestService {
     return RequestModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
   }
 
-  // 함경민 추가 : 단일 의뢰글 실시간 스트림
+  // 함 추가 : 단일 의뢰글 실시간 스트림
   Stream<RequestModel?> watchRequest(String id) {
     return _ref.doc(id).snapshots().map((doc) {
       if (!doc.exists) return null;

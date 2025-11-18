@@ -17,7 +17,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';   // [수정] Firestore i
 enum RequestFeeType {free, paid}
 
 class RequestWriteScreen extends StatefulWidget {
-  const RequestWriteScreen({super.key});
+  final RequestModel? existingRequest; 
+  const RequestWriteScreen({
+    super.key,
+    this.existingRequest,               // 선택 사항 (수정할 경우에만)
+  });
 
   @override
   State<RequestWriteScreen> createState() => RequestWriteScreenScreenState();
@@ -45,10 +49,47 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
   // 설명문 상태 관리용
   bool _showExplanation = false;
 
+  bool get isEditing => widget.existingRequest != null;
+
+
+  
+
   @override
   void initState() {
     super.initState();
-    priceController.value = const TextEditingValue(text: '0');
+
+    if (isEditing) {
+      // 수정 모드일 때: 기존 값 채우기
+      final r = widget.existingRequest!;
+
+      requestTitleController.text = r.title ?? '';
+      descriptionController.text   = r.description ?? '';
+      priceController.text         = r.price.toString();
+      locationController.text      = r.location ?? '';
+
+      pickedPos = r.position; // LatLng
+
+      // 무료/유료 토글 상태
+      _feeTypeIsSelected = [r.isFree, !r.isFree];
+
+      // 미니맵 원도 바로 그려주기
+      if (pickedPos != null) {
+        circles = {
+          Circle(
+            circleId: const CircleId('miniCircle'),
+            fillColor: const Color.fromARGB(54, 116, 235, 106),
+            center: pickedPos!,
+            radius: 2500,
+            strokeColor: const Color.fromARGB(54, 116, 235, 106),
+            strokeWidth: 1,
+            visible: true,
+          ),
+        };
+      }
+    } else {
+      // 수정이 아니라 새로운 의뢰글 작성일 경우에만 아무것도 안채움
+      priceController.value = const TextEditingValue(text: '0');
+    }
   }
 
   @override
@@ -121,8 +162,7 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
   }
 
 
-
-  // 폼 제출 함수 수정
+  // 11/18 함 수정 (수정일 때 RequestService().updateRequest 로직 수행)
   Future<void> _submitForm() async {
     if (_formKey.currentState == null) return;
 
@@ -142,29 +182,57 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
         return;
       }
 
-      // [수정] Firestore users 컬렉션에서 닉네임과 프로필 이미지 가져오기
+      // 공통 입력 값들
+      final photoName   = requestTitleController.text.trim();
+      final price       = int.parse(priceController.text.replaceAll(',', '').trim());
+      final description = descriptionController.text.trim();
+      final location    = locationController.text.trim();
+      final isFree      = _feeTypeIsSelected[0];
+
+      // ✨ 수정 모드인 경우
+      if (isEditing) {
+        final old = widget.existingRequest!;
+
+        // 수정할 필드만 Map으로 구성 (필요하면 더 추가)
+        final updateData = {
+          'title': photoName,
+          'description': description,
+          'price': price,
+          'location': location,
+          'position': GeoPoint(pickedPos!.latitude, pickedPos!.longitude),
+          'isFree': isFree,
+          'isPaied': !isFree,
+        };
+
+        await RequestService().updateRequest(old.requestId, updateData);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("의뢰글이 수정되었습니다.")),
+        );
+
+        // 이전 화면으로 돌아가기
+        Navigator.of(context).pop();
+        return;
+      }
+
+      // ✨ 작성 모드인 경우 (기존 코드 유지)
+      // Firestore users 컬렉션에서 닉네임과 프로필 이미지 가져오기
       final userDoc = await FirebaseFirestore.instance
           .collection("users")
           .doc(user.uid)
           .get();
 
-      final nickname = userDoc.data()?["nickname"] ?? "사용자";                 // [수정]
+      final nickname = userDoc.data()?["nickname"] ?? "사용자";
       final profileImageUrl = userDoc.data()?["profileImageUrl"]
           ?? user.photoURL
-          ?? "";                                         // [수정]
-
-      final photoName = requestTitleController.text.trim();
-      final price =
-      int.parse(priceController.text.replaceAll(',', '').trim());
-      final description = descriptionController.text.trim();
-      final location = locationController.text.trim();
+          ?? "";
 
       // RequestModel 생성
       final request = RequestModel(
         requestId: const Uuid().v4(),
         uid: user.uid,
-        nickname: nickname,                // [수정]
-        profileImageUrl: profileImageUrl,  // [수정]
+        nickname: nickname,
+        profileImageUrl: profileImageUrl,
         category: null,
         dateTime: DateTime.now(),
         title: photoName,
@@ -174,16 +242,12 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
         position: pickedPos!,
         bookmarkedBy: [],
         status: '의뢰중',
-        isFree: _feeTypeIsSelected[0],
+        isFree: isFree,
         isPaied: false,
         reportCount: 0,
       );
-    
-      dev.log('request 모델 생성 완료 *********************');
-    
 
       dev.log('request 모델 생성 완료 *********************');
-
 
       // 등록
       await RequestService().addRequest(request);
@@ -192,9 +256,11 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
         const SnackBar(content: Text("의뢰글이 등록되었습니다.")),
       );
 
-    dev.log('request 업로드 완료 *********************');
+      dev.log('request 업로드 완료 *********************');
+      Navigator.of(context).pop(); // 작성 후에도 뒤로
     }
   }
+
 
 
   // 유료-무료 선택했을 때 호출
@@ -254,7 +320,10 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
       backgroundColor: Colors.white,
 
       appBar: AppBar(
-        title: const Text('사진 의뢰글 작성', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+        title: Text(
+          isEditing ? '사진 의뢰글 수정' : '사진 의뢰글 작성',
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)
+        ),
         centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -488,10 +557,12 @@ class RequestWriteScreenScreenState extends State<RequestWriteScreen> with Singl
                   )
               )
           ),
-          child: const Text("등록", style: TextStyle(fontSize: 15, color: Colors.white)),
+          child: Text(
+            isEditing ? '수정 완료' : '등록',
+            style: const TextStyle(fontSize: 15, color: Colors.white)
+          ),
         ),
       ),
     );
   }
 }
-  

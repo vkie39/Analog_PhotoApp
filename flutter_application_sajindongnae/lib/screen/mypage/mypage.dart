@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage/setting/settings.dart';
+import 'package:flutter_application_sajindongnae/screen/mypage/setting/alarm.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage/contents/userContent.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage/userLikeds/likedList.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage/inquiry/inquiry.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage/faq.dart';
+import 'package:flutter_application_sajindongnae/screen/mypage/pointHistory.dart';
 
 class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
@@ -18,11 +20,11 @@ class MyPageScreen extends StatefulWidget {
 class _MyPageScreenState extends State<MyPageScreen> {
   User? user = FirebaseAuth.instance.currentUser; // 로그인 사용자 정보
 
-  String? nickname;              // DB 닉네임
-  String? profileImageUrl;       // DB 프로필 이미지 URL
-  int? sellPhotoCount;           // 판매 사진 수
-  int? buyPhotoCount;            // 구매 사진 수
-  int? postCount;                // 게시글 수
+  String? nickname; // DB 닉네임
+  String? profileImageUrl; // DB 프로필 이미지 URL
+  int? sellPhotoCount; // 판매 사진 수
+  int? buyPhotoCount; // 구매 사진 수
+  int? postCount; // 게시글 수
 
   StreamSubscription? _sellPhotoListener;
   StreamSubscription? _buyPhotoListener;
@@ -34,10 +36,10 @@ class _MyPageScreenState extends State<MyPageScreen> {
 
     // 프레임 이후에 비동기 초기화(안전)
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await migrateUserDocToUid();   // 과거 문서ID 정규화(있으면)
-      await _ensurePointField();     // point 필드 없으면 생성
-      await _fetchUserProfile();     // 닉네임/프로필 로드
-      await _loadCounts();           // 판매/구매/게시글 수 로드
+      await migrateUserDocToUid(); // 과거 문서ID 정규화(있으면)
+      await _ensurePointField(); // point 필드 없으면 생성
+      await _fetchUserProfile(); // 닉네임/프로필 로드
+      await _loadCounts(); // 판매/구매/게시글 수 로드
     });
   }
 
@@ -56,25 +58,20 @@ class _MyPageScreenState extends State<MyPageScreen> {
         tx.set(ref, {
           'uid': u.uid,
           'email': u.email,
-          'point': {
-            'balance': 0,
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
+          'point': {'balance': 0, 'updatedAt': FieldValue.serverTimestamp()},
         }, SetOptions(merge: true));
         return;
       }
+      final data = snap.data() as Map<String, dynamic>?;
+      final hasPoint =
+          (data?['point'] is Map) &&
 
-      final data = snap.data();
-      final hasPoint = (data?['point'] is Map) &&
           ((data!['point'] as Map).containsKey('balance'));
 
       if (!hasPoint) {
         debugPrint('👉 point.balance 없음 → 0으로 초기화');
         tx.update(ref, {
-          'point': {
-            'balance': 0,
-            'updatedAt': FieldValue.serverTimestamp(),
-          }
+          'point': {'balance': 0, 'updatedAt': FieldValue.serverTimestamp()},
         });
       }
     });
@@ -93,18 +90,18 @@ class _MyPageScreenState extends State<MyPageScreen> {
     }
 
     // 필드 uid 로 기존 문서를 찾아 복사
-    final qs = await FirebaseFirestore.instance
-        .collection('users')
-        .where('uid', isEqualTo: u.uid)
-        .limit(1)
-        .get();
+    final qs =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .where('uid', isEqualTo: u.uid)
+            .limit(1)
+            .get();
 
     if (qs.docs.isEmpty) return;
 
     final oldDoc = qs.docs.first;
     final data = oldDoc.data();
-    final newDocRef =
-    FirebaseFirestore.instance.collection('users').doc(u.uid);
+    final newDocRef = FirebaseFirestore.instance.collection('users').doc(u.uid);
 
     debugPrint('👉 기존(users/${oldDoc.id}) → users/${u.uid} 로 마이그레이션');
     await newDocRef.set(data, SetOptions(merge: true));
@@ -135,8 +132,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
     final u = FirebaseAuth.instance.currentUser;
     if (u == null) return;
 
-    final doc =
-    await FirebaseFirestore.instance.doc('users/${u.uid}').get();
+    final doc = await FirebaseFirestore.instance.doc('users/${u.uid}').get();
     final data = doc.data();
 
     setState(() {
@@ -144,7 +140,9 @@ class _MyPageScreenState extends State<MyPageScreen> {
       profileImageUrl = data?['profileImageUrl'] as String?;
     });
 
-    debugPrint('✅ 프로필 로드: nickname=$nickname, profileImageUrl=$profileImageUrl');
+    debugPrint(
+      '✅ 프로필 로드: nickname=$nickname, profileImageUrl=$profileImageUrl',
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────
@@ -155,17 +153,15 @@ class _MyPageScreenState extends State<MyPageScreen> {
 
     int posts = 0;
     int sells = 0;
-    int buys  = 0;
+    int buys = 0;
 
     // 1) 게시글 수: posts 컬렉션 (authorId 또는 uid 어느쪽이든 존재하는 필드로 카운트)
     try {
       final postsColl = FirebaseFirestore.instance.collection('posts');
 
       // 우선 authorId
-      var agg = await postsColl
-          .where('authorId', isEqualTo: u.uid)
-          .count()
-          .get();
+      var agg =
+          await postsColl.where('authorId', isEqualTo: u.uid).count().get();
       posts = agg.count ?? 0;
 
       // authorId가 없다면 uid 필드 시도
@@ -184,19 +180,23 @@ class _MyPageScreenState extends State<MyPageScreen> {
 
       // 판매(내가 판매자)
       try {
-        var agg = await trades.where('sellerUid', isEqualTo: u.uid).count().get();
+        var agg =
+            await trades.where('sellerUid', isEqualTo: u.uid).count().get();
         sells = agg.count ?? 0;
       } catch (_) {
-        final agg = await trades.where('sellerId', isEqualTo: u.uid).count().get();
+        final agg =
+            await trades.where('sellerId', isEqualTo: u.uid).count().get();
         sells = agg.count ?? 0;
       }
 
       // 구매(내가 구매자)
       try {
-        var agg = await trades.where('buyerUid', isEqualTo: u.uid).count().get();
+        var agg =
+            await trades.where('buyerUid', isEqualTo: u.uid).count().get();
         buys = agg.count ?? 0;
       } catch (_) {
-        final agg = await trades.where('buyerId', isEqualTo: u.uid).count().get();
+        final agg =
+            await trades.where('buyerId', isEqualTo: u.uid).count().get();
         buys = agg.count ?? 0;
       }
     } catch (e) {
@@ -238,7 +238,14 @@ class _MyPageScreenState extends State<MyPageScreen> {
               icon: const Icon(Icons.notifications),
               iconSize: 30,
               color: Colors.black,
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AlarmSettingsScreen(),
+                  ),
+                );
+              },
             ),
           ),
           Padding(
@@ -264,13 +271,17 @@ class _MyPageScreenState extends State<MyPageScreen> {
           // ── 프로필 ─────────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.only(
-              top: 8.0, left: 24.0, right: 16.0, bottom: 8.0,
+              top: 8.0,
+              left: 24.0,
+              right: 16.0,
+              bottom: 8.0,
             ),
             child: StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(user!.uid)
-                  .snapshots(),
+              stream:
+                  FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(user!.uid)
+                      .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData || snapshot.data == null) {
                   // 로딩 시 기본 UI
@@ -279,7 +290,9 @@ class _MyPageScreenState extends State<MyPageScreen> {
                     children: [
                       const CircleAvatar(
                         radius: 36,
-                        backgroundImage: AssetImage('assets/images/default_profile.png'),
+                        backgroundImage: AssetImage(
+                          'assets/images/default_profile.png',
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Padding(
@@ -314,9 +327,13 @@ class _MyPageScreenState extends State<MyPageScreen> {
                   children: [
                     CircleAvatar(
                       radius: 36,
-                      backgroundImage: profileImageUrl != null
-                          ? NetworkImage(profileImageUrl)
-                          : const AssetImage('assets/images/default_profile.png') as ImageProvider,
+                      backgroundImage:
+                          profileImageUrl != null
+                              ? NetworkImage(profileImageUrl)
+                              : const AssetImage(
+                                    'assets/images/default_profile.png',
+                                  )
+                                  as ImageProvider,
                     ),
                     const SizedBox(width: 16),
                     Padding(
@@ -330,9 +347,10 @@ class _MyPageScreenState extends State<MyPageScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: nickname == '이름을 설정해주세요'
-                                  ? const Color.fromARGB(255, 156, 156, 156)
-                                  : Colors.black,
+                              color:
+                                  nickname == '이름을 설정해주세요'
+                                      ? const Color.fromARGB(255, 156, 156, 156)
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -370,7 +388,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
             ),
           ),
 
-
           const Divider(
             color: Color.fromARGB(255, 240, 240, 240),
             thickness: 8,
@@ -407,7 +424,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
           ),
 
           // ── 칸 나누기 ──────────────────────────────────────────────────
-
           const Divider(
             color: Color.fromARGB(255, 240, 240, 240),
             thickness: 8,
@@ -433,8 +449,18 @@ class _MyPageScreenState extends State<MyPageScreen> {
                     },
                   ),
                   _buildMenuDivider(),
-                  
-                  _buildMenuItem('포인트 내역', onTap: () {}),
+
+                  _buildMenuItem(
+                    '포인트 내역',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const PointHistoryScreen(),
+                        ),
+                      );
+                    },
+                  ),
                   _buildMenuDivider(),
 
                   _buildMenuItem(
@@ -452,15 +478,13 @@ class _MyPageScreenState extends State<MyPageScreen> {
 
                   _buildMenuItem(
                     '자주 묻는 질문',
-                     onTap: () {
+                    onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const FaqScreen(),
-                          )
+                        MaterialPageRoute(builder: (_) => const FaqScreen()),
                       );
-                     }
-                    ),
+                    },
+                  ),
                   _buildMenuDivider(),
                 ],
               ),
