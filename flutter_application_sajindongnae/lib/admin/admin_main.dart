@@ -99,8 +99,17 @@ class _AdminActions {
 /// ----------------------
 
 //StreamBuilder + ListView.builder를 통해 계정이 보여짐
-class _AccountManageTab extends StatelessWidget {
+//AccountManageTab에 검색 추가
+// AccountManageTab에 검색 추가
+class _AccountManageTab extends StatefulWidget {
   const _AccountManageTab();
+
+  @override
+  State<_AccountManageTab> createState() => _AccountManageTabState();
+}
+
+class _AccountManageTabState extends State<_AccountManageTab> {
+  String _keyword = '';
 
   Stream<QuerySnapshot<Map<String, dynamic>>> _userStream() {
     return FirebaseFirestore.instance
@@ -113,7 +122,14 @@ class _AccountManageTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const _SearchBar(hintText: '닉네임, 이메일로 검색'),
+        _SearchBar(
+          hintText: '닉네임, 이메일로 검색',
+          onChanged: (value) {
+            setState(() {
+              _keyword = value.trim().toLowerCase();
+            });
+          },
+        ),
         Expanded(
           child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
             stream: _userStream(),
@@ -122,20 +138,39 @@ class _AccountManageTab extends StatelessWidget {
                 return const Center(child: CircularProgressIndicator());
               }
               if (snapshot.hasError) {
-                return Center(child: Text('계정 목록을 불러오는 중 오류가 발생했어요 😢'));
+                return const Center(
+                    child: Text('계정 목록을 불러오는 중 오류가 발생했어요 😢'));
               }
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                 return const Center(child: Text('등록된 계정이 없습니다.'));
               }
 
-              final docs = snapshot.data!.docs;
+              final allDocs = snapshot.data!.docs;
+
+              // 🔍 검색어로 필터링 (닉네임 / 이메일)
+              final filteredDocs = allDocs.where((doc) {
+                if (_keyword.isEmpty) return true;
+
+                final data = doc.data();
+                final nickname =
+                (data['nickname'] ?? '').toString().toLowerCase();
+                final email =
+                (data['email'] ?? '').toString().toLowerCase();
+
+                return nickname.contains(_keyword) ||
+                    email.contains(_keyword);
+              }).toList();
+
+              if (filteredDocs.isEmpty && _keyword.isNotEmpty) {
+                return const Center(child: Text('검색 결과가 없습니다.'));
+              }
 
               return ListView.builder(
                 padding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: docs.length,
+                itemCount: filteredDocs.length,
                 itemBuilder: (context, index) {
-                  final doc = docs[index];
+                  final doc = filteredDocs[index];
                   final data = doc.data();
 
                   final uid = doc.id;
@@ -146,9 +181,7 @@ class _AccountManageTab extends StatelessWidget {
 
                   return _AdminCard(
                     title: nickname,
-                    subtitle: email.isNotEmpty
-                        ? email
-                        : '정보 없음',
+                    subtitle: email.isNotEmpty ? email : '정보 없음',
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -166,26 +199,27 @@ class _AccountManageTab extends StatelessWidget {
                           icon: const Icon(Icons.more_vert, size: 20),
                           onPressed: () async {
                             try {
-                              final newStatus = isBanned ? 'normal' : 'banned';
+                              final newStatus =
+                              isBanned ? 'normal' : 'banned';
 
                               await FirebaseFirestore.instance
                                   .collection('users')
                                   .doc(uid)
                                   .update({'status': newStatus});
 
-                              // 🔥 성공 메시지 (선택)
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('회원 상태가 "$newStatus" 로 변경되었습니다.'),
+                                  content: Text(
+                                      '회원 상태가 "$newStatus" 로 변경되었습니다.'),
                                   duration: const Duration(seconds: 1),
                                 ),
                               );
                             } catch (e) {
                               debugPrint('회원 상태 변경 실패: $e');
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
+                                const SnackBar(
                                   content: Text('상태 변경 실패: 권한 또는 네트워크 문제'),
-                                  duration: const Duration(seconds: 1),
+                                  duration: Duration(seconds: 1),
                                 ),
                               );
                             }
@@ -351,8 +385,9 @@ class _QnaManageTab extends StatelessWidget {
 
 class _SearchBar extends StatelessWidget {
   final String hintText;
+  final ValueChanged<String>? onChanged; //검색
 
-  const _SearchBar({required this.hintText});
+  const _SearchBar({required this.hintText, this.onChanged, });
 
   @override
   Widget build(BuildContext context) {
@@ -360,6 +395,7 @@ class _SearchBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       color: const Color(0xFFDBEFC4),
       child: TextField(
+        onChanged: onChanged, //콜백 함수
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           hintText: hintText,
