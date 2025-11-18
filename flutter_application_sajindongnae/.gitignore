@@ -69,3 +69,7 @@ lib/screen/test_*
 **/flutter/generated_plugins.cmake
 
 
+# Flutter generated plugin files (optional ignore)
+**/flutter/generated_plugin_registrant.*
+**/flutter/generated_plugins.*
+**/Flutter/GeneratedPluginRegistrant.*

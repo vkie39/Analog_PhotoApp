@@ -7,6 +7,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:flutter_application_sajindongnae/screen/auth/login.dart';
 import 'signup_detail.dart';
+import 'package:flutter_application_sajindongnae/services/user_service.dart';
+
 
 class SignupStartScreen extends StatefulWidget {
   const SignupStartScreen({super.key});
@@ -84,6 +86,7 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
       final user = result.user;
       if (user != null) {
         await _upsertUser(user, provider: 'google');
+        await UserService.saveUserLocation();
 
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -132,6 +135,7 @@ class _SignupStartScreenState extends State<SignupStartScreen> {
 
       if (user != null) {
         await _upsertUser(user, provider: 'microsoft');
+        await UserService.saveUserLocation();
 
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(

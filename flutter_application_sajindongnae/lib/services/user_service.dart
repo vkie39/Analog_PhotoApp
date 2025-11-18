@@ -2,6 +2,8 @@ import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
+import 'package:geolocator/geolocator.dart';
+
 
 class UserService {
   static final _db = FirebaseFirestore.instance;
@@ -80,4 +82,52 @@ class UserService {
       rethrow;
     }
   }
+
+  // FCM 토큰 저장 (UserModel 수정 없이 Firestore에만 저장됨)
+static Future<void> updateFcmToken(String token) async {
+  final user = _auth.currentUser;
+  if (user == null) return;
+
+  try {
+    await _db.collection('users').doc(user.uid).update({
+      'fcmToken': token,
+    });
+    log("FCM 토큰 저장 완료");
+  } catch (e) {
+    log("FCM 토큰 저장 실패: $e");
+  }
 }
+
+static Future<void> saveUserLocation() async {
+  final user = _auth.currentUser;
+  if (user == null) return;
+
+  // 위치 권한 확인
+  LocationPermission permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
+  }
+  if (permission == LocationPermission.deniedForever ||
+      permission == LocationPermission.denied) {
+    log("❌ 위치 권한 거부됨");
+    return;
+  }
+
+  // 위치 가져오기
+  final pos = await Geolocator.getCurrentPosition();
+
+  // Firestore에 저장
+  await _db.collection('users').doc(user.uid).update({
+    'position': {
+      'latitude': pos.latitude,
+      'longitude': pos.longitude,
+    }
+  });
+
+  log("📍 위치 저장 완성: ${pos.latitude}, ${pos.longitude}");
+}
+
+}
+
+
+

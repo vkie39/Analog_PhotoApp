@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 //관리자 계정
 import 'package:flutter_application_sajindongnae/admin/admin_main.dart';
@@ -9,6 +10,7 @@ import 'package:flutter_application_sajindongnae/screen/auth/login.dart';
 
 // 아래 라우트들은 프로젝트에 이미 있는 파일을 그대로 쓰세요.
 import 'package:flutter_application_sajindongnae/screen/auth/Find_account.dart';
+import 'package:flutter_application_sajindongnae/services/notification_service.dart';
 import 'screen/post/list.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/photo_sell.dart';
 import 'package:flutter_application_sajindongnae/screen/chat/chat_list.dart';
@@ -23,13 +25,50 @@ import 'package:flutter_application_sajindongnae/screen/auth/Pwfound.dart'; // �
 import 'package:flutter_application_sajindongnae/default.dart';
 import 'package:flutter_application_sajindongnae/screen/home.dart';
 import 'component/bottom_nav.dart'; // bottom_nav.dart에서 UI 분리한 하단바
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_application_sajindongnae/services/user_service.dart';
+
+
+
+//(1) 백그라운드 메시지 핸들러 — main 위 전역에 둬야 함
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  print("📩 백그라운드 메시지: ${message.notification?.title}");
+}
+
+
+Future<void> initFcmToken() async {
+  final token = await FirebaseMessaging.instance.getToken();
+  if (token != null) {
+    await UserService.updateFcmToken(token);
+  }
+
+  // 토큰이 갱신될 때 Firestore에 자동 반영
+  FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+    UserService.updateFcmToken(newToken);
+  });
+}
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+   // 🔥 (2) 백그라운드 메시지 핸들러 등록
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // 🔥 (3) 알림 권한 요청
+  await NotificationService.requestPermission();
+
+  // 🔥 (4) FCM 토큰 저장
+  await initFcmToken();
+
+  // 🔥 (5) 앱이 켜져 있을 때(포그라운드) 받는 메시지 처리
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    print("📩 포그라운드 메시지 도착: ${message.notification?.title}");
+  });
 
   final app = Firebase.app();
-  debugPrint('🔥 Firebase projectId = ${(app.options as FirebaseOptions).projectId}');
+  debugPrint('🔥 Firebase projectId = ${(app.options).projectId}');
 
   runApp(const MyApp());
 }

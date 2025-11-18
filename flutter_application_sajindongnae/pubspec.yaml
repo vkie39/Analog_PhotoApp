@@ -55,6 +55,8 @@ dependencies:
   firebase_storage: ^12.3.0
   cloud_firestore: ^5.4.0
   google_sign_in: ^6.2.1
+  firebase_messaging: ^15.2.10
+
 
   image_picker: ^1.1.2
   file_picker: ^10.2.0

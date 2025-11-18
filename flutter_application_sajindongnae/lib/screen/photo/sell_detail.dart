@@ -301,9 +301,9 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
   Future<void> _handlePurchase(PhotoTradeModel photo) async {
     final buyer = FirebaseAuth.instance.currentUser; // 현재 로그인 = 구매자
     if (buyer == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('로그인이 필요합니다.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('로그인이 필요합니다.')));
       return;
     }
 
@@ -314,9 +314,9 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
     } else if (photo.price is num) {
       price = (photo.price as num).toInt();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('잘못된 가격 정보입니다.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('잘못된 가격 정보입니다.')));
       return;
     }
     
@@ -324,31 +324,34 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
     int? newBuyerBalanceBill;
 
     if (photo.id == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('잘못된 판매글입니다.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('잘못된 판매글입니다.')));
       return;
     }
 
     // ── UID 설정 ───────────────────────────────────────────────
-    final String buyerUid  = buyer.uid;   // 구매자 uid
-    final String sellerUid = photo.uid;   // 판매자 uid (판매글 작성자)
+    final String buyerUid = buyer.uid; // 구매자 uid
+    final String sellerUid = photo.uid; // 판매자 uid (판매글 작성자)
 
     // 본인 사진은 구매 못하게
     if (buyerUid == sellerUid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('자신의 사진은 구매할 수 없습니다.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('자신의 사진은 구매할 수 없습니다.')));
       return;
     }
 
     // ── Firestore 참조 ─────────────────────────────────────────
-    final buyerRef =
-    FirebaseFirestore.instance.collection('users').doc(buyerUid);
-    final sellerRef =
-    FirebaseFirestore.instance.collection('users').doc(sellerUid);
-    final tradeRef =
-    FirebaseFirestore.instance.collection('photo_trades').doc(photo.id);
+    final buyerRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(buyerUid);
+    final sellerRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(sellerUid);
+    final tradeRef = FirebaseFirestore.instance
+        .collection('photo_trades')
+        .doc(photo.id);
 
     
 
@@ -362,7 +365,8 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
 
         final buyerData = buyerSnap.data() as Map<String, dynamic>;
         final buyerPoint =
-            (buyerData['point'] as Map<String, dynamic>?) ?? <String, dynamic>{};
+            (buyerData['point'] as Map<String, dynamic>?) ??
+            <String, dynamic>{};
         final dynamic buyerRawBalance = buyerPoint['balance'];
 
         int buyerBalance;
@@ -388,7 +392,8 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
         if (sellerSnap.exists) {
           sellerData = sellerSnap.data() as Map<String, dynamic>;
           sellerPoint =
-              (sellerData['point'] as Map<String, dynamic>?) ?? <String, dynamic>{};
+              (sellerData['point'] as Map<String, dynamic>?) ??
+              <String, dynamic>{};
           final dynamic sellerRawBalance = sellerPoint['balance'];
           if (sellerRawBalance is int) {
             sellerBalance = sellerRawBalance;
@@ -400,7 +405,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
           sellerData = {'uid': sellerUid};
         }
 
-        final int newBuyerBalance  = buyerBalance - price;
+        final int newBuyerBalance = buyerBalance - price;
         final int newSellerBalance = sellerBalance + price;
 
         // 3) 구매자 포인트 차감
@@ -417,26 +422,39 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
         dev.log(' 3-1 완료 ');
 
         // 4) 판매자 포인트 적립 (set + merge 로 문서 없어도 생성)
-        tx.set(
-          sellerRef,
-          {
-            ...sellerData,
-            'point': {
-              ...sellerPoint,
-              'balance': newSellerBalance,
-              'updatedAt': FieldValue.serverTimestamp(),
-            },
+        tx.set(sellerRef, {
+          ...sellerData,
+          'point': {
+            ...sellerPoint,
+            'balance': newSellerBalance,
+            'updatedAt': FieldValue.serverTimestamp(),
           },
-          SetOptions(merge: true),
-        );
+        }, SetOptions(merge: true));
 
         // 5) 거래 정보 업데이트 (구매 완료 처리)
         tx.update(tradeRef, {
           'buyerUid': buyerUid,
           'sellerUid': sellerUid,
-          'status': 'completed',  // 프로젝트에서 쓰는 상태값에 맞게 조정 가능
+          'status': 'completed', // 프로젝트에서 쓰는 상태값에 맞게 조정 가능
           'purchasedAt': FieldValue.serverTimestamp(),
         });
+
+        // 6) 포인트 내역 거래 기록
+        // 구매자 기록
+        tx.set(buyerRef.collection('point_history').doc(), {
+          'amount': -price,
+          'description': '사진 구매',
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+
+        //판매자 기록
+        tx.set(
+          sellerRef.collection('point_history').doc(),
+          {
+            'amount': price,
+            'description': '사진 판매',
+            'timestamp': FieldValue.serverTimestamp(),
+          });
       });
 
       // 트랜잭션 성공 -> 이거 대신 바텀 시트 넣었습니다.
@@ -456,28 +474,32 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
 
 
     } catch (e) {
+
       final msg = e.toString();
       if (msg.contains('INSUFFICIENT_POINT')) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('포인트가 부족합니다. 충전 후 다시 시도해주세요.')),
         );
-      } else {
-        dev.log('구매 처리 중 오류: $e');
+      } else if (msg.contains('NO_BUYER_DOC')) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('구매 처리 중 오류가 발생했습니다.')),
+          const SnackBar(content: Text('구매자 정보가 존재하지 않습니다.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('구매 처리 중 오류가 발생했습니다.\n$e')),
         );
       }
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final sellDocId = photo.id ?? '';
 
-    final tradeStream = (sellDocId.isEmpty)
-        ? Stream<PhotoTradeModel?>.value(widget.photo)
-        : _photoTradeService.streamGetTradeById(sellDocId);
+    final tradeStream =
+        (sellDocId.isEmpty)
+            ? Stream<PhotoTradeModel?>.value(widget.photo)
+            : _photoTradeService.streamGetTradeById(sellDocId);
 
     return StreamBuilder<PhotoTradeModel?>(
       stream: tradeStream,
@@ -503,15 +525,13 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
 
         final photo = data;
 
-        final formattedDate =
-            DateFormat('yyyy/MM/dd').format(photo.createdAt);
+        final formattedDate = DateFormat('yyyy/MM/dd').format(photo.createdAt);
 
         final isOwner = photo.uid == currentUserUid;
         final tags = photo.tags;
 
         // [추가] 좋아요 여부는 DB(likedBy) 기준으로만 판단
-        final bool isLiked =
-            (photo.likedBy ?? []).contains(currentUserUid);
+        final bool isLiked = (photo.likedBy ?? []).contains(currentUserUid);
 
         // 좋아요 개수
         final int likeCount = photo.likeCount ?? 0;
@@ -565,28 +585,33 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                       // 삭제 확인 다이얼로그 표시
                       final shouldDelete = await showDialog<bool>(
                         context: context,
-                        builder: (_) => AlertDialog(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          backgroundColor: Colors.white,
-                          title: const Text('정말로 이 판매글을 삭제하시겠습니까?'),
-                          content: const Text('삭제 후에는 복구할 수 없습니다.'),
-                          actions: [
-                            TextButton(
-                              onPressed: () =>
-                                  Navigator.of(context).pop(false),
-                              child: const Text('취소',
-                                  style: TextStyle(color: Colors.black)),
+                        builder:
+                            (_) => AlertDialog(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              backgroundColor: Colors.white,
+                              title: const Text('정말로 이 판매글을 삭제하시겠습니까?'),
+                              content: const Text('삭제 후에는 복구할 수 없습니다.'),
+                              actions: [
+                                TextButton(
+                                  onPressed:
+                                      () => Navigator.of(context).pop(false),
+                                  child: const Text(
+                                    '취소',
+                                    style: TextStyle(color: Colors.black),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed:
+                                      () => Navigator.of(context).pop(true),
+                                  child: const Text(
+                                    '삭제',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
                             ),
-                            TextButton(
-                              onPressed: () =>
-                                  Navigator.of(context).pop(true),
-                              child: const Text('삭제',
-                                  style: TextStyle(color: Colors.red)),
-                            ),
-                          ],
-                        ),
                       );
 
                       if (shouldDelete == true) {
@@ -640,19 +665,23 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                 ListTile(
                   leading: CircleAvatar(
                     backgroundColor: Colors.grey.shade200,
-                    backgroundImage: (photo.profileImageUrl.isNotEmpty &&
-                            !photo.profileImageUrl.startsWith('file:///'))
-                        ? NetworkImage(photo.profileImageUrl)
-                        : null,
-                    child: (photo.profileImageUrl.isEmpty ||
-                            photo.profileImageUrl.startsWith('file:///'))
-                        ? const Icon(Icons.person, color: Colors.grey)
-                        : null,
+                    backgroundImage:
+                        (photo.profileImageUrl.isNotEmpty &&
+                                !photo.profileImageUrl.startsWith('file:///'))
+                            ? NetworkImage(photo.profileImageUrl)
+                            : null,
+                    child:
+                        (photo.profileImageUrl.isEmpty ||
+                                photo.profileImageUrl.startsWith('file:///'))
+                            ? const Icon(Icons.person, color: Colors.grey)
+                            : null,
                   ),
                   title: Text(
                     photo.nickname,
                     style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.bold),
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
 
@@ -664,14 +693,18 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                   child: Text(
                     photo.title,
                     style: const TextStyle(
-                        fontSize: 25, fontWeight: FontWeight.bold),
+                      fontSize: 25,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
 
                 // 날짜
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   child: Text(
                     formattedDate,
                     style: const TextStyle(color: Colors.grey),
@@ -681,25 +714,31 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                 // 태그들
                 if (tags.isNotEmpty)
                   Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: tags.map((tag) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: ActionChip(
-                              label: Text(tag),
-                              backgroundColor: Colors.white,
-                              labelStyle:
-                                  const TextStyle(color: Colors.black87),
-                              side: const BorderSide(
-                                  color: Color(0xFFE0E0E0), width: 1),
-                              onPressed: () {},
-                            ),
-                          );
-                        }).toList(),
+                        children:
+                            tags.map((tag) {
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: ActionChip(
+                                  label: Text(tag),
+                                  backgroundColor: Colors.white,
+                                  labelStyle: const TextStyle(
+                                    color: Colors.black87,
+                                  ),
+                                  side: const BorderSide(
+                                    color: Color(0xFFE0E0E0),
+                                    width: 1,
+                                  ),
+                                  onPressed: () {},
+                                ),
+                              );
+                            }).toList(),
                       ),
                     ),
                   ),
@@ -707,12 +746,17 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                 // 장소
                 if (photo.location.isNotEmpty)
                   Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
                     child: Row(
                       children: [
-                        const Icon(Icons.location_on,
-                            size: 16, color: Colors.grey),
+                        const Icon(
+                          Icons.location_on,
+                          size: 16,
+                          color: Colors.grey,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           photo.location,
@@ -746,14 +790,29 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                       icon: Icon(
                         isLiked ? Icons.favorite : Icons.favorite_border,
                         size: 30,
-                        color: isLiked
-                            ? const Color.fromARGB(255, 102, 204, 105)
-                            : const Color.fromARGB(255, 161, 161, 161),
+                        color:
+                            isLiked
+                                ? const Color.fromARGB(
+                                  255,
+                                  102,
+                                  204,
+                                  105,
+                                ) // 좋아요 색상 (HEAD 유지)
+                                : const Color.fromARGB(
+                                  255,
+                                  161,
+                                  161,
+                                  161,
+                                ), // 기본색
                       ),
                       onPressed: () async {
                         if (photo.id == null) return;
+
                         try {
-                          await _photoTradeService.toggleLike(photo.id!, currentUserUid);
+                          await _photoTradeService.toggleLike(
+                            photo.id!,
+                            currentUserUid,
+                          );
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -804,6 +863,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                       child: const Text('구매하기'),
                     ),
                   ],
+
                 ),
               ],
             ),

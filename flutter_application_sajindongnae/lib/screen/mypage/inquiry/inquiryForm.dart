@@ -125,7 +125,7 @@ class _InquiryFormScreenState extends State<InquiryFormScreen> {
               const Text('카테고리', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 items:
                     _categories
                         .map(
