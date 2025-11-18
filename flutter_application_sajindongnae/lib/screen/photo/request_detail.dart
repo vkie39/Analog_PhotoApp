@@ -342,12 +342,14 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
 
                 ElevatedButton(
                   onPressed: () async {
-                    dev.log('수락하기 버튼 클릭됨');
+                    
+                    dev.log('수락/대화중인 채팅으로 이동하기 버튼 클릭됨');
 
                     final currentUid =
                         FirebaseAuth.instance.currentUser?.uid;
                     if (currentUid == null) return;
-
+                    /*
+                    // 본인 의뢰면 채팅 리스트를 보여주도록 하고 있기 때문에 불필요
                     if (isOwner) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -355,57 +357,60 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                         ),
                       );
                       return;
+                    }   */
+
+                   if(isOwner){
+                      
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatListScreen(  
+                          ),
+                        ),
+                      );
                     }
+                    else{
+                      final db = FirebaseFirestore.instance;
+                      final requesterUid = request.uid;
 
-                    final db = FirebaseFirestore.instance;
-                    final requesterUid = request.uid;
+                      // 항상 동일한 chatRoomId 생성
+                      final sortedIds = [currentUid, requesterUid]..sort();
+                      final chatRoomId = sortedIds.join('_');
 
-                    // 항상 동일한 chatRoomId 생성
-                    final sortedIds = [currentUid, requesterUid]..sort();
-                    final chatRoomId = sortedIds.join('_');
+                      final chatRef = db.collection('chats').doc(chatRoomId);
+                      final existingChat = await chatRef.get();
 
-                    final chatRef = db.collection('chats').doc(chatRoomId);
-                    final existingChat = await chatRef.get();
+                      if (!existingChat.exists) {
+                        // 신규 채팅방 생성
+                        final newChatRoom = ChatRoom(
+                          chatRoomId: chatRoomId,
+                          participants: [currentUid, requesterUid],
+                          requestId: request.requestId,
+                          lastMessage: '',
+                          lastSenderId: '',
+                          lastTimestamp: DateTime.now(),
+                          requesterNickname: request.nickname,
+                          requesterProfileImageUrl: request.profileImageUrl,
+                        );
 
-                    if (!existingChat.exists) {
-                      // 신규 채팅방 생성
-                      final newChatRoom = ChatRoom(
-                        chatRoomId: chatRoomId,
-                        participants: [currentUid, requesterUid],
-                        requestId: request.requestId,
-                        lastMessage: '',
-                        lastSenderId: '',
-                        lastTimestamp: DateTime.now(),
-                        requesterNickname: request.nickname,
-                        requesterProfileImageUrl: request.profileImageUrl,
-                      );
+                        await chatRef.set(newChatRoom.toMap());
+                        dev.log('새 채팅방 생성 완료: $chatRoomId');
 
-                      await chatRef.set(newChatRoom.toMap());
-                      dev.log('새 채팅방 생성 완료: $chatRoomId');
+                      } else {
+                        // 기존 채팅방 읽기
+                        final existingRoom =
+                            ChatRoom.fromDoc(existingChat);
 
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ChatDetailScreen(
-                            request: request,
-                            chatRoom: newChatRoom,   // ⭐ 정답!
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ChatDetailScreen(
+                              request: request,
+                              chatRoom: existingRoom,   // ⭐ 정답!
+                            ),
                           ),
-                        ),
-                      );
-                    } else {
-                      // 기존 채팅방 읽기
-                      final existingRoom =
-                          ChatRoom.fromDoc(existingChat);
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ChatDetailScreen(
-                            request: request,
-                            chatRoom: existingRoom,   // ⭐ 정답!
-                          ),
-                        ),
-                      );
+                        );
+                      }
                     }
                   },
                   style: ButtonStyle(
