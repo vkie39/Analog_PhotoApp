@@ -46,39 +46,41 @@ class _ReportPostScreenState extends State<ReportPostScreen> {
         children: [
           Expanded(
             child: ListView(
-              children: widget.reasons.map((reason) {
-                return Column(
-                  children: [
-                    RadioListTile<String>(
-                      title: Text(reason),
-                      value: reason,
-                      groupValue: selectedReason,
-                      activeColor: const Color(0xFF84AC57),
-                      onChanged: (value) => setState(() {
-                        selectedReason = value;
-                      }),
-                    ),
-                    if (reason.toLowerCase().contains('기타') &&
-                        selectedReason == reason)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: TextField(
-                          controller: otherController,
-                          style: const TextStyle(color: Colors.black),
-                          decoration: const InputDecoration(
-                            hintText: '신고 사유를 입력해주세요',
-                            enabledBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.black),
-                            ),
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Colors.black),
+              children:
+                  widget.reasons.map((reason) {
+                    return Column(
+                      children: [
+                        RadioListTile<String>(
+                          title: Text(reason),
+                          value: reason,
+                          groupValue: selectedReason,
+                          activeColor: const Color(0xFF84AC57),
+                          onChanged:
+                              (value) => setState(() {
+                                selectedReason = value;
+                              }),
+                        ),
+                        if (reason.toLowerCase().contains('기타') &&
+                            selectedReason == reason)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: TextField(
+                              controller: otherController,
+                              style: const TextStyle(color: Colors.black),
+                              decoration: const InputDecoration(
+                                hintText: '신고 사유를 입력해주세요',
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.black),
+                                ),
+                                focusedBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.black),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                  ],
-                );
-              }).toList(),
+                      ],
+                    );
+                  }).toList(),
             ),
           ),
 
@@ -109,12 +111,15 @@ class _ReportPostScreenState extends State<ReportPostScreen> {
                     return;
                   }
 
-                  final reasonText = selectedReason!.toLowerCase().contains('기타')
-                      ? otherController.text
-                      : selectedReason!;
+                  final reasonText =
+                      selectedReason!.toLowerCase().contains('기타')
+                          ? otherController.text
+                          : selectedReason!;
 
-                  final alreadyReported = await ReportService()
-                      .hasReported(widget.postId, uid);
+                  final alreadyReported = await ReportService().hasReported(
+                    widget.postId,
+                    uid,
+                  );
 
                   if (alreadyReported) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -138,14 +143,17 @@ class _ReportPostScreenState extends State<ReportPostScreen> {
                     );
                     Navigator.of(context).pop();
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('신고 실패: $e')),
-                    );
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('신고 실패: $e')));
                   }
                 },
                 child: const Text(
                   '신고하기',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),

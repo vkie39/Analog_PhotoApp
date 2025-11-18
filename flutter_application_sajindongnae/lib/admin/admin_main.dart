@@ -3,6 +3,8 @@ import 'package:flutter_application_sajindongnae/component/expandable_fab.dart';
 import 'package:flutter_application_sajindongnae/component/action_button.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // 파이어베이스 연동
 import 'package:flutter_application_sajindongnae/models/photo_trade_model.dart';
+import 'package:flutter_application_sajindongnae/screen/post/reportList.dart';
+
 
 /// 사진동네 관리자 페이지 (BottomNavigationBar 버전)
 /// 대표색: #DBEFC4
@@ -402,43 +404,43 @@ class _PostManageTabState extends State<_PostManageTab>
                   }
 
                   return ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 18, vertical: 0),
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 0),
                     itemCount: docs.length,
                     itemBuilder: (context, index) {
                       final doc = docs[index];
                       final data = doc.data();
-                      final title =
-                          data['title'] ?? '제목 없음';
-                      final author =
-                          data['nickname'] ?? '작성자 없음';
-                      final authorId =
-                          data['authorId'] ?? '';
-                      final reportCount =
-                      (data['reportCount'] ?? 0) as int;
-                      final bool canDelete =
-                          isAdmin || (currentUserId == authorId);
+                      final title = data['title'] ?? '제목 없음';
+                      final author = data['nickname'] ?? '작성자 없음';
+                      final authorId = data['authorId'] ?? '';
+                      final reportCount = (data['reportCount'] ?? 0) as int;
+                      final bool canDelete = isAdmin || (currentUserId == authorId);
 
                       return _AdminCard(
                         title: title,
-                        subtitle:
-                        '작성자: $author · 신고 $reportCount건',
+                        subtitle: '작성자: $author · 신고 $reportCount건',
+
+                        // 🔥 여기! 카드 클릭 시 신고 상세 페이지로 이동
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ReportListScreen(
+                                postId: doc.id,
+                              ),
+                            ),
+                          );
+                        },
+
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(
-                                Icons.visibility_outlined,
-                                size: 20,
-                              ),
+                              icon: const Icon(Icons.visibility_outlined, size: 20),
                               onPressed: () {},
                             ),
                             if (canDelete)
                               IconButton(
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  size: 20,
-                                ),
+                                icon: const Icon(Icons.delete_outline, size: 20),
                                 onPressed: () async {
                                   try {
                                     await FirebaseFirestore.instance
@@ -446,8 +448,7 @@ class _PostManageTabState extends State<_PostManageTab>
                                         .doc(doc.id)
                                         .delete();
                                   } catch (e) {
-                                    debugPrint(
-                                        '게시글 삭제 실패: $e');
+                                    debugPrint('게시글 삭제 실패: $e');
                                   }
                                 },
                               ),
@@ -456,8 +457,9 @@ class _PostManageTabState extends State<_PostManageTab>
                       );
                     },
                   );
-                },
+                }
               ),
+
 
               /// ── 2) 판매 사진 ─────────────────
               StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -848,68 +850,61 @@ class _AdminCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final Widget? trailing;
+  final VoidCallback? onTap; // ★ 추가
 
   const _AdminCard({
     required this.title,
     required this.subtitle,
     this.trailing,
+    this.onTap, // ★ 추가
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin:
-      const EdgeInsets.symmetric(vertical: 6),
-      padding: const EdgeInsets.symmetric(
-          horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 4,
-            spreadRadius: 0,
-            offset: const Offset(0, 2),
-            color:
-            Colors.black.withOpacity(0.05),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                  overflow:
-                  TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[700],
-                  ),
-                  overflow:
-                  TextOverflow.ellipsis,
-                ),
-              ],
+    return InkWell( // ★ 카드 전체 클릭 가능
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 4,
+              spreadRadius: 0,
+              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(0.05),
             ),
-          ),
-          if (trailing != null) trailing!,
-        ],
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 14),
+                      overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 4),
+                  Text(subtitle,
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey[700]),
+                      overflow: TextOverflow.ellipsis),
+                ],
+              ),
+            ),
+            if (trailing != null) trailing!,
+          ],
+        ),
       ),
     );
   }
 }
+
 
 class _ChipLabel extends StatelessWidget {
   final String label;
