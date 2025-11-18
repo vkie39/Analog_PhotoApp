@@ -84,7 +84,7 @@ class PhotoTradeService {
         description: description,
         price: price,
         isSold: false,
-        buyerUid: null,
+        buyerUid: [],
         tags: tags ?? [],
         createdAt: DateTime.now(),
         category: '판매',
@@ -103,7 +103,7 @@ class PhotoTradeService {
   }
 
   // 판매 상태 업데이트 (거래 완료)
-  Future<void> updateTradeStatus(String id, bool isSold, {String? buyerUid}) async {
+  Future<void> updateTradeStatus(String id, bool isSold, {List<String>? buyerUid}) async {
     await _ref.doc(id).update({
       'isSold': isSold,
       'buyerUid': buyerUid,
