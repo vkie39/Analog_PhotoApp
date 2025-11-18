@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_sajindongnae/models/chat_list_model.dart';
 
 import 'package:flutter_application_sajindongnae/models/request_model.dart';
+import 'package:flutter_application_sajindongnae/screen/mypage/mypage.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/request_detail.dart';
 import 'package:flutter_application_sajindongnae/screen/chat/chat_image_viewer.dart';
 import 'package:flutter_application_sajindongnae/models/message_model.dart'; // Firestore Message 모델
@@ -677,8 +678,13 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
                   price: amount,                   // 결제 금액
                   remainingBalance: remainingBalance, // 더미 잔액
                   onTapMyPage: () {
-                    // TODO: 마이페이지로 이동하는 로직 나중에 구현
-                    Fluttertoast.showToast(msg: '마이페이지로 이동(추후 구현)');
+                    //마이페이지로 이동
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const MyPageScreen(),
+                      ),
+                    );
                   },
                 );
               },

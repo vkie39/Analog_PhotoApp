@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_application_sajindongnae/services/user_service.dart';
 
 class NotificationService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -19,4 +20,20 @@ class NotificationService {
       print("🤖 Android 알림 권한 상태: ${settings.authorizationStatus}");
     }
   }
+
+  
+static Future<void> initFcmToken() async {
+  final token = await FirebaseMessaging.instance.getToken();
+  if (token != null) {
+    await UserService.updateFcmToken(token);
+  }
+
+  // 토큰이 갱신될 때 Firestore에 자동 반영
+  FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+    UserService.updateFcmToken(newToken);
+  });
 }
+
+}
+
+
