@@ -30,9 +30,11 @@ class SellDetailScreen extends StatefulWidget {
 
 class _SellDetailScreenState extends State<SellDetailScreen> {
   final PhotoTradeService _photoTradeService = PhotoTradeService();
-  final ImageService _imageService = ImageService();  
+  final ImageService _imageService = ImageService();
   PhotoTradeModel get photo => widget.photo;
   String get currentUserUid => widget.currentUserUid;
+
+  String? currentUserProfileImageUrl;
 
   // Firebase Storage URL 네트워크 이미지 전용 빌더
   Widget _buildNetworkImage(String url) {
@@ -74,11 +76,51 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
     );
   }
 
+  Future<String?> _getCurrentUserProfileImage() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return null;
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    return doc.data()?['profileImageUrl'] as String?;
+  }
 
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUserProfile();
+  }
 
- // =========================================================================== 
- // 결제 확인 다이얼로그 (구매하기 버튼 누르면 뜸 -> 취소, 확인 버튼 있음)
- // ===========================================================================
+  Future<void> _loadCurrentUserProfile() async {
+    final url = await _getCurrentUserProfileImage();
+    setState(() {
+      currentUserProfileImageUrl = url; // 이제 여기서 오류 안 남
+    });
+  }
+
+  String formatRelativeDate(DateTime createdAt) {
+    final now = DateTime.now();
+    final difference = now.difference(createdAt);
+
+    if (difference.inDays >= 7) {
+      // 7일 이상 → 날짜 표시
+      return DateFormat('yyyy/MM/dd').format(createdAt);
+    } else if (difference.inDays >= 1) {
+      // 1일 이상 7일 미만 → n일 전
+      return '${difference.inDays}일 전';
+    } else if (difference.inHours >= 1) {
+      // 1시간 이상 1일 미만 → n시간 전
+      return '${difference.inHours}시간 전';
+    } else if (difference.inMinutes >= 1) {
+      // 1분 이상 1시간 미만 → n분 전
+      return '${difference.inMinutes}분 전';
+    } else {
+      return '방금 전';
+    }
+  }
+
+  // ===========================================================================
+  // 결제 확인 다이얼로그 (구매하기 버튼 누르면 뜸 -> 취소, 확인 버튼 있음)
+  // ===========================================================================
 
   void _showPaymentDialog() {
     showDialog(
@@ -94,7 +136,10 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           content: Text('사진을 구매하시겠습니까?'),
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          actionsPadding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 4,
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context), // 취소 버튼
@@ -103,21 +148,29 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
               ),
               child: const Text('취소', style: TextStyle(color: Colors.black)),
             ),
             TextButton(
-              onPressed: () async{
+              onPressed: () async {
                 Navigator.pop(context);
                 await _handlePurchase(photo);
               },
               style: TextButton.styleFrom(
-                backgroundColor: Colors.lightGreen, // lightGreen[200]은 materialColor이므로 바로 사용 가능
+                backgroundColor:
+                    Colors
+                        .lightGreen, // lightGreen[200]은 materialColor이므로 바로 사용 가능
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
               ),
               child: const Text('확인', style: TextStyle(color: Colors.white)),
             ),
@@ -127,11 +180,9 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
     );
   }
 
-
-
- // =========================================================================== 
- // 결제 완료 후 띄울 바텀 시트 (결제 성공시 -> 확인/마이페이지로 이동 버튼 있음)
- // ===========================================================================
+  // ===========================================================================
+  // 결제 완료 후 띄울 바텀 시트 (결제 성공시 -> 확인/마이페이지로 이동 버튼 있음)
+  // ===========================================================================
 
   void _showPaymentBottomSheet(int newBuyerBalanceBill) {
     showModalBottomSheet(
@@ -154,7 +205,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                 padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
                 child: Column(
                   mainAxisSize: MainAxisSize.min, // 내용만큼만 높이 차지
-                  crossAxisAlignment: CrossAxisAlignment.start,  // 왼쪽 정렬
+                  crossAxisAlignment: CrossAxisAlignment.start, // 왼쪽 정렬
                   children: [
                     // 1. 안내 문구 영역
                     const Text(
@@ -170,9 +221,13 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                       textAlign: TextAlign.start,
                     ),
                     const SizedBox(height: 10),
-                    Container(width: double.infinity, height: 0.8, color: Colors.grey[300],),  // 아주 연한 회색
+                    Container(
+                      width: double.infinity,
+                      height: 0.8,
+                      color: Colors.grey[300],
+                    ), // 아주 연한 회색
                     const SizedBox(height: 10),
-                    
+
                     // 2. 구매한 사진 정보 영역
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,7 +249,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                         // 판매글 제목과 가격
                         Column(
                           mainAxisSize: MainAxisSize.min, // 내용만큼만 높이 차지
-                          crossAxisAlignment: CrossAxisAlignment.start,  // 왼쪽 정렬
+                          crossAxisAlignment: CrossAxisAlignment.start, // 왼쪽 정렬
                           children: [
                             Text(
                               photo.title,
@@ -216,17 +271,21 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    Container(width: double.infinity, height: 0.8, color: Colors.grey[300],),  // 아주 연한 회색
+                    Container(
+                      width: double.infinity,
+                      height: 0.8,
+                      color: Colors.grey[300],
+                    ), // 아주 연한 회색
                     const SizedBox(height: 10),
 
                     // 3. 거래 후 잔액 표시 영역
                     Text(
-                          '거래 후 잔액 : ${newBuyerBalanceBill}원',
-                          style: const TextStyle(
-                            //color: Colors.grey,
-                            fontSize: 14,
-                          ),
-                        ),
+                      '거래 후 잔액 : ${newBuyerBalanceBill}원',
+                      style: const TextStyle(
+                        //color: Colors.grey,
+                        fontSize: 14,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -242,9 +301,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                     // 마이페이지로 이동
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => MyPageScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => MyPageScreen()),
                     );
                   },
                   style: TextButton.styleFrom(
@@ -256,10 +313,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                   ),
                   child: const Text(
                     '마이페이지로 이동',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 15,
-                    ),
+                    style: TextStyle(color: Colors.black, fontSize: 15),
                   ),
                 ),
               ),
@@ -282,10 +336,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                   ),
                   child: const Text(
                     '확인',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                    ),
+                    style: TextStyle(color: Colors.white, fontSize: 15),
                   ),
                 ),
               ),
@@ -295,9 +346,6 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
       },
     );
   }
-  
-
-
 
   Future<void> _handlePurchase(PhotoTradeModel photo) async {
     final buyer = FirebaseAuth.instance.currentUser; // 현재 로그인 = 구매자
@@ -320,7 +368,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
       ).showSnackBar(const SnackBar(content: Text('잘못된 가격 정보입니다.')));
       return;
     }
-    
+
     // 거래 후 잔액을 보여주기 위한 변수
     int? newBuyerBalanceBill;
 
@@ -354,20 +402,17 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
         .collection('photo_trades')
         .doc(photo.id);
 
-    
-
     try {
       await FirebaseFirestore.instance.runTransaction((tx) async {
-
         // 0) 이미 구매한 사용자면 막기
         final tradeSnap = await tx.get(tradeRef);
         final tradeData = tradeSnap.data() as Map<String, dynamic>? ?? {};
         final List<dynamic> buyerList = tradeData['buyerUid'] ?? [];
         const SnackBar(content: Text('이미 구매한 사진입니다.'));
 
-    if (buyerList.contains(buyerUid)) {
-      throw Exception('ALREADY_PURCHASED');
-    }
+        if (buyerList.contains(buyerUid)) {
+          throw Exception('ALREADY_PURCHASED');
+        }
         // 1) 구매자 포인트 조회
         final buyerSnap = await tx.get(buyerRef);
         if (!buyerSnap.exists) {
@@ -459,21 +504,19 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
         });
 
         //판매자 기록
-        tx.set(
-          sellerRef.collection('point_history').doc(),
-          {
-            'amount': price,
-            'description': '사진 판매',
-            'timestamp': FieldValue.serverTimestamp(),
-          });
+        tx.set(sellerRef.collection('point_history').doc(), {
+          'amount': price,
+          'description': '사진 판매',
+          'timestamp': FieldValue.serverTimestamp(),
+        });
       });
 
       // 트랜잭션 성공 -> 이거 대신 바텀 시트 넣었습니다.
-    /*  ScaffoldMessenger.of(context).showSnackBar(
+      /*  ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('구매가 완료되었습니다.')),
-      );*/ 
+      );*/
       dev.log('트랜잭션 성공');
-      
+
       // 거래 성공시 결제 완료에 대한 BottomSheet(안내문구, 구매한 사진 정보, 마이페이지로 이동 버튼 등) 띄움
       // 거래 후 잔액이 계산되어 있다면 BottomSheet 띄우기
       if (newBuyerBalanceBill != null) {
@@ -481,17 +524,13 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
         _showPaymentBottomSheet(newBuyerBalanceBill!);
       }
       dev.log('바텀 시트 보여주기 완료');
-
-
-
     } catch (e) {
-
       final msg = e.toString();
-       // 🔥 이미 구매한 경우 처리
+      // 🔥 이미 구매한 경우 처리
       if (msg.contains('ALREADY_PURCHASED')) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('이미 구매한 사진입니다.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('이미 구매한 사진입니다.')));
         return;
       }
       if (msg.contains('INSUFFICIENT_POINT')) {
@@ -499,17 +538,16 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
           const SnackBar(content: Text('포인트가 부족합니다. 충전 후 다시 시도해주세요.')),
         );
       } else if (msg.contains('NO_BUYER_DOC')) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('구매자 정보가 존재하지 않습니다.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('구매자 정보가 존재하지 않습니다.')));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('구매 처리 중 오류가 발생했습니다.\n$e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('구매 처리 중 오류가 발생했습니다.\n$e')));
       }
     }
   }
-
 
   // ===================================================================
   // 사진 다운로드 (결제 완료 후 활성화)
@@ -524,7 +562,6 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     final sellDocId = photo.id ?? '';
@@ -533,7 +570,6 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
         (sellDocId.isEmpty)
             ? Stream<PhotoTradeModel?>.value(widget.photo)
             : _photoTradeService.streamGetTradeById(sellDocId);
-
 
     return StreamBuilder<PhotoTradeModel?>(
       stream: tradeStream,
@@ -569,7 +605,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
 
         // 좋아요 개수
         final int likeCount = photo.likeCount ?? 0;
-        
+
         // 사진을 구매한 사용자인지 확인
         // buyerUid 리스트에 현재 로그인 유저가 포함되어 있으면 다운로드 가능
         final bool canDownload = photo.buyerUid.contains(currentUserUid);
@@ -580,53 +616,51 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
             elevation: 0.5,
-
-            // 더보기 버튼
+            centerTitle: true,
+            title: const Text(
+              '판매글',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+              textAlign: TextAlign.center,
+            ),
             actions: [
               PopupMenuButton<MoreAction>(
                 icon: const Icon(Icons.more_vert),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 color: Colors.white,
                 elevation: 6,
                 position: PopupMenuPosition.under,
-
                 onSelected: (MoreAction action) async {
                   switch (action) {
                     case MoreAction.report:
-                    dev.log('신고하기 선택됨');
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ReportPostScreen(
-                          postId: photo.id!,
-                          postType: 'photo_trades',
-                          reasons: [
-                            '무단 사진 도용',
-                            '저작권 침해',
-                            '불법 사진',
-                            '기타',
-                          ],
+                      dev.log('신고하기 선택됨');
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder:
+                              (_) => ReportPostScreen(
+                                postId: photo.id!,
+                                postType: 'photo_trades',
+                                reasons: ['무단 사진 도용', '저작권 침해', '불법 사진', '기타'],
+                              ),
                         ),
-                      ),
-                    );
-
-                          break;
+                      );
+                      break;
                     case MoreAction.edit:
                       dev.log('수정하기 선택됨');
-                      // 수정하기 로직 추가
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => SellWriteScreen(
-                              initialPhoto: photo, // <─ 이게 핵심!
-                            ),
-                          ),
-                        );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SellWriteScreen(initialPhoto: photo),
+                        ),
+                      );
                       break;
                     case MoreAction.delete:
                       dev.log('삭제하기 선택됨');
-                      // 삭제 확인 다이얼로그 표시
                       final shouldDelete = await showDialog<bool>(
                         context: context,
                         builder:
@@ -660,19 +694,20 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
 
                       if (shouldDelete == true) {
                         dev.log('삭제 로직 실행됨');
-                        // 실제 삭제 로직 추가
-                        Navigator.of(context).pop(); // 삭제 후 이전 화면으로 돌아감
+                        Navigator.of(context).pop();
                       }
                       break;
                   }
                 },
-
                 itemBuilder: (context) {
                   if (isOwner) {
                     return const [
                       PopupMenuItem(
                         value: MoreAction.edit,
-                        child: Text('수정하기'),
+                        child: Text(
+                          '수정하기',
+                          style: TextStyle(color: Colors.black, fontSize: 10),
+                        ),
                       ),
                       PopupMenuDivider(height: 5),
                       PopupMenuItem(
@@ -681,10 +716,18 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                       ),
                     ];
                   } else {
-                    return const [
-                      PopupMenuItem(
+                    return [
+                      PopupMenuItem<MoreAction>(
                         value: MoreAction.report,
-                        child: Text('신고하기'),
+                        padding: EdgeInsets.zero, // 기본 좌측 패딩 제거
+                        height: 30,
+                        child: Center(
+                          // Center로 감싸서 가로 중앙 정렬
+                          child: Text(
+                            '신고하기',
+                            style: TextStyle(color: Colors.black, fontSize: 14),
+                          ),
+                        ),
                       ),
                     ];
                   }
@@ -697,97 +740,112 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 사진
+                // 1. 사진
                 SizedBox(
                   width: double.infinity,
                   child: _buildNetworkImage(photo.imageUrl),
                 ),
+                const SizedBox(height: 2),
 
-                const SizedBox(height: 10),
-
-                // 작가 정보
-                ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Colors.grey.shade200,
-                    backgroundImage:
-                        (photo.profileImageUrl.isNotEmpty &&
-                                !photo.profileImageUrl.startsWith('file:///'))
-                            ? NetworkImage(photo.profileImageUrl)
-                            : null,
-                    child:
-                        (photo.profileImageUrl.isEmpty ||
-                                photo.profileImageUrl.startsWith('file:///'))
-                            ? const Icon(Icons.person, color: Colors.grey)
-                            : null,
-                  ),
-                  title: Text(
-                    photo.nickname,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-
-                const Divider(),
-
-                // 제목
+                // 4. 작가 프로필
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    photo.title,
-                    style: const TextStyle(
-                      fontSize: 25,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18, // 프로필 이미지 크기 조절
+                        backgroundColor: Colors.grey.shade200,
+                        backgroundImage:
+                            currentUserProfileImageUrl != null &&
+                                    currentUserProfileImageUrl!.isNotEmpty
+                                ? NetworkImage(currentUserProfileImageUrl!)
+                                : null,
+                        child:
+                            currentUserProfileImageUrl == null ||
+                                    currentUserProfileImageUrl!.isEmpty
+                                ? const Icon(
+                                  Icons.person,
+                                  color: Colors.grey,
+                                  size: 18,
+                                )
+                                : null,
+                      ),
+                      const SizedBox(width: 8), // 사진과 닉네임 사이 간격
+                      Text(
+                        photo.nickname ?? '작가 정보 없음',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
-                // 날짜
+                const Divider(
+                  height: 1,
+                  thickness: 0.5,
+                  color: Color.fromARGB(248, 236, 233, 233),
+                ),
+
+                // Divider와 제목 사이 간격
+                const SizedBox(height: 8),
+
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, right: 20),
+                  child: Row(
+                    children: [
+                      // 제목
+                      Text(
+                        photo.title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      Spacer(), // 제목과 하트 사이 공간 밀기
+                      // 하트 + 숫자
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.favorite,
+                            size: 18,
+                            color: Color.fromARGB(230, 197, 197, 197),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$likeCount',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 3. 날짜
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 4,
                   ),
                   child: Text(
-                    formattedDate,
-                    style: const TextStyle(color: Colors.grey),
+                    formatRelativeDate(photo.createdAt),
+                    style: const TextStyle(
+                      color: Color.fromARGB(255, 139, 139, 139),
+                      fontSize: 12,
+                    ),
                   ),
                 ),
 
-                // 태그들
-                if (tags.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children:
-                            tags.map((tag) {
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: ActionChip(
-                                  label: Text(tag),
-                                  backgroundColor: Colors.white,
-                                  labelStyle: const TextStyle(
-                                    color: Colors.black87,
-                                  ),
-                                  side: const BorderSide(
-                                    color: Color(0xFFE0E0E0),
-                                    width: 1,
-                                  ),
-                                  onPressed: () {},
-                                ),
-                              );
-                            }).toList(),
-                      ),
-                    ),
-                  ),
-
-                // 장소
+                // 6. 위치
                 if (photo.location.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -798,19 +856,22 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                       children: [
                         const Icon(
                           Icons.location_on,
-                          size: 16,
-                          color: Colors.grey,
+                          size: 14,
+                          color: Color.fromARGB(255, 139, 139, 139),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 2),
                         Text(
                           photo.location,
-                          style: const TextStyle(color: Colors.grey),
+                          style: const TextStyle(
+                            color: Color.fromARGB(255, 139, 139, 139),
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
                   ),
 
-                // 내용
+                // 7. 내용
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Text(
@@ -818,36 +879,130 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                     style: const TextStyle(fontSize: 14),
                   ),
                 ),
+
+                // 8. 태그
+                if (tags.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 0,
+                    ),
+                    child: Wrap(
+                      spacing: 6, // 한 줄에서 태그 사이 가로 간격
+                      runSpacing: 0, // 줄 간 세로 간격
+                      children:
+                          tags
+                              .map(
+                                (tag) => Chip(
+                                  label: Text(
+                                    '#$tag', // 앞에 # 붙이기
+                                    style: const TextStyle(
+                                      color: Color.fromARGB(255, 78, 78, 78),
+                                      fontSize: 12, // 폰트 크기
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  backgroundColor: Color.fromARGB(
+                                    230,
+                                    230,
+                                    230,
+                                    230,
+                                  ), // 태그 배경색
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 0,
+                                    vertical: 0,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(2),
+                                    side: const BorderSide(
+                                      color: Color.fromARGB(
+                                        230,
+                                        230,
+                                        230,
+                                        230,
+                                      ), // 테두리 색
+                                      width: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                    ),
+                  ),
               ],
             ),
           ),
-          // 좋아요 + 가격 + 구매 버튼
+
+          // 가격 + 구매하기/다운받기 + 좋아요
           bottomNavigationBar: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 18),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 18),
             child: Row(
+              // <-- child 추가
               children: [
-                // 왼쪽: 좋아요
+                // 포인트 아이콘 + 가격
+                const SizedBox(width: 16),
+                Image.asset('assets/images/point.jpg', width: 20, height: 20),
+                const SizedBox(width: 4),
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Text(
+                    '${photo.price}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+
+                const Spacer(), // 가격과 오른쪽 요소 구분
+                // 구매 버튼
+                ElevatedButton(
+                  onPressed: () async {
+                    if (canDownload) {
+                      dev.log('다운로드 버튼 클릭됨');
+                      await _downloadPhoto(photo);
+                    } else {
+                      dev.log('구매하기 버튼 클릭됨');
+                      _showPaymentDialog();
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        canDownload
+                            ? Colors.lightGreen
+                            : const Color(0xFFDDECC7),
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 12,
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    canDownload ? '다운로드' : '구매하기',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 1), // 버튼과 하트 사이 간격
+                // 오른쪽: 좋아요
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       icon: Icon(
                         isLiked ? Icons.favorite : Icons.favorite_border,
-                        size: 30,
+                        size: 35,
                         color:
                             isLiked
-                                ? const Color.fromARGB(
-                                  255,
-                                  102,
-                                  204,
-                                  105,
-                                ) // 좋아요 색상 (HEAD 유지)
-                                : const Color.fromARGB(
-                                  255,
-                                  161,
-                                  161,
-                                  161,
-                                ), // 기본색
+                                ? const Color.fromARGB(255, 102, 204, 105)
+                                : const Color.fromARGB(255, 161, 161, 161),
                       ),
                       onPressed: () async {
                         if (photo.id == null) return;
@@ -866,59 +1021,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                         }
                       },
                     ),
-                    Text(
-                      '$likeCount',
-                      style: const TextStyle(fontSize: 16, color: Colors.black),
-                    ),
                   ],
-                ),
-
-                // 중간 여백 = 오른쪽으로 밀어내기
-                const Spacer(),
-
-                // 오른쪽: 가격 + 구매 버튼 (일렬 가로 배치)
-                Row(
-                  mainAxisSize: MainAxisSize.min, // 필요한 만큼만 차지
-                  children: [
-                    // 가격
-                    Text(
-                      '${photo.price} 원',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-
-                    // 구매 버튼
-                    ElevatedButton(
-                    onPressed: () async {
-                      if (canDownload) {
-                        // ✅ 이미 구매한 유저 → 다운로드
-                        dev.log('다운로드 버튼 클릭됨');
-                        await _downloadPhoto(photo);
-                      } else {
-                        // ✅ 아직 구매 안 한 유저 → 결제 플로우
-                        dev.log('구매하기 버튼 클릭됨');
-                        _showPaymentDialog();
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: canDownload
-                          ? Colors.lightGreen            // 다운로드 시 더 진한 초록
-                          : const Color(0xFFDDECC7),    // 구매 전 기본 색
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                    ),
-                    child: Text(
-                      canDownload ? '다운로드' : '구매하기',
-                    ),
-                  ),
-                  ],
-
                 ),
               ],
             ),
