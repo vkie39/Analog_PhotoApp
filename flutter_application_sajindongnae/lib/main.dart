@@ -68,7 +68,7 @@ void main() async {
   });
 
   final app = Firebase.app();
-  debugPrint('🔥 Firebase projectId = ${(app.options as FirebaseOptions).projectId}');
+  debugPrint('🔥 Firebase projectId = ${(app.options).projectId}');
 
   runApp(const MyApp());
 }

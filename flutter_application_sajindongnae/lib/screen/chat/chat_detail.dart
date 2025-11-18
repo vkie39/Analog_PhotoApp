@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_sajindongnae/models/chat_list_model.dart';
 
 import 'package:flutter_application_sajindongnae/models/request_model.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/request_detail.dart';
@@ -30,13 +31,19 @@ import 'package:permission_handler/permission_handler.dart';           // 권한
 
 
 class ChatDetailScreen extends StatefulWidget {
-  final RequestModel request; // 이전 화면에서 넘겨받음
-  const ChatDetailScreen({super.key, required this.request});
-  
+  final RequestModel request;
+  final ChatRoom chatRoom;
+
+  const ChatDetailScreen({
+    super.key,
+    required this.request,
+    required this.chatRoom,
+  });
 
   @override
   _ChatDetailScreen createState() => _ChatDetailScreen();
 }
+
 
 class _ChatDetailScreen extends State<ChatDetailScreen> {
   final RequestService _requestService = RequestService(); // 함 추가 11/16
@@ -83,7 +90,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   // 선택한 이미지 파일
   XFile? _originalImage;
   XFile? _selectedImage; 
-  bool _cropping = false;
+  final bool _cropping = false;
   late ImageService _imageService;
 
   // 기능 패널 on/off 제어 (카카오톡처럼 메뉴버튼 누르면 키보드 대신 패널 열림)
@@ -99,9 +106,19 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
     if (_showPanel) _hideKeyboard(); // 패널 열릴 땐 키보드 닫기
   }
  
+
+ 
   @override
   void initState() {
     super.initState();
+
+    final myUid = FirebaseAuth.instance.currentUser!.uid;
+    final otherUid = widget.chatRoom.participants.firstWhere(
+      (id) => id != myUid,
+    );
+
+    final sorted = [myUid, otherUid]..sort();
+    _chatRoomId = sorted.join('_');
 
     _originalRequest = widget.request;
     _imageService = ImageService();
@@ -114,21 +131,11 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
     _requestStatement = _originalRequest.status ?? '의뢰중';
     _isPaied = _originalRequest.isPaied;
 
-
-    // ===========================================
-    // 🔧 수정된 코드 — chatRoomId 통일 방식
-    // RequestDetailScreen과 동일한 규칙으로 통일
-    final sortedIds = [_myUid, _requesterUid]..sort();
-    _chatRoomId = sortedIds.join('_');   // ← UID 기준 고정 chatRoomId
-    // ===========================================
-
-
     _ensureChatRoomExists();   // 채팅방 생성 확인 (가장 중요)
     // _loadRequest();         // 실시간으로 바꾸며 제거 : 의뢰글 정보 로드
 
 
-    // 현재 사용자와 상대방 UID
-    final otherUid = _requesterUid;
+
     final me = _myUid ?? 'dummy_me';
     _isOwner = _myUid == _requesterUid; 
 
@@ -914,7 +921,7 @@ Widget _buildBubble(BuildContext context, Message msg, bool isMe) {
                                 
                                 const SizedBox(height: 4),
                                 // 의뢰 가격 표시 (0원은 '무료의뢰'로 표시)
-                                Text(_requestPrice == 0 ?  '무료 의뢰' : '${_requestPrice}원',style: const TextStyle()),
+                                Text(_requestPrice == 0 ?  '무료 의뢰' : '$_requestPrice원',style: const TextStyle()),
                                     
                               ],
                             ),

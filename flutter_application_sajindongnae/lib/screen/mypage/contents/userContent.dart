@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage/contents/sellPhoto.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage/contents/buyPhoto.dart';
 import 'package:flutter_application_sajindongnae/screen/mypage/contents/postC.dart';

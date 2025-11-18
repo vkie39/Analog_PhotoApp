@@ -51,7 +51,7 @@ class RequestCard extends StatelessWidget {
                       ),
                       Expanded(
                         child:Text(
-                          request.location!,
+                          request.location,
                           style: const TextStyle(
                             fontSize: 12,
                             color: Color.fromARGB(255, 120, 119, 119),

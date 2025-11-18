@@ -64,7 +64,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
         return;
       }
 
-      final data = snap.data() as Map<String, dynamic>?;
+      final data = snap.data();
       final hasPoint = (data?['point'] is Map) &&
           ((data!['point'] as Map).containsKey('balance'));
 

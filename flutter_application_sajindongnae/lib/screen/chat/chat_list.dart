@@ -4,14 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 // Firestore 모델
 import 'package:flutter_application_sajindongnae/models/chat_list_model.dart';
-import 'package:flutter_application_sajindongnae/models/request_model.dart';
 
 // 채팅 리스트 카드 위젯
 import 'package:flutter_application_sajindongnae/component/chat_card.dart';
 
 // 채팅 상세 페이지
 import 'package:flutter_application_sajindongnae/screen/chat/chat_detail.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_application_sajindongnae/services/request_service.dart';
 
 
@@ -102,6 +100,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       MaterialPageRoute(
                         builder: (_) => ChatDetailScreen(
                           request: request,         
+                          chatRoom: room,   // ⭐ chatRoom 추가 전달
                         ),
 
                       ),
