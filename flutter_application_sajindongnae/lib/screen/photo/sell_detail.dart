@@ -30,6 +30,7 @@ class SellDetailScreen extends StatefulWidget {
 
 class _SellDetailScreenState extends State<SellDetailScreen> {
   final PhotoTradeService _photoTradeService = PhotoTradeService();
+  final ImageService _imageService = ImageService();  
   PhotoTradeModel get photo => widget.photo;
   String get currentUserUid => widget.currentUserUid;
 
@@ -443,7 +444,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
 
         // 5) 거래 정보 업데이트 (구매 완료 처리)
         tx.update(tradeRef, {
-          'buyerUid': FieldValue.arrayUnion([buyerUid]),  // 리스트 누적 저장
+          'buyerUid': FieldValue.arrayUnion([buyerUid]),
           'sellerUid': sellerUid,
           'status': 'completed', // 프로젝트에서 쓰는 상태값에 맞게 조정 가능
           'purchasedAt': FieldValue.serverTimestamp(),
@@ -509,6 +510,21 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
     }
   }
 
+
+  // ===================================================================
+  // 사진 다운로드 (결제 완료 후 활성화)
+  // ===================================================================
+  Future<void> _downloadPhoto(PhotoTradeModel photo) async {
+    // 네트워크 이미지 기준 (photo.imageUrl 이 Firebase Storage URL)
+    await _imageService.saveImageToGallery2(
+      context: context,
+      imagePath: photo.imageUrl,
+      isAsset: false,
+      photoOwnerNickname: photo.nickname, // 파일명에 작가 닉네임 + sajindongnae 붙음
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final sellDocId = photo.id ?? '';
@@ -517,6 +533,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
         (sellDocId.isEmpty)
             ? Stream<PhotoTradeModel?>.value(widget.photo)
             : _photoTradeService.streamGetTradeById(sellDocId);
+
 
     return StreamBuilder<PhotoTradeModel?>(
       stream: tradeStream,
@@ -552,6 +569,10 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
 
         // 좋아요 개수
         final int likeCount = photo.likeCount ?? 0;
+        
+        // 사진을 구매한 사용자인지 확인
+        // buyerUid 리스트에 현재 로그인 유저가 포함되어 있으면 다운로드 가능
+        final bool canDownload = photo.buyerUid.contains(currentUserUid);
 
         return Scaffold(
           backgroundColor: Colors.white,
@@ -871,20 +892,31 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
 
                     // 구매 버튼
                     ElevatedButton(
-                      onPressed: () async {
+                    onPressed: () async {
+                      if (canDownload) {
+                        // ✅ 이미 구매한 유저 → 다운로드
+                        dev.log('다운로드 버튼 클릭됨');
+                        await _downloadPhoto(photo);
+                      } else {
+                        // ✅ 아직 구매 안 한 유저 → 결제 플로우
                         dev.log('구매하기 버튼 클릭됨');
-                        _showPaymentDialog(); // 이후에 _handlePurchase(photo) 넣으면 됨
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFDDECC7),
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                        _showPaymentDialog();
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: canDownload
+                          ? Colors.lightGreen            // 다운로드 시 더 진한 초록
+                          : const Color(0xFFDDECC7),    // 구매 전 기본 색
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Text('구매하기'),
+                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
                     ),
+                    child: Text(
+                      canDownload ? '다운로드' : '구매하기',
+                    ),
+                  ),
                   ],
 
                 ),

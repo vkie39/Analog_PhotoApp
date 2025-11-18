@@ -86,10 +86,10 @@ class PhotoTradeModel {
       nickname: data['nickname'] ?? '',
       profileImageUrl: data['profileImageUrl'] ?? '',
       isSold: data['isSold'] ?? false,
+       buyerUid: data['buyerUid'] is String
+        ? [data['buyerUid']]
+        : List<String>.from(data['buyerUid'] ?? []),
 
-      buyerUid: data['buyerUid'] is String
-          ? [data['buyerUid']]
-          : List<String>.from(data['buyerUid'] ?? []),
 
       tags: List<String>.from(data['tags'] ?? []),
       createdAt: (data['createdAt'] is Timestamp)

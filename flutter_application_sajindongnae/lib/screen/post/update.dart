@@ -28,7 +28,7 @@ class UpdateScreen extends StatefulWidget {
 }
 
 class UpdateScreenState extends State<UpdateScreen> {
-  final List<String> categoryList = ['자유', '카메라추천', '피드백'];
+  final List<String> categoryList = ['자유', '카메라추천', 'QnA'];
   late String _selectedCategory;
   late ImageService _imageService;
   XFile? _originalImage;

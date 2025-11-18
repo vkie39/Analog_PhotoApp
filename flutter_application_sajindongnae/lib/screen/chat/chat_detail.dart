@@ -87,6 +87,8 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   // 리퀘스트 상태(의뢰중, 거래중, 의뢰완료)
   String _requestStatement = '의뢰중';
 
+  String? _lastNonRequesterImageUrl; // 의뢰자가 아닌 사람이 보낸 마지막 이미지 URL
+
   // 선택한 이미지 파일
   XFile? _originalImage;
   XFile? _selectedImage; 
@@ -180,9 +182,20 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
         return m.senderId != myUid;
       });
 
+        String? lastNonRequesterImageUrl;
+        for (final m in msgs) {
+          if (m.hasImage &&
+              m.senderId != _requesterUid &&          // 의뢰인이 아닌 사람
+              m.imageUrl != null &&
+              m.imageUrl!.isNotEmpty) {
+            lastNonRequesterImageUrl = m.imageUrl;    // 계속 덮어쓰기 → 결국 마지막 값
+          }
+        }
+
       setState(() {
         _messages = msgs;
         _canPay = hasOpponentImage;
+        _lastNonRequesterImageUrl = lastNonRequesterImageUrl;
       });
     });
   }
@@ -305,7 +318,6 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
           .add(messageData);
 
       await _db.collection('chats').doc(_chatRoomId).update({
-        'participants': [_myUid, _requesterUid],
         'lastMessage': text,
         'lastSenderId': senderId,
         'lastTimestamp': FieldValue.serverTimestamp(),
@@ -534,7 +546,6 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
       });
 
       await _db.collection('chats').doc(_chatRoomId).update({
-        'participants': [_myUid, _requesterUid],
         'lastMessage': text,
         'lastSenderId': senderId,
         'lastTimestamp': FieldValue.serverTimestamp(),
@@ -569,7 +580,6 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
       });
 
       await _db.collection('chats').doc(_chatRoomId).update({
-        'participants': [_myUid, _requesterUid],
         'lastMessage': '결제가 완료되었습니다.',
         'lastSenderId': senderId,
         'lastTimestamp': FieldValue.serverTimestamp(),
@@ -581,16 +591,34 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   }
 
   // [결제 완료] 메세지 내용
-  Widget _buildPaymentCompleteCard(Message msg, bool isMe) {
+  Widget _buildPaymentCompleteCard(BuildContext context, Message msg, bool isMe) {
     final amount = msg.paymentAmount ?? _requestPrice;
+    
+    // ✅ 결제한 사람 닉네임 계산
+    // 메시지를 보낸 사람이 의뢰자면 -> 의뢰자 닉네임
+    // 아니면 -> 상대방 닉네임
+    String payerNickname;
+    if (msg.senderId == _requesterUid) {
+      payerNickname = _requesterNickname;
+    } else {
+      payerNickname = _otherNickname ?? '알 수 없음';
+    }
+    
+    // 더미 데이터 (결제완료 메세지는 의뢰자가 보냄. 의뢰자일 경우와 아닐 경우로 나누어 각각의 잔액을 표시)
+    final int remainingBalance = isMe ? 43210 : 98765;
+
+    // 썸네일로 쓸 이미지 (없으면 더미 이미지)
+    final thumbUrl = _lastNonRequesterImageUrl ??
+    'https://via.placeholder.com/150'; // TODO: 나중에 플레이스홀더 바꾸기
+
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF4E0), // 연한 주황 느낌
+        color: const Color(0xFFDFF1D5), // 연한 초록 느낌
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFCC80), width: 1),
+        border: Border.all(color: Color(0xFF7BC67B), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -616,8 +644,8 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                '송금 완료',
+              Text(
+                 '[${payerNickname}] 님의 송금',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -635,16 +663,27 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
             '상대방과의 거래를 마무리해주세요.',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           SizedBox(
             height: 36,
             child: ElevatedButton(
               onPressed: () {
-                // TODO: 결제 내역 페이지로 이동하거나, 나중에 사용
-                Fluttertoast.showToast(msg: '이용내역 보기(추후 구현 예정)');
+              // 여기서 바텀시트 호출
+                tradeBottomSheetService(
+                  context: context,
+                  postId: _requestId,              // 어떤 의뢰/거래인지 구분용 (지금은 그냥 넘겨만 주기)
+                  imageUrl: thumbUrl,         
+                  title: _requestTitle,            // 의뢰 제목
+                  price: amount,                   // 결제 금액
+                  remainingBalance: remainingBalance, // 더미 잔액
+                  onTapMyPage: () {
+                    // TODO: 마이페이지로 이동하는 로직 나중에 구현
+                    Fluttertoast.showToast(msg: '마이페이지로 이동(추후 구현)');
+                  },
+                );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF9800),
+                backgroundColor: Colors.lightGreen,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -652,7 +691,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
                 elevation: 0,
               ),
               child: const Text(
-                '이용내역 보기',
+                '의뢰 내역 보기',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
               ),
             ),
@@ -826,6 +865,88 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   }
 
   // =======================================================================
+  // 실제 포인트 결제 처리 (의뢰자 -> 수락자)
+  // =======================================================================
+  Future<void> _processPayment() async {
+    final buyerUid = _requesterUid; // 결제(포인트 차감) 주체: 의뢰자
+    final sellerUid = _otherUid;    // 포인트 받는 사람: 의뢰 수락자
+    final amount = _requestPrice;
+
+    if (buyerUid.isEmpty || sellerUid.isEmpty) {
+      Fluttertoast.showToast(msg: '결제 대상 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    try {
+      await _db.runTransaction((transaction) async {
+        final buyerRef = _db.collection('users').doc(buyerUid);
+        final sellerRef = _db.collection('users').doc(sellerUid);
+        final requestRef = _db.collection('requests').doc(_requestId);
+
+        final buyerSnap = await transaction.get(buyerRef);
+        final sellerSnap = await transaction.get(sellerRef);
+
+        if (!buyerSnap.exists || !sellerSnap.exists) {
+          throw Exception('유저 정보를 찾을 수 없습니다.');
+        }
+
+        final buyerData = buyerSnap.data() as Map<String, dynamic>;
+        final sellerData = sellerSnap.data() as Map<String, dynamic>;
+
+        // 현재 포인트 (없으면 0으로 간주)
+        final buyerPoint = ((buyerData['point'] ?? {})['balance'] ?? 0) as int;
+        final sellerPoint = ((sellerData['point'] ?? {})['balance'] ?? 0) as int;
+
+        if (buyerPoint < amount) {
+          throw Exception('잔액이 부족합니다.');
+        }
+
+        final newBuyerPoint = buyerPoint - amount;
+        final newSellerPoint = sellerPoint + amount;
+
+        // 의뢰자 포인트 차감
+        transaction.update(buyerRef, {
+          'point.balance': newBuyerPoint,
+        });
+
+        // 수락자 포인트 가산
+        transaction.update(sellerRef, {
+          'point.balance': newSellerPoint,
+        });
+
+        // 의뢰 상태 / 결제 여부 업데이트
+        transaction.update(requestRef, {
+          'isPaied': true,
+          'status': '의뢰완료',
+          'paidAt': FieldValue.serverTimestamp(),
+        });
+      });
+
+      // 상태 반영
+      if (mounted) {
+        setState(() {
+          _isPaied = true;
+          _canDownload = true;
+          _requestStatement = '의뢰완료';
+        });
+      }
+
+      // 결제 완료 메시지 전송 (채팅용)
+      await _sendPaymentCompleteMessage();
+
+      Fluttertoast.showToast(msg: '결제가 완료되었습니다!');
+    } catch (e) {
+      debugPrint('결제 처리 실패: $e');
+      if (e.toString().contains('잔액이 부족')) {
+        Fluttertoast.showToast(msg: '포인트가 부족하여 결제할 수 없습니다.');
+      } else {
+        Fluttertoast.showToast(msg: '결제 처리 중 오류가 발생했습니다.');
+      }
+    }
+  }
+
+
+  // =======================================================================
   // 결제 다이얼로그
   // =======================================================================
 
@@ -861,9 +982,8 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
             TextButton(
               onPressed: () async{
                 Navigator.pop(context);
-                // TODO: 실제 포인트 차감 + isPaied 처리
                 Fluttertoast.showToast(msg: '결제가 완료되었습니다!');
-                await _sendPaymentCompleteMessage();
+                await _processPayment();
               },
               style: TextButton.styleFrom(
                 backgroundColor: Colors.lightGreen,
@@ -1108,7 +1228,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
 
                         // ★ 결제 완료 카드
                         if (msg.isPaymentComplete) {
-                          return _buildPaymentCompleteCard(msg, isMe);
+                          return _buildPaymentCompleteCard(context, msg, isMe);
                         }
 
                         // ★ 일반 말풍선
