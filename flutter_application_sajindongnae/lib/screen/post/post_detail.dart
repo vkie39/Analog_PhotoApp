@@ -161,14 +161,24 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       case MoreAction.report:
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) =>
-                                ReportPostScreen(
-                                  postId: post.postId,
-                                  postType: 'posts',
-                                ),
+                            builder: (_) => ReportPostScreen(
+                              postId: post.postId,
+                              postType: 'posts', // posts / photo_trades / requests 구분
+                              reasons: [
+                                '스팸홍보/도배글입니다.',
+                                '음란물입니다.',
+                                '불법정보를 포함하고 있습니다.',
+                                '청소년에게 유해한 내용입니다.',
+                                '욕설 및 혐오 표현입니다.',
+                                '개인정보 노출 게시물입니다.',
+                                '불쾌한 표현이 있습니다.',
+                                '기타 내용',
+                              ],
+                            ),
                           ),
                         );
                         break;
+
 
                       case MoreAction.edit:
                         await Navigator.of(context).push(

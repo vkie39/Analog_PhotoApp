@@ -172,6 +172,22 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                   switch (action) {
                     case MoreAction.report:
                       dev.log('신고하기 선택됨');
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ReportPostScreen(
+                            postId: request.requestId,    
+                            postType: 'requests',        
+                            reasons: [
+                              '무단 사진/자료 도용',
+                              '저작권 침해',
+                              '불법 내용',
+                              '욕설/혐오 표현',
+                              '기타',
+                            ],
+                          ),
+                        ),
+                      );
+
                       break;
                     case MoreAction.edit:
                       dev.log('수정하기 선택됨');

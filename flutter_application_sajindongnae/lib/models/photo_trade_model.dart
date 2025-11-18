@@ -66,13 +66,19 @@ class PhotoTradeModel {
     if (pos is GeoPoint) {
       latLng = LatLng(pos.latitude, pos.longitude);
     } else if (pos is Map<String, dynamic>) {
-      // Map 형태로 저장된 경우
       latLng = LatLng(pos['lat'], pos['lng']);
+    }
+
+    // 🔹 imageUrl 이 String 이든 List 이든 안전하게 처리
+    String _parseImageUrl(dynamic v) {
+      if (v is String) return v;
+      if (v is List && v.isNotEmpty) return v.first.toString();
+      return '';
     }
 
     return PhotoTradeModel(
       id: id,
-      imageUrl: data['imageUrl'] ?? '',
+      imageUrl: _parseImageUrl(data['imageUrl']),
       title: data['title'] ?? '',
       description: data['description'] ?? '',
       price: data['price'] ?? 0,
@@ -80,10 +86,10 @@ class PhotoTradeModel {
       nickname: data['nickname'] ?? '',
       profileImageUrl: data['profileImageUrl'] ?? '',
       isSold: data['isSold'] ?? false,
-      
        buyerUid: data['buyerUid'] is String
         ? [data['buyerUid']]
         : List<String>.from(data['buyerUid'] ?? []),
+
 
       tags: List<String>.from(data['tags'] ?? []),
       createdAt: (data['createdAt'] is Timestamp)
@@ -92,16 +98,12 @@ class PhotoTradeModel {
       category: data['category'] ?? '판매',
       location: data['location'] ?? '',
       position: latLng,
-
-      // -------------------------
-      // [추가] Firestore에서 likedBy / likeCount 값을 읽어오는 부분
-      // 값이 없을 수 있으므로 기본값 [] / 0
-      // -------------------------
       likedBy: List<String>.from(data['likedBy'] ?? []),
       likeCount: data['likeCount'] ?? 0,
       reportCount: data['reportCount'] ?? 0,
     );
   }
+
 
   // Model → Firestore 변환
   Map<String, dynamic> toMap() {

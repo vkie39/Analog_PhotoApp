@@ -403,6 +403,16 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
 
     try {
       await FirebaseFirestore.instance.runTransaction((tx) async {
+
+        // 0) 이미 구매한 사용자면 막기
+        final tradeSnap = await tx.get(tradeRef);
+        final tradeData = tradeSnap.data() as Map<String, dynamic>? ?? {};
+        final List<dynamic> buyerList = tradeData['buyerUid'] ?? [];
+        const SnackBar(content: Text('이미 구매한 사진입니다.'));
+
+    if (buyerList.contains(buyerUid)) {
+      throw Exception('ALREADY_PURCHASED');
+    }
         // 1) 구매자 포인트 조회
         final buyerSnap = await tx.get(buyerRef);
         if (!buyerSnap.exists) {
@@ -479,7 +489,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
 
         // 5) 거래 정보 업데이트 (구매 완료 처리)
         tx.update(tradeRef, {
-           'buyerUid': FieldValue.arrayUnion([buyerUid]),
+          'buyerUid': FieldValue.arrayUnion([buyerUid]),
           'sellerUid': sellerUid,
           'status': 'completed', // 프로젝트에서 쓰는 상태값에 맞게 조정 가능
           'purchasedAt': FieldValue.serverTimestamp(),
@@ -522,6 +532,13 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
     } catch (e) {
 
       final msg = e.toString();
+       // 🔥 이미 구매한 경우 처리
+      if (msg.contains('ALREADY_PURCHASED')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('이미 구매한 사진입니다.')),
+        );
+        return;
+      }
       if (msg.contains('INSUFFICIENT_POINT')) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('포인트가 부족합니다. 충전 후 다시 시도해주세요.')),
@@ -624,15 +641,21 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                   switch (action) {
                     case MoreAction.report:
                     dev.log('신고하기 선택됨');
-                    Navigator.push(
-                      context,
+                    Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => ReportPostScreen(
                           postId: photo.id!,
-                          postType: 'photo_trades',   // sales (sells 아님)
-                          ),
-                          ),
-                          );
+                          postType: 'photo_trades',
+                          reasons: [
+                            '무단 사진 도용',
+                            '저작권 침해',
+                            '불법 사진',
+                            '기타',
+                          ],
+                        ),
+                      ),
+                    );
+
                           break;
                     case MoreAction.edit:
                       dev.log('수정하기 선택됨');
