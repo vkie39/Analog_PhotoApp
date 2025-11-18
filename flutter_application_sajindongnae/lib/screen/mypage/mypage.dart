@@ -161,7 +161,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
 
       // 우선 authorId
       var agg =
-          await postsColl.where('authorId', isEqualTo: u.uid).count().get();
+          await postsColl.where('uid', isEqualTo: u.uid).count().get();
       posts = agg.count ?? 0;
 
       // authorId가 없다면 uid 필드 시도
@@ -181,22 +181,22 @@ class _MyPageScreenState extends State<MyPageScreen> {
       // 판매(내가 판매자)
       try {
         var agg =
-            await trades.where('sellerUid', isEqualTo: u.uid).count().get();
+            await trades.where('uid', isEqualTo: u.uid).count().get();
         sells = agg.count ?? 0;
       } catch (_) {
         final agg =
-            await trades.where('sellerId', isEqualTo: u.uid).count().get();
+            await trades.where('uid', isEqualTo: u.uid).count().get();
         sells = agg.count ?? 0;
       }
 
       // 구매(내가 구매자)
       try {
         var agg =
-            await trades.where('buyerUid', isEqualTo: u.uid).count().get();
+            await trades.where('uid', isEqualTo: u.uid).count().get();
         buys = agg.count ?? 0;
       } catch (_) {
         final agg =
-            await trades.where('buyerId', isEqualTo: u.uid).count().get();
+            await trades.where('uid', isEqualTo: u.uid).count().get();
         buys = agg.count ?? 0;
       }
     } catch (e) {
