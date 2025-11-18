@@ -575,15 +575,21 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                   switch (action) {
                     case MoreAction.report:
                     dev.log('신고하기 선택됨');
-                    Navigator.push(
-                      context,
+                    Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => ReportPostScreen(
                           postId: photo.id!,
-                          postType: 'photo_trades',   // sales (sells 아님)
-                          ),
-                          ),
-                          );
+                          postType: 'photo_trades',
+                          reasons: [
+                            '무단 사진 도용',
+                            '저작권 침해',
+                            '불법 사진',
+                            '기타',
+                          ],
+                        ),
+                      ),
+                    );
+
                           break;
                     case MoreAction.edit:
                       dev.log('수정하기 선택됨');

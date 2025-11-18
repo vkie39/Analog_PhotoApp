@@ -251,50 +251,31 @@ class _PostManageTabState extends State<_PostManageTab>
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> _postStream() {
-    final collection = FirebaseFirestore.instance.collection('posts');
-    if (showReportedOnly) {
-      return collection
-          .where('reportCount', isGreaterThan: 0)
-          .orderBy('reportCount', descending: true)
-          .snapshots();
-    } else {
-      return collection
-          .orderBy('createdAt', descending: true)
-          .snapshots();
+      final collection = FirebaseFirestore.instance.collection('posts');
+      if (showReportedOnly) {
+        return collection.where('reportCount', isGreaterThan: 0).orderBy('reportCount', descending: true).snapshots();
+      } else {
+        return collection.orderBy('createdAt', descending: true).snapshots();
+      }
     }
-  }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> _photoTradeStream() {
-    final collection =
-    FirebaseFirestore.instance.collection('photo_trades');
-    if (showReportedOnly) {
-      return collection
-          .where('reportCount', isGreaterThan: 0)
-          .orderBy('reportCount', descending: true)
-          .orderBy('createdAt', descending: true)
-          .snapshots();
-    } else {
-      return collection
-          .orderBy('createdAt', descending: true)
-          .snapshots();
+      final collection = FirebaseFirestore.instance.collection('photo_trades');
+      if (showReportedOnly) {
+        return collection.where('reportCount', isGreaterThan: 0).orderBy('reportCount', descending: true).snapshots();
+      } else {
+        return collection.orderBy('createdAt', descending: true).snapshots();
+      }
     }
-  }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> _requestStream() {
-    final collection =
-    FirebaseFirestore.instance.collection('requests');
-    if (showReportedOnly) {
-      return collection
-          .where('reportCount', isGreaterThan: 0)
-          .orderBy('reportCount', descending: true)
-          .orderBy('dateTime', descending: true)
-          .snapshots();
-    } else {
-      return collection
-          .orderBy('dateTime', descending: true)
-          .snapshots();
+    Stream<QuerySnapshot<Map<String, dynamic>>> _requestStream() {
+      final collection = FirebaseFirestore.instance.collection('requests');
+      if (showReportedOnly) {
+        return collection.where('reportCount', isGreaterThan: 0).orderBy('reportCount', descending: true).snapshots();
+      } else {
+        return collection.orderBy('dateTime', descending: true).snapshots();
+      }
     }
-  }
 
   @override
   Widget build(BuildContext context) {
