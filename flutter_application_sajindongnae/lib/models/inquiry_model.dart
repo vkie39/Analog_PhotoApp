@@ -10,6 +10,7 @@ class InquiryModel {
   final String? answer;        // 관리자 답변
   final DateTime? answeredAt;  // 답변 시간
   final bool isAnswered;       // 답변 여부
+  final String category;       // 문의 카테고리
 
   InquiryModel({
     required this.inquiryId,
@@ -21,6 +22,7 @@ class InquiryModel {
     this.answer,
     this.answeredAt,
     this.isAnswered = false,
+    this.category = '',
   });
 
   // 🔹 Firestore → Model
@@ -39,6 +41,7 @@ class InquiryModel {
           ? (data['answeredAt'] as Timestamp).toDate()
           : null,
       isAnswered: data['isAnswered'] ?? false,
+      category: data['category'] ?? '',
     );
   }
 
@@ -53,6 +56,7 @@ class InquiryModel {
       'answer': answer,
       'answeredAt': answeredAt,
       'isAnswered': isAnswered,
+      'category': category,
     };
   }
 }
