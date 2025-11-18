@@ -526,7 +526,6 @@ Future<void> _ensureChatRoomExists() async {
   }
 
   
-
   // [결제 요청] 메세지 보내기
 
   Future<void> _sendPaymentRequestMessage() async {
@@ -564,6 +563,121 @@ Future<void> _ensureChatRoomExists() async {
       Fluttertoast.showToast(msg: '결제 요청 메시지를 보내는 중 오류가 발생했어요.');
     }
   }
+
+  // [결제 완료] 메세지 보내기
+  Future<void> _sendPaymentCompleteMessage() async {
+    await _ensureChatRoomExists();
+
+    final senderId = _myUid ?? 'unknown';
+
+    try {
+      await _db
+          .collection('chats')
+          .doc(_chatRoomId)
+          .collection('messages')
+          .add({
+        'senderId': senderId,
+        'text': null,                 // 텍스트는 사용 안 함
+        'imageUrl': null,             // 이미지 URL도 없음
+        'createdAt': FieldValue.serverTimestamp(),
+        'type': 'payment_complete',   
+        'paymentAmount': _requestPrice, 
+      });
+
+      await _db.collection('chats').doc(_chatRoomId).update({
+        'participants': [_myUid, _requesterUid],
+        'lastMessage': '결제가 완료되었습니다.',
+        'lastSenderId': senderId,
+        'lastTimestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('결제 완료 메시지 전송 오류: $e');
+      Fluttertoast.showToast(msg: '결제 완료 메시지를 보내는 중 오류가 발생했어요.');
+    }
+  }
+
+  // [결제 완료] 메세지 내용
+  Widget _buildPaymentCompleteCard(Message msg, bool isMe) {
+    final amount = msg.paymentAmount ?? _requestPrice;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF4E0), // 연한 주황 느낌
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFCC80), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              // 앵무새 아이콘
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Center(
+                  child: Image.asset(
+                    'assets/icons/parrot.png',
+                    width: 26,
+                    height: 26,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                '송금 완료',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '${amount}원을 보냈어요.',
+            style: const TextStyle(fontSize: 14),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            '상대방과의 거래를 마무리해주세요.',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 36,
+            child: ElevatedButton(
+              onPressed: () {
+                // TODO: 결제 내역 페이지로 이동하거나, 나중에 사용
+                Fluttertoast.showToast(msg: '이용내역 보기(추후 구현 예정)');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF9800),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                '이용내역 보기',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
 
   // ===========================================================================
@@ -776,12 +890,13 @@ Future<void> _ensureChatRoomExists() async {
               child: const Text('취소', style: TextStyle(color: Colors.black)),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async{
                 Navigator.pop(context);
                 // ===========================================
                 // TODO: 결제 처리 로직 추가 (포인트 차감 등)
                 // ===========================================
                 Fluttertoast.showToast(msg: '결제가 완료되었습니다!');
+                await _sendPaymentCompleteMessage();
               },
               style: TextButton.styleFrom(
                 backgroundColor: Colors.lightGreen, // lightGreen[200]은 materialColor이므로 바로 사용 가능
@@ -1016,54 +1131,60 @@ Future<void> _ensureChatRoomExists() async {
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
                       return const Center(child: CircularProgressIndicator());
-                      }
-                      
-                      final docs = snapshot.data!.docs;
-                      return ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: docs.length,
-                        itemBuilder: (context, index) {
-                          final msg = Message.fromDoc(docs[index]);
-                          final isMe = msg.senderId == (_myUid ?? 'dummy_me');
-                          
-                    return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
-                        // 열 [프로필, 메세지]
-                        child: Row(
+                    }
+
+                    final docs = snapshot.data!.docs;
+
+                    return ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: docs.length,
+                      itemBuilder: (context, index) {
+                        final msg = Message.fromDoc(docs[index]);
+                        final isMe = msg.senderId == (_myUid ?? 'dummy_me');
+
+                        // ★ 결제 완료 카드
+                        if (msg.isPaymentComplete) {
+                          return _buildPaymentCompleteCard(msg, isMe);
+                        }
+
+                        // ★ 일반 말풍선
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 2.0, horizontal: 4.0),
+                          child: Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             mainAxisAlignment:
                                 isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                                children: [
-                                    if(isMe) Text((msg.createdAt).toKoreanAMPM(), style: TextStyle(fontSize: 10, color: Colors.grey)),
-                                    if(!isMe) _buildAvatar(loginProfile: false),
-                                    _buildBubble(context, msg, isMe),
-
-                                    if(!isMe) Text((msg.createdAt).toKoreanAMPM(), style: TextStyle(fontSize: 10, color: Colors.grey)),
-                                    // if (isMe) const SizedBox(width: 36),
-/*
-                          final msg = Message.fromDoc(docs[index]);
-                          final isMe = msg.senderId == (_myUid ?? 'dummy_me');
-                          
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              mainAxisAlignment:
-                              isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                              children: [
-                                if (!isMe) _buildAvatar(isMe: false),
-                                _buildBubble(msg, isMe),
-*/
-                                ],
-                            ),
-                         );
+                            children: [
+                              if (isMe)
+                                Text(
+                                  (msg.createdAt).toKoreanAMPM(),
+                                  style: const TextStyle(
+                                      fontSize: 10, color: Colors.grey),
+                                ),
+                              if (!isMe) _buildAvatar(loginProfile: false),
+                              // Flexible 추가 (줄 내림)
+                              Flexible(
+                                child: _buildBubble(context, msg, isMe),
+                              ),
+                              //_buildBubble(context, msg, isMe),
+                              if (!isMe)
+                                Text(
+                                  (msg.createdAt).toKoreanAMPM(),
+                                  style: const TextStyle(
+                                      fontSize: 10, color: Colors.grey),
+                                ),
+                            ],
+                          ),
+                        );
                       },
                     );
                   },
                 ),
               ),
             ),
+
 
             // 입력창
             SafeArea( // 하단바 등을 피해서 배치

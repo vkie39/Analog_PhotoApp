@@ -81,7 +81,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               return ChatCard(
                 chatRoom: room,
                 // 채팅방 클릭 시 처리
-                onTap: () {
+                /* 구버전 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -104,14 +104,14 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       )
                     )
                   );
-                }
+                }*/
                       // -----------------------------------------------------
                       // 함 수정
                       // 가짜 데이터(request) 만들어서 넘기던 방식 
                       // -> chat에 저장된 requestId로 request 모델 검색해서 넘김
                       // -----------------------------------------------------
                                       
-                /*onTap: () async {
+                onTap: () async {
                     dev.log('🔥 room.requestId = ${room.requestId}');  
                     try {
                       // 1) requestId로 해당 의뢰글 Firestore에서 조회
@@ -149,7 +149,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       );
                       dev.log('의뢰 정보 오류 : ${e}');
                     }
-                }, */
+                }, 
               );
             },
           );

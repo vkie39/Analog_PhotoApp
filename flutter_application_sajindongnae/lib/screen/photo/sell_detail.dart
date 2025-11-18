@@ -1,11 +1,17 @@
 import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+
 import 'package:flutter_application_sajindongnae/screen/post/report.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/sell_write.dart';
+import 'package:flutter_application_sajindongnae/screen/chat/chat_image_viewer.dart';
+import 'package:flutter_application_sajindongnae/screen/mypage/mypage.dart';
+
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_application_sajindongnae/models/photo_trade_model.dart';
 import 'package:flutter_application_sajindongnae/services/photo_trade_service.dart';
+import 'package:flutter_application_sajindongnae/services/image_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 /// appBar 버튼에서 어떤 메뉴를 선택했는지 구분하기 위한 enum
@@ -68,6 +74,230 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
   }
 
 
+
+ // =========================================================================== 
+ // 결제 확인 다이얼로그 (구매하기 버튼 누르면 뜸 -> 취소, 확인 버튼 있음)
+ // ===========================================================================
+
+  void _showPaymentDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          backgroundColor: Colors.white,
+          title: const Text(
+            '구매 확인',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: Text('사진을 구매하시겠습니까?'),
+          actionsPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context), // 취소 버튼
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.grey[300], // 밝은 회색
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
+              child: const Text('취소', style: TextStyle(color: Colors.black)),
+            ),
+            TextButton(
+              onPressed: () async{
+                Navigator.pop(context);
+                await _handlePurchase(photo);
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.lightGreen, // lightGreen[200]은 materialColor이므로 바로 사용 가능
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
+              child: const Text('확인', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+
+ // =========================================================================== 
+ // 결제 완료 후 띄울 바텀 시트 (결제 성공시 -> 확인/마이페이지로 이동 버튼 있음)
+ // ===========================================================================
+
+  void _showPaymentBottomSheet(int newBuyerBalanceBill) {
+    showModalBottomSheet(
+      context: context,
+      // 위쪽만 둥글게
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      backgroundColor: Colors.white,
+      isScrollControlled: false, // 필요하면 true로 조절 가능
+      builder: (_) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min, // 내용만큼만 높이 차지
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 텍스트 영역
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min, // 내용만큼만 높이 차지
+                  crossAxisAlignment: CrossAxisAlignment.start,  // 왼쪽 정렬
+                  children: [
+                    // 1. 안내 문구 영역
+                    const Text(
+                      '사진 구매 완료',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '구매한 사진은 마이페이지에서 확인할 수 있습니다.',
+                      textAlign: TextAlign.start,
+                    ),
+                    const SizedBox(height: 10),
+                    Container(width: double.infinity, height: 0.8, color: Colors.grey[300],),  // 아주 연한 회색
+                    const SizedBox(height: 10),
+                    
+                    // 2. 구매한 사진 정보 영역
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 구매한 사진 (정사각형 미니 썸네일)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(0),
+                          child: SizedBox(
+                            width: 60,
+                            height: 60,
+                            child: Image.network(
+                              photo.imageUrl, // 또는 photo.imageUrl
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+
+                        // 판매글 제목과 가격
+                        Column(
+                          mainAxisSize: MainAxisSize.min, // 내용만큼만 높이 차지
+                          crossAxisAlignment: CrossAxisAlignment.start,  // 왼쪽 정렬
+                          children: [
+                            Text(
+                              photo.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${photo.price}원',
+                              style: const TextStyle(
+                                //color: Colors.grey,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Container(width: double.infinity, height: 0.8, color: Colors.grey[300],),  // 아주 연한 회색
+                    const SizedBox(height: 10),
+
+                    // 3. 거래 후 잔액 표시 영역
+                    Text(
+                          '거래 후 잔액 : ${newBuyerBalanceBill}원',
+                          style: const TextStyle(
+                            //color: Colors.grey,
+                            fontSize: 14,
+                          ),
+                        ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // 버튼 1: 마이페이지로 이동 (가로 꽉 채우기)
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () {
+                    // 바텀시트 닫기
+                    Navigator.pop(context);
+                    // 마이페이지로 이동
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => MyPageScreen(),
+                      ),
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.grey[300],
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text(
+                    '마이페이지로 이동',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // 버튼 2: 확인 (가로 꽉 채우기)
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // 바텀시트만 닫기
+                  },
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.lightGreen,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text(
+                    '확인',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+  
+
+
+
   Future<void> _handlePurchase(PhotoTradeModel photo) async {
     final buyer = FirebaseAuth.instance.currentUser; // 현재 로그인 = 구매자
     if (buyer == null) {
@@ -89,6 +319,9 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
       );
       return;
     }
+    
+    // 거래 후 잔액을 보여주기 위한 변수
+    int? newBuyerBalanceBill;
 
     if (photo.id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -116,6 +349,8 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
     FirebaseFirestore.instance.collection('users').doc(sellerUid);
     final tradeRef =
     FirebaseFirestore.instance.collection('photo_trades').doc(photo.id);
+
+    
 
     try {
       await FirebaseFirestore.instance.runTransaction((tx) async {
@@ -177,6 +412,10 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
           },
         });
 
+        // 3-1) 구매자 측 포인트 차감 완료시 (잔액을 표시하기 위한 변수에 newBuyerBalance저장)
+        newBuyerBalanceBill = newBuyerBalance;
+        dev.log(' 3-1 완료 ');
+
         // 4) 판매자 포인트 적립 (set + merge 로 문서 없어도 생성)
         tx.set(
           sellerRef,
@@ -200,10 +439,22 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
         });
       });
 
-      // 트랜잭션 성공
-      ScaffoldMessenger.of(context).showSnackBar(
+      // 트랜잭션 성공 -> 이거 대신 바텀 시트 넣었습니다.
+    /*  ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('구매가 완료되었습니다.')),
-      );
+      );*/ 
+      dev.log('트랜잭션 성공');
+      
+      // 거래 성공시 결제 완료에 대한 BottomSheet(안내문구, 구매한 사진 정보, 마이페이지로 이동 버튼 등) 띄움
+      // 거래 후 잔액이 계산되어 있다면 BottomSheet 띄우기
+      if (newBuyerBalanceBill != null) {
+        dev.log('바텀 시트 보여줄 수 있도록 준비 완료');
+        _showPaymentBottomSheet(newBuyerBalanceBill!);
+      }
+      dev.log('바텀 시트 보여주기 완료');
+
+
+
     } catch (e) {
       final msg = e.toString();
       if (msg.contains('INSUFFICIENT_POINT')) {
@@ -486,73 +737,77 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
           bottomNavigationBar: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 18),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // 좋아요 + 가격 영역
+                // 왼쪽: 좋아요
                 Row(
-                children: [
-          // 좋아요 버튼
-          IconButton(
-            icon: Icon(
-              isLiked ? Icons.favorite : Icons.favorite_border,size: 30,
-              color: isLiked
-                  ? const Color.fromARGB(255, 102, 204, 105)   // 좋아요 색상 (HEAD 유지)
-                  : const Color.fromARGB(255, 161, 161, 161),  // 기본색
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        isLiked ? Icons.favorite : Icons.favorite_border,
+                        size: 30,
+                        color: isLiked
+                            ? const Color.fromARGB(255, 102, 204, 105)
+                            : const Color.fromARGB(255, 161, 161, 161),
+                      ),
+                      onPressed: () async {
+                        if (photo.id == null) return;
+                        try {
+                          await _photoTradeService.toggleLike(photo.id!, currentUserUid);
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('좋아요 처리 중 오류가 발생했습니다.'),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                    Text(
+                      '$likeCount',
+                      style: const TextStyle(fontSize: 16, color: Colors.black),
+                    ),
+                  ],
+                ),
+
+                // 중간 여백 = 오른쪽으로 밀어내기
+                const Spacer(),
+
+                // 오른쪽: 가격 + 구매 버튼 (일렬 가로 배치)
+                Row(
+                  mainAxisSize: MainAxisSize.min, // 필요한 만큼만 차지
+                  children: [
+                    // 가격
+                    Text(
+                      '${photo.price} 원',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // 구매 버튼
+                    ElevatedButton(
+                      onPressed: () async {
+                        dev.log('구매하기 버튼 클릭됨');
+                        _showPaymentDialog(); // 이후에 _handlePurchase(photo) 넣으면 됨
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFDDECC7),
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                      ),
+                      child: const Text('구매하기'),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            onPressed: () async {
-              if (photo.id == null) return;
-
-              try {
-                await _photoTradeService.toggleLike(
-                    photo.id!, currentUserUid);
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('좋아요 처리 중 오류가 발생했습니다.')),
-                );
-              }
-            },
           ),
-
-          const SizedBox(width: 6),
-
-          // 좋아요 개수
-          Text(
-            '$likeCount',
-            style: const TextStyle(fontSize: 16, color: Colors.black),
-          ),
-
-          const SizedBox(width: 14),
-
-          // 가격
-          Text(
-            '${photo.price} 원',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-
-      // 구매 버튼
-      ElevatedButton(
-        onPressed: () async {
-          dev.log('구매하기 버튼 클릭됨');
-          await _handlePurchase(photo);
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFDDECC7), // HEAD 색상 유지
-          foregroundColor: Colors.black,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        child: const Text('구매하기'),
-      ),
-    ],
-  ),
-),
         );
       },
     );
