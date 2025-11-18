@@ -318,7 +318,6 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
           .add(messageData);
 
       await _db.collection('chats').doc(_chatRoomId).update({
-        'participants': [_myUid, _requesterUid],
         'lastMessage': text,
         'lastSenderId': senderId,
         'lastTimestamp': FieldValue.serverTimestamp(),
@@ -547,7 +546,6 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
       });
 
       await _db.collection('chats').doc(_chatRoomId).update({
-        'participants': [_myUid, _requesterUid],
         'lastMessage': text,
         'lastSenderId': senderId,
         'lastTimestamp': FieldValue.serverTimestamp(),
@@ -582,7 +580,6 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
       });
 
       await _db.collection('chats').doc(_chatRoomId).update({
-        'participants': [_myUid, _requesterUid],
         'lastMessage': '결제가 완료되었습니다.',
         'lastSenderId': senderId,
         'lastTimestamp': FieldValue.serverTimestamp(),
