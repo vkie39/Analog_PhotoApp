@@ -961,12 +961,14 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
         });
       }
 
+
       // 최신 잔액 다시 불러오기
       await _loadMyPoint();
       // 결제 완료 메시지 전송 (채팅용)
       await _sendPaymentCompleteMessage();
 
       //Fluttertoast.showToast(msg: '결제가 완료되었습니다!');
+
     } catch (e) {
       debugPrint('결제 처리 실패: $e');
       if (e.toString().contains('잔액이 부족')) {

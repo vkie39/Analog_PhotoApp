@@ -202,9 +202,29 @@ class _PhotoSellScreenState extends State<PhotoSellScreen>
                           side: const BorderSide(color: Color(0xFFBBD18B), width: 1),
                         ),
                         onDeleted: () {
+
+                          final removedTag = tags[index];
                           setState(() {
                             tags.removeAt(index);
                             _selectedTags.remove(tag);
+
+                             // 검색 상태(_searchTagState)에서도 제거
+                             // 2) 기존 multiTags를 깊은 복사(Deep Copy)
+                             final newMulti = <String, Set<String>>{};
+                             _searchTagState.multiTags.forEach((key, value) {
+                              newMulti[key] = Set<String>.from(value);  // 불변 → 변경 가능
+                              });
+                              // 3) 복사된 데이터에서 해당 태그 제거
+                              newMulti.updateAll((key, value) {
+                                value.remove(removedTag);
+                                return value;
+                                });
+                                // 4) 빈 Set은 제거
+                                newMulti.removeWhere((key, value) => value.isEmpty);
+                                // 5) 새로운 상태로 업데이트
+                                _searchTagState = SelectedTagState(
+                                  singleTags: _searchTagState.singleTags, // 그대로 유지
+                                  multiTags: newMulti, );
                           });
                         },
                         deleteIcon: const Icon(Icons.close, color: Colors.white, size: 18),
@@ -241,7 +261,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen>
                   children: [
                     // 판매 탭
                     StreamBuilder<List<PhotoTradeModel>>(
-                      stream: _photoTradeService.getPhotoTrades(limit: 30),
+                      stream: _photoTradeService.searchTradeByTags(_searchTagState),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return const Center(child: CircularProgressIndicator());
