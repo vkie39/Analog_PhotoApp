@@ -144,6 +144,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               centerTitle: true,
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
+              surfaceTintColor: Colors.transparent,
               elevation: 0.5,
 
               actions: [

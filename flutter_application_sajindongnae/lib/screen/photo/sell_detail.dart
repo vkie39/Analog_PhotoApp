@@ -36,8 +36,10 @@ class SellDetailScreen extends StatefulWidget {
 class _SellDetailScreenState extends State<SellDetailScreen> {
   final PhotoTradeService _photoTradeService = PhotoTradeService();
   final ImageService _imageService = ImageService();
+
   PhotoTradeModel get photo => widget.photo;
   String get currentUserUid => widget.currentUserUid;
+
 
   late Future<UserModel?> _authorFuture;
   String? currentUserProfileImageUrl;
@@ -64,7 +66,50 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
       currentUserProfileImageUrl = url;
     });
   }
+//   // 작성자(현재 로그인한 유저) 프로필 이미지 URL
+//   String? currentUserProfileImageUrl;
 
+//   // Firebase Storage URL 네트워크 이미지 전용 빌더
+//   Widget _buildNetworkImage(String url) {
+//     // 잘못된 URL(file:///, 빈 문자열 등) 방어
+//     if (url.isEmpty || url.startsWith('file:///')) {
+//       return Container(
+//         height: 300,
+//         color: const Color(0xFFF2F2F2),
+//         alignment: Alignment.center,
+//         child: const Icon(Icons.broken_image, size: 48, color: Colors.grey),
+//       );
+//     }
+
+//     final fallback = Container(
+//       color: const Color(0xFFF2F2F2),
+//       alignment: Alignment.center,
+//       height: 300,
+//       child: const Icon(Icons.broken_image, size: 48, color: Colors.grey),
+//     );
+
+//     return Image.network(
+//       url,
+//       fit: BoxFit.cover,
+//       width: double.infinity,
+//       loadingBuilder: (context, child, progress) {
+//         if (progress == null) return child;
+//         final total = progress.expectedTotalBytes;
+//         final loaded = progress.cumulativeBytesLoaded;
+//         return SizedBox(
+//           height: 300,
+//           child: Center(
+//             child: CircularProgressIndicator(
+//               value: total != null ? loaded / total : null,
+//             ),
+//           ),
+//         );
+//       },
+//       errorBuilder: (_, __, ___) => fallback,
+//     );
+//   }
+
+// >>>>>>> 9c16cbd4a9e9ffe633c043a759ee3ad522a83a62
   // 사진 위에 중앙 워터마크 한 번만 찍는 빌더
   Widget _waterMarkedImage(String url) {
     return LayoutBuilder(
@@ -108,6 +153,35 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
     );
   }
 
+//   // 현재 로그인 유저 프로필 사진 URL 가져오기
+//   Future<String?> _getCurrentUserProfileImage() async {
+//     final uid = FirebaseAuth.instance.currentUser?.uid;
+//     if (uid == null) return null;
+
+//     final doc =
+//     await FirebaseFirestore.instance.collection('users').doc(uid).get();
+
+//     return doc.data()?['profileImageUrl'] as String?;
+//   }
+
+//   // State에 프로필 URL 세팅
+//   Future<void> _loadCurrentUserProfile() async {
+//     final url = await _getCurrentUserProfileImage();
+//     if (!mounted) return;
+//     setState(() {
+//       currentUserProfileImageUrl = url;
+//     });
+//   }
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     // 예전: _authorFuture = UserService.getUserByUid(photo.uid);  ❌
+//     // 지금은 현재 로그인 유저 프로필만 로드
+//     _loadCurrentUserProfile();
+//   }
+
+// >>>>>>> 9c16cbd4a9e9ffe633c043a759ee3ad522a83a62
 
 
   String formatRelativeDate(DateTime createdAt) {
