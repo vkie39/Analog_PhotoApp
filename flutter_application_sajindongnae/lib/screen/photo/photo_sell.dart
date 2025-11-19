@@ -52,6 +52,52 @@ class _PhotoSellScreenState extends State<PhotoSellScreen>
     super.dispose();
   }
 
+  // 사진 위에 중앙 워터마크 한 번만 찍는 빌더
+  Widget _waterMarkedImage({
+    required String imageUrl,
+    required String nickname,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 화면 너비 기준으로 글자 크기 계산
+        final double baseWidth = constraints.maxWidth;
+
+        // 너무 크지 않게 적당히 조절 (예: 10% 정도)
+        final double fontSize = (baseWidth * 0.10).clamp(16.0, 30.0);
+
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            // 원본 비율 유지하면서 가로 꽉 채우기
+            Image.network(
+              imageUrl,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+            // 중앙 워터마크 텍스트
+            Text(
+              '$nickname \n사진동네',   // 🔥 줄바꿈 들어간 버전
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.bold,
+                color: Colors.white.withOpacity(0.35),
+                shadows: [
+                  Shadow(
+                    blurRadius: 4,
+                    offset: const Offset(1, 1),
+                    color: Colors.black.withOpacity(0.5),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -156,9 +202,29 @@ class _PhotoSellScreenState extends State<PhotoSellScreen>
                           side: const BorderSide(color: Color(0xFFBBD18B), width: 1),
                         ),
                         onDeleted: () {
+
+                          final removedTag = tags[index];
                           setState(() {
                             tags.removeAt(index);
                             _selectedTags.remove(tag);
+
+                             // 검색 상태(_searchTagState)에서도 제거
+                             // 2) 기존 multiTags를 깊은 복사(Deep Copy)
+                             final newMulti = <String, Set<String>>{};
+                             _searchTagState.multiTags.forEach((key, value) {
+                              newMulti[key] = Set<String>.from(value);  // 불변 → 변경 가능
+                              });
+                              // 3) 복사된 데이터에서 해당 태그 제거
+                              newMulti.updateAll((key, value) {
+                                value.remove(removedTag);
+                                return value;
+                                });
+                                // 4) 빈 Set은 제거
+                                newMulti.removeWhere((key, value) => value.isEmpty);
+                                // 5) 새로운 상태로 업데이트
+                                _searchTagState = SelectedTagState(
+                                  singleTags: _searchTagState.singleTags, // 그대로 유지
+                                  multiTags: newMulti, );
                           });
                         },
                         deleteIcon: const Icon(Icons.close, color: Colors.white, size: 18),
@@ -195,7 +261,7 @@ class _PhotoSellScreenState extends State<PhotoSellScreen>
                   children: [
                     // 판매 탭
                     StreamBuilder<List<PhotoTradeModel>>(
-                      stream: _photoTradeService.getPhotoTrades(limit: 30),
+                      stream: _photoTradeService.searchTradeByTags(_searchTagState),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return const Center(child: CircularProgressIndicator());
@@ -225,9 +291,9 @@ class _PhotoSellScreenState extends State<PhotoSellScreen>
                                   children: [
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(5),
-                                      child: Image.network(
-                                        photo.imageUrl,
-                                        fit: BoxFit.cover,
+                                      child: _waterMarkedImage(
+                                        imageUrl: photo.imageUrl,
+                                        nickname: photo.nickname,   // PhotoTradeModel에 있는 닉네임 필드
                                       ),
                                     ),
                                     const SizedBox(height: 2),

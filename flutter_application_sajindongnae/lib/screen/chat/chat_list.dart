@@ -29,6 +29,13 @@ class _ChatListScreenState extends State<ChatListScreen> {
   Widget build(BuildContext context) {
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
 
+    // 로그인 안 되어 있으면 방어
+    if (currentUid == null) {
+      return const Scaffold(
+        body: Center(child: Text('로그인이 필요합니다.')),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -77,6 +84,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
               return ChatCard(
                 chatRoom: room,
+                currentUserUid: currentUid,
                 onTap: () async {
                   try {
                     // 1) requestId로 해당 의뢰글 Firestore에서 조회
