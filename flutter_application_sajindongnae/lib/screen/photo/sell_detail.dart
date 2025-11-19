@@ -39,71 +39,53 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
   PhotoTradeModel get photo => widget.photo;
   String get currentUserUid => widget.currentUserUid;
 
-
- // late Future<UserModel?> _authorFuture;
-
+  late Future<UserModel?> _authorFuture;
   String? currentUserProfileImageUrl;
 
+  @override
+  void initState() {
+    super.initState();
+    // 판매글 작성자 정보 가져오기
+    _authorFuture = UserService.getUserByUid(photo.uid);
 
-  // Firebase Storage URL 네트워크 이미지 전용 빌더
-  Widget _buildNetworkImage(String url) {
-    // 잘못된 URL(file:///, 빈 문자열 등) 방어
-    if (url.isEmpty || url.startsWith('file:///')) {
-      return Container(
-        height: 300,
-        color: const Color(0xFFF2F2F2),
-        alignment: Alignment.center,
-        child: const Icon(Icons.broken_image, size: 48, color: Colors.grey),
-      );
-    }
-
-    final fallback = Container(
-      color: const Color(0xFFF2F2F2),
-      alignment: Alignment.center,
-      height: 300,
-      child: const Icon(Icons.broken_image, size: 48, color: Colors.grey),
-    );
-
-    return Image.network(
-      url,
-      fit: BoxFit.cover,
-      width: double.infinity,
-      loadingBuilder: (context, child, progress) {
-        if (progress == null) return child;
-        final total = progress.expectedTotalBytes;
-        final loaded = progress.cumulativeBytesLoaded;
-        return SizedBox(
-          height: 300,
-          child: Center(
-            child: CircularProgressIndicator(
-              value: total != null ? loaded / total : null,
-            ),
-          ),
-        );
-      },
-      errorBuilder: (_, __, ___) => fallback,
-    );
+    // 현재 유저 프로필 로드
+    _loadCurrentUserProfile();
   }
 
+  Future<void> _loadCurrentUserProfile() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final url = doc.data()?['profileImageUrl'] as String?;
+
+    setState(() {
+      currentUserProfileImageUrl = url;
+    });
+  }
 
   // 사진 위에 중앙 워터마크 한 번만 찍는 빌더
   Widget _waterMarkedImage(String url) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 화면 너비 기준으로 글자 크기 계산
         final double baseWidth = constraints.maxWidth;
         final double fontSize = (baseWidth * 0.6).clamp(16.0, 80.0);
 
         return Stack(
           alignment: Alignment.center,
           children: [
-            // 원본 비율 유지하면서 가로 꽉 채우기
             Image.network(
               url,
               width: double.infinity,
               fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: const Color(0xFFF2F2F2),
+                height: 300,
+                alignment: Alignment.center,
+                child: const Icon(Icons.broken_image, size: 48, color: Colors.grey),
+              ),
             ),
-            // 중앙 워터마크 텍스트
             Text(
               '${photo.nickname} \n사진동네',
               textAlign: TextAlign.center,
@@ -124,33 +106,9 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
         );
       },
     );
-
-  Future<String?> _getCurrentUserProfileImage() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return null;
-    final doc =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    return doc.data()?['profileImageUrl'] as String?;
-
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // photo.uid = 이 판매글을 올린 유저의 uid
-    _authorFuture = UserService.getUserByUid(photo.uid);
   }
 
 
-    _loadCurrentUserProfile();
-  }
-
-  Future<void> _loadCurrentUserProfile() async {
-    final url = await _getCurrentUserProfileImage();
-    setState(() {
-      currentUserProfileImageUrl = url; // 이제 여기서 오류 안 남
-    });
-  }
 
   String formatRelativeDate(DateTime createdAt) {
     final now = DateTime.now();
@@ -768,27 +726,37 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                 itemBuilder: (context) {
                   if (isOwner) {
                     return const [
-                      PopupMenuItem(
+                      PopupMenuItem<MoreAction>(
                         value: MoreAction.edit,
-                        child: Text(
-                          '수정하기',
-                          style: TextStyle(color: Colors.black, fontSize: 10),
+                        padding: EdgeInsets.zero,
+                        height: 30,
+                        child: Center(
+                          child: Text(
+                            '수정하기',
+                            style: TextStyle(color: Colors.black, fontSize: 14),
+                          ),
                         ),
                       ),
                       PopupMenuDivider(height: 5),
-                      PopupMenuItem(
+                      PopupMenuItem<MoreAction>(
                         value: MoreAction.delete,
-                        child: Text('삭제하기'),
+                        padding: EdgeInsets.zero,
+                        height: 30,
+                        child: Center(
+                          child: Text(
+                            '삭제하기',
+                            style: TextStyle(color: Colors.black, fontSize: 14),
+                          ),
+                        ),
                       ),
                     ];
                   } else {
-                    return [
+                    return const [
                       PopupMenuItem<MoreAction>(
                         value: MoreAction.report,
-                        padding: EdgeInsets.zero, // 기본 좌측 패딩 제거
+                        padding: EdgeInsets.zero,
                         height: 30,
                         child: Center(
-                          // Center로 감싸서 가로 중앙 정렬
                           child: Text(
                             '신고하기',
                             style: TextStyle(color: Colors.black, fontSize: 14),
@@ -810,53 +778,7 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                   width: double.infinity,
                   child: _waterMarkedImage(photo.imageUrl),
                 ),
-/*
-                const SizedBox(height: 10),
 
-                // 작가 정보 (users 컬렉션에서 프로필/닉네임 조회)
-                FutureBuilder<UserModel?>(
-                  future: _authorFuture,
-                  builder: (context, snapshot) {
-                    // photo에 들어있는 닉네임은 기본값으로 사용
-                    String nickname = photo.nickname;
-                    String? profileUrl;
-
-                    if (snapshot.hasData) {
-                      final user = snapshot.data!;
-                      // user에 닉네임이 있으면 그걸 우선
-                      nickname = user.nickname.isNotEmpty
-                          ? user.nickname
-                          : nickname;
-                      profileUrl = user.profileImageUrl;
-                    }
-
-                    final bool hasValidProfile = profileUrl != null &&
-                        profileUrl.isNotEmpty &&
-                        profileUrl.startsWith('http');
-
-                    return ListTile(
-                      leading: CircleAvatar(
-                        radius: 20,
-                        backgroundColor: Colors.grey.shade200,
-                        backgroundImage:
-                            hasValidProfile ? NetworkImage(profileUrl!) : null,
-                        child: hasValidProfile
-                            ? null
-                            : const Icon(
-                                Icons.person,
-                                color: Colors.grey,
-                              ),
-                      ),
-                      title: Text(
-                        nickname,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    );
-                  },
-*/
                 const SizedBox(height: 2),
 
                 // 4. 작가 프로필
@@ -949,41 +871,6 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                     vertical: 4,
                   ),
                   child: Text(
-/*
-                    formattedDate,
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                ),
-
-                // 태그들
-                if (tags.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: tags.map((tag) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: ActionChip(
-                              label: Text(tag),
-                              backgroundColor: Colors.white,
-                              labelStyle: const TextStyle(
-                                color: Colors.black87,
-                              ),
-                              side: const BorderSide(
-                                color: Color(0xFFE0E0E0),
-                                width: 1,
-                              ),
-                              onPressed: () {},
-                            ),
-                          );
-                        }).toList(),
-                      ),
-*/
                     formatRelativeDate(photo.createdAt),
                     style: const TextStyle(
                       color: Color.fromARGB(255, 139, 139, 139),
@@ -1169,60 +1056,8 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
                         }
                       },
                     ),
-                    Text(
-                      '$likeCount',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black,
-                      ),
-                    ),
                   ],
                 ),
-
-                const Spacer(),
-
-                // 오른쪽: 가격 + 구매/다운로드 버튼
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${photo.price} 원',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      onPressed: () async {
-                        if (canDownload) {
-                          dev.log('다운로드 버튼 클릭됨');
-                          await _downloadPhoto(photo);
-                        } else {
-                          dev.log('구매하기 버튼 클릭됨');
-                          _showPaymentDialog();
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: canDownload
-                            ? Colors.lightGreen // 이미 구매 → 다운로드
-                            : const Color(0xFFDDECC7), // 구매 전
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 30,
-                          vertical: 12,
-                        ),
-                      ),
-                      child: Text(
-                        canDownload ? '다운로드' : '구매하기',
-                      ),
-                    ),
-                  ],
-                ),
-
               ],
             ),
           ),

@@ -63,7 +63,7 @@ class _InquiryAnswerScreenState extends State<InquiryAnswerScreen> {
         elevation: 0, // 그림자 약간만
       ),
       backgroundColor: Colors.white,
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,7 +76,10 @@ class _InquiryAnswerScreenState extends State<InquiryAnswerScreen> {
             const SizedBox(height: 16),
             Text(widget.inquiry.content, style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 24),
-            const Text('답변 작성', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              '답변 작성',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: _answerController,
@@ -88,11 +91,11 @@ class _InquiryAnswerScreenState extends State<InquiryAnswerScreen> {
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.grey),
+                  borderSide: BorderSide(color: Colors.grey),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.black, width: 1.5), // 클릭 시 검정
+                  borderSide: BorderSide(color: Colors.black, width: 1.5),
                 ),
               ),
             ),
@@ -106,8 +109,10 @@ class _InquiryAnswerScreenState extends State<InquiryAnswerScreen> {
                   return ElevatedButton(
                     onPressed: isEnabled ? _saveAnswer : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isEnabled ? const Color(0xFF84AC57) : Colors.grey,
-                      foregroundColor: isEnabled ? Colors.white : Colors.black54,
+                      backgroundColor:
+                          isEnabled ? const Color(0xFF84AC57) : Colors.grey,
+                      foregroundColor:
+                          isEnabled ? Colors.white : Colors.black54,
                     ),
                     child: const Text('저장'),
                   );
