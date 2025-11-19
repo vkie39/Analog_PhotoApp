@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_application_sajindongnae/component/post_card.dart';
@@ -23,11 +24,46 @@ class _HomeScreenState extends State<HomeScreen>{
   final _bestPageCtrl = PageController(viewportFraction: 0.9);
   int _bestPage = 0;
 
+  Timer? _autoSlideTimer;     //  자동 슬라이드용 타이머
+  int _bestPhotoCount = 0;    //  베스트 사진 개수
+
+  @override
+  void initState(){
+    super.initState();
+    _startAutoSlide();
+  }
+
   @override
   void dispose(){
     _bestPageCtrl.dispose();
+    _autoSlideTimer?.cancel();
     super.dispose();
   }
+
+  // ★ 베스트 사진 자동 슬라이드
+  void _startAutoSlide() {
+    // 혹시 기존 타이머가 있으면 정리
+    _autoSlideTimer?.cancel();
+
+    _autoSlideTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted) return;
+      if (!_bestPageCtrl.hasClients) return;
+      if (_bestPhotoCount <= 1) return; // 사진 1장 이하면 넘길 필요 없음
+
+      final nextPage = (_bestPage + 1) % _bestPhotoCount;
+
+      _bestPageCtrl.animateToPage(
+        nextPage,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOut,
+      );
+
+      setState(() {
+        _bestPage = nextPage;
+      });
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +132,8 @@ class _HomeScreenState extends State<HomeScreen>{
                           }
 
                           final photos = snapshot.data!;
+                          _bestPhotoCount = photos.length;  // 자동 슬라이드용 사진 개수 저장
+
                           if (photos.isEmpty) {
                             return const Padding(
                               padding: EdgeInsets.all(20.0),

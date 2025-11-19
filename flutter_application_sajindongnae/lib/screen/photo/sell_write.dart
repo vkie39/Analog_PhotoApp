@@ -1,4 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:image_editor_plus/image_editor_plus.dart';
+import 'package:image_editor_plus/options.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_sajindongnae/screen/photo/location_select.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -418,7 +422,8 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
   Future<void> _pickImageFromGallery(BuildContext context) async {
     _originalImage = await pickImageFromGallery(context);
     if (_originalImage != null) {
-      await _cropImage(_originalImage!.path);
+      await _openImageEditor(_originalImage!);  // 크롭 + 필터 + 낙서 등 가능
+      //await _cropImage(_originalImage!.path);
       // 크롭 없이 바로 이미지 삽입할 거면 주석처리된 내용으로 하기
       //setState(() {
       //  _cropedImage = _originalImage; // 크롭, 압축 없이 바로 사용
@@ -452,6 +457,67 @@ class _SellWriteScreenState extends State<SellWriteScreen> {
       // await _cropImage(_originalImage!.path);
     } else {
       Fluttertoast.showToast(msg: '파일 선택이 취소되었습니다.');
+    }
+  }
+
+
+  // 사진 편집기(image_editor_plus) 열어서 결과를 _selectedImage에 반영
+  Future<void> _openImageEditor(XFile xfile) async {
+    try {
+      // 1) 원본 이미지 바이트 읽기
+      final bytes = await xfile.readAsBytes();
+
+      // 2) 에디터 화면 띄우기 (crop 옵션 포함)
+      final Uint8List? editedBytes = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ImageEditor(
+            image: bytes,
+            // 필요하면 옵션 추가 (크롭 가능 등)
+            cropOption: const CropOption(
+              reversible: false, // 취소 시 옛날 상태로 되돌리기 여부
+            ),
+            // features: const ImageEditorFeatures(
+            //   crop: true,
+            //   rotate: true,
+            //   flip: true,
+            //   brush: true,
+            //   text: true,
+            //   filters: true,
+            //   emoji: true,
+            // ),
+          ),
+        ),
+      );
+
+      // 3) 사용자가 "완료" 안 누르고 나가면 null
+      if (editedBytes == null) {
+        // 편집 취소 시, 그냥 원본 그대로 쓸 거면 여기서 세팅 가능
+        if (!mounted) return;
+        setState(() {
+          _selectedImage = xfile;
+        });
+        return;
+      }
+
+      // 4) 편집 결과를 임시 파일로 저장
+      final dir = await getTemporaryDirectory();
+      final ext = path.extension(xfile.path).isNotEmpty
+          ? path.extension(xfile.path)
+          : '.jpg';
+      final filePath =
+          '${dir.path}/edited_${DateTime.now().millisecondsSinceEpoch}$ext';
+      final file = File(filePath);
+      await file.writeAsBytes(editedBytes, flush: true);
+
+      // 5) 상태 반영
+      if (!mounted) return;
+      setState(() {
+        _selectedImage = XFile(file.path);
+      });
+    } catch (e, st) {
+      debugPrint('image_editor_plus error: $e\n$st');
+      Fluttertoast.showToast(msg: '사진 편집 중 오류가 발생했습니다.');
     }
   }
 
