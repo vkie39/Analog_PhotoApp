@@ -284,6 +284,7 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                 ),
 
                 const SizedBox(height: 20),
+                /* 컴퓨터 잘 안돌아가는 사람들은 이거 주석 빼고 사용하기
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: SizedBox(
@@ -300,7 +301,56 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                       fit: BoxFit.cover,
                     ),
                   ),
+                ),*/
+                // 컴퓨터 잘 돌아가면 이걸로 쓰기 (반투명 원이 있는 버전)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: SizedBox(
+                    height: 160,
+                    width: double.infinity,
+                    child: GoogleMap(
+                      liteModeEnabled: true, // 👈 StaticMap 느낌 나게 가볍게
+                      initialCameraPosition: CameraPosition(
+                        target: LatLng(
+                          request.position.latitude,
+                          request.position.longitude,
+                        ),
+                        zoom: 12,
+                      ),
+                      onMapCreated: (c) => _requestDetailMapController = c,
+                      myLocationEnabled: false,
+                      myLocationButtonEnabled: false,
+                      zoomControlsEnabled: false,
+                      markers: {
+                        Marker(
+                          markerId: const MarkerId('request_detail'),
+                          position: LatLng(
+                            request.position.latitude,
+                            request.position.longitude,
+                          ),
+                          infoWindow: const InfoWindow(title: '의뢰 위치'),
+                          icon: BitmapDescriptor.defaultMarkerWithHue(
+                            BitmapDescriptor.hueGreen,
+                          ),
+                        ),
+                      },
+                      circles: {
+                        Circle(
+                          circleId: const CircleId('request_circle'),
+                          center: LatLng(
+                            request.position.latitude,
+                            request.position.longitude,
+                          ),
+                          radius: 2500, // 2.5km
+                          fillColor: const Color.fromARGB(54, 116, 235, 106),
+                          strokeColor: const Color.fromARGB(54, 116, 235, 106),
+                          strokeWidth: 1,
+                        ),
+                      },
+                    ),
+                  ),
                 ),
+
               ],
             ),
           ),
@@ -331,119 +381,126 @@ class RequestDetailScreenState extends State<RequestDetailScreen> {
                     ),
                   ],
                 ),
+                const Spacer(),
 
-                Text(
-                  request.status ?? '의뢰중',
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                ElevatedButton(
-                  onPressed: () async {
-                    
-                    dev.log('수락/대화중인 채팅으로 이동하기 버튼 클릭됨');
-
-                    final currentUid =
-                        FirebaseAuth.instance.currentUser?.uid;
-                    if (currentUid == null) return;
-                    /*
-                    // 본인 의뢰면 채팅 리스트를 보여주도록 하고 있기 때문에 불필요
-                    if (isOwner) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('본인 의뢰는 수락할 수 없습니다.'),
-                        ),
-                      );
-                      return;
-                    }   */
-
-                   if(isOwner){
-                      
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ChatListScreen(  
-                          ),
-                        ),
-                      );
-                    }
-                    else{
-                      final db = FirebaseFirestore.instance;
-                      final requesterUid = request.uid;
-
-                      // 항상 동일한 chatRoomId 생성
-                      final sortedIds = [currentUid, requesterUid]..sort();
-                      final chatRoomId = sortedIds.join('_');
-
-                      final chatRef = db.collection('chats').doc(chatRoomId);
-                      final existingChat = await chatRef.get();
-
-                      if (!existingChat.exists) {
-                        // 신규 채팅방 생성
-                        final newChatRoom = ChatRoom(
-                          chatRoomId: chatRoomId,
-                          participants: [currentUid, requesterUid],
-                          requestId: request.requestId,
-                          lastMessage: '',
-                          lastSenderId: '',
-                          lastTimestamp: DateTime.now(),
-                          requesterNickname: request.nickname,
-                          requesterProfileImageUrl: request.profileImageUrl,
-                        );
-
-                        await chatRef.set(newChatRoom.toMap());
-                        dev.log('새 채팅방 생성 완료: $chatRoomId');
-
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ChatDetailScreen(
-                              request: request,
-                              chatRoom: newChatRoom,   // ⭐ 여기!!!!
-                            ),
-                          ),
-                        );
-
-                      } else {
-                        // 기존 채팅방 읽기
-                        final existingRoom =
-                            ChatRoom.fromDoc(existingChat);
-
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ChatDetailScreen(
-                              request: request,
-                              chatRoom: existingRoom,   // ⭐ 정답!
-                            ),
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  style: ButtonStyle(
-                    backgroundColor:
-                        WidgetStateProperty.resolveWith<Color>(
-                      (Set<WidgetState> states) {
-                        if (states.contains(WidgetState.pressed)) {
-                          return const Color.fromARGB(255, 198, 211, 178);
-                        }
-                        return const Color(0xFFDDECC7);
-                      },
-                    ),
-                    shape: WidgetStateProperty.all<
-                        RoundedRectangleBorder>(
-                      RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.0),
+                Row(
+                  children: [
+                    Text(
+                      request.status ?? '의뢰중',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
+
+                    const SizedBox(width: 12),
+
+                  ElevatedButton(
+                    onPressed: () async {
+                      
+                      dev.log('수락/대화중인 채팅으로 이동하기 버튼 클릭됨');
+
+                      final currentUid =
+                          FirebaseAuth.instance.currentUser?.uid;
+                      if (currentUid == null) return;
+                      /*
+                      // 본인 의뢰면 채팅 리스트를 보여주도록 하고 있기 때문에 불필요
+                      if (isOwner) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('본인 의뢰는 수락할 수 없습니다.'),
+                          ),
+                        );
+                        return;
+                      }   */
+
+                      if(isOwner){
+                          
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ChatListScreen(  
+                              ),
+                            ),
+                          );
+                        }
+                        else{
+                          final db = FirebaseFirestore.instance;
+                          final requesterUid = request.uid;
+
+                          // 항상 동일한 chatRoomId 생성
+                          final sortedIds = [currentUid, requesterUid]..sort();
+                          final chatRoomId = sortedIds.join('_');
+
+                          final chatRef = db.collection('chats').doc(chatRoomId);
+                          final existingChat = await chatRef.get();
+
+                          if (!existingChat.exists) {
+                            // 신규 채팅방 생성
+                            final newChatRoom = ChatRoom(
+                              chatRoomId: chatRoomId,
+                              participants: [currentUid, requesterUid],
+                              requestId: request.requestId,
+                              lastMessage: '',
+                              lastSenderId: '',
+                              lastTimestamp: DateTime.now(),
+                              requesterNickname: request.nickname,
+                              requesterProfileImageUrl: request.profileImageUrl,
+                            );
+
+                            await chatRef.set(newChatRoom.toMap());
+                            dev.log('새 채팅방 생성 완료: $chatRoomId');
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ChatDetailScreen(
+                                  request: request,
+                                  chatRoom: newChatRoom,   // ⭐ 여기!!!!
+                                ),
+                              ),
+                            );
+
+                          } else {
+                            // 기존 채팅방 읽기
+                            final existingRoom =
+                                ChatRoom.fromDoc(existingChat);
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ChatDetailScreen(
+                                  request: request,
+                                  chatRoom: existingRoom,   // ⭐ 정답!
+                                ),
+                              ),
+                            );
+                          }
+                        }
+                    },
+                    style: ButtonStyle(
+                      backgroundColor:
+                          WidgetStateProperty.resolveWith<Color>(
+                        (Set<WidgetState> states) {
+                          if (states.contains(WidgetState.pressed)) {
+                            return const Color.fromARGB(255, 198, 211, 178);
+                          }
+                          return const Color(0xFFDDECC7);
+                        },
+                      ),
+                      shape: WidgetStateProperty.all<
+                          RoundedRectangleBorder>(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      isOwner ? '대화중인 채팅' : '수락하기',
+                      style: const TextStyle(color: Colors.black),
+                    ),
                   ),
-                  child: Text(
-                    isOwner ? '대화중인 채팅' : '수락하기',
-                    style: const TextStyle(color: Colors.black),
-                  ),
+                 ],
                 ),
               ],
             ),
