@@ -36,14 +36,12 @@ class SellDetailScreen extends StatefulWidget {
 class _SellDetailScreenState extends State<SellDetailScreen> {
   final PhotoTradeService _photoTradeService = PhotoTradeService();
   final ImageService _imageService = ImageService();
+
   PhotoTradeModel get photo => widget.photo;
   String get currentUserUid => widget.currentUserUid;
 
-
- // late Future<UserModel?> _authorFuture;
-
+  // 작성자(현재 로그인한 유저) 프로필 이미지 URL
   String? currentUserProfileImageUrl;
-
 
   // Firebase Storage URL 네트워크 이미지 전용 빌더
   Widget _buildNetworkImage(String url) {
@@ -85,7 +83,6 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
     );
   }
 
-
   // 사진 위에 중앙 워터마크 한 번만 찍는 빌더
   Widget _waterMarkedImage(String url) {
     return LayoutBuilder(
@@ -124,33 +121,37 @@ class _SellDetailScreenState extends State<SellDetailScreen> {
         );
       },
     );
+  }
 
+  // 현재 로그인 유저 프로필 사진 URL 가져오기
   Future<String?> _getCurrentUserProfileImage() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return null;
-    final doc =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    return doc.data()?['profileImageUrl'] as String?;
 
+    final doc =
+    await FirebaseFirestore.instance.collection('users').doc(uid).get();
+
+    return doc.data()?['profileImageUrl'] as String?;
+  }
+
+  // State에 프로필 URL 세팅
+  Future<void> _loadCurrentUserProfile() async {
+    final url = await _getCurrentUserProfileImage();
+    if (!mounted) return;
+    setState(() {
+      currentUserProfileImageUrl = url;
+    });
   }
 
   @override
   void initState() {
     super.initState();
-    // photo.uid = 이 판매글을 올린 유저의 uid
-    _authorFuture = UserService.getUserByUid(photo.uid);
-  }
-
-
+    // 예전: _authorFuture = UserService.getUserByUid(photo.uid);  ❌
+    // 지금은 현재 로그인 유저 프로필만 로드
     _loadCurrentUserProfile();
   }
 
-  Future<void> _loadCurrentUserProfile() async {
-    final url = await _getCurrentUserProfileImage();
-    setState(() {
-      currentUserProfileImageUrl = url; // 이제 여기서 오류 안 남
-    });
-  }
+
 
   String formatRelativeDate(DateTime createdAt) {
     final now = DateTime.now();
