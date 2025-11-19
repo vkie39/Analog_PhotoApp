@@ -34,4 +34,26 @@ class UserModel {
       profileImageUrl: map['profileImageUrl'],
     );
   }
+
+  factory UserModel.fromMap2(Map<String, dynamic> map) {
+    final createdAtRaw = map['createdAt'];
+    DateTime createdAt;
+
+    if (createdAtRaw is Timestamp) {
+      createdAt = createdAtRaw.toDate();
+    } else if (createdAtRaw is String) {
+      createdAt = DateTime.tryParse(createdAtRaw) ?? DateTime.now();
+    } else {
+      createdAt = DateTime.now();
+    }
+
+    return UserModel(
+      uid: map['uid'] ?? '',
+      email: map['email'] ?? '',
+      nickname: map['nickname'] ?? '익명',
+      createdAt: createdAt,
+      profileImageUrl: map['profileImageUrl'],
+    );
+  }
+
 }

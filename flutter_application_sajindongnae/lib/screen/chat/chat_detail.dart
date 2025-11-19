@@ -57,6 +57,8 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
   late String _otherUid;
   late bool _isOwner; // 리퀘스트 작성자가 아니라면 리퀘스트 상태변화를 할 수 없도록 함
 
+  int? _myPointBalance; // 내 잔액
+
 
   // Firestore 인스턴스
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -123,6 +125,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
 
     // 프로필/닉네임 불러오기
     _loadProfiles();
+    _loadMyPoint(); // 내 잔액 불러오기
 
     final sorted = [myUid, otherUid]..sort();
     _chatRoomId = sorted.join('_');
@@ -450,7 +453,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
                         imagePath: msg.imageUrl!,
                         isAsset: false,
                         heroTag: 'chat_image_${msg.id}',
-                        photoOwnerNickname: _requesterNickname,
+                        photoOwnerNickname: msg.senderId,
                         canDownload: _canDownload,
                       ),
                     ),
@@ -524,6 +527,27 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
     );
   }
 
+  // 잔액 계산
+  Future<void> _loadMyPoint() async {
+    final uid = _myUid;
+    if (uid == null) return;
+
+    try {
+      final snap = await _db.collection('users').doc(uid).get();
+      if (!snap.exists) return;
+
+      final data = snap.data() as Map<String, dynamic>;
+      // point.balance 구조 그대로 사용
+      final balance = ((data['point'] ?? {})['balance'] ?? 0) as int;
+
+      if (!mounted) return;
+      setState(() {
+        _myPointBalance = balance;
+      });
+    } catch (e) {
+      debugPrint('내 포인트 불러오기 실패: $e');
+    }
+  }
 
   
   // [결제 요청] 메세지 보내기
@@ -606,7 +630,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
     }
     
     // 더미 데이터 (결제완료 메세지는 의뢰자가 보냄. 의뢰자일 경우와 아닐 경우로 나누어 각각의 잔액을 표시)
-    final int remainingBalance = isMe ? 43210 : 98765;
+    final int remainingBalance = _myPointBalance ?? 0;
 
     // 썸네일로 쓸 이미지 (없으면 더미 이미지)
     final thumbUrl = _lastNonRequesterImageUrl ??
@@ -676,7 +700,7 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
                   imageUrl: thumbUrl,         
                   title: _requestTitle,            // 의뢰 제목
                   price: amount,                   // 결제 금액
-                  remainingBalance: remainingBalance, // 더미 잔액
+                  remainingBalance: remainingBalance, // 잔액
                   onTapMyPage: () {
                     //마이페이지로 이동
                     Navigator.push(
@@ -937,10 +961,14 @@ class _ChatDetailScreen extends State<ChatDetailScreen> {
         });
       }
 
+
+      // 최신 잔액 다시 불러오기
+      await _loadMyPoint();
       // 결제 완료 메시지 전송 (채팅용)
       await _sendPaymentCompleteMessage();
 
-      Fluttertoast.showToast(msg: '결제가 완료되었습니다!');
+      //Fluttertoast.showToast(msg: '결제가 완료되었습니다!');
+
     } catch (e) {
       debugPrint('결제 처리 실패: $e');
       if (e.toString().contains('잔액이 부족')) {

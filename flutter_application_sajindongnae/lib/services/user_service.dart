@@ -49,12 +49,26 @@ class UserService {
     }
   }
 
+/*
   // 특정 uid의 유저 문서를 가져옴
   static Future<UserModel?> getUserByUid(String uid) async {
     try {
       final doc = await _db.collection('users').doc(uid).get();
       if (!doc.exists) return null;
       return UserModel.fromMap(doc.data()!);
+    } catch (e) {
+      log("유저 정보 불러오기 실패: $e");
+      return null;
+    }
+  }
+*/
+
+  // 특정 uid의 유저 문서를 가져옴
+  static Future<UserModel?> getUserByUid(String uid) async {
+    try {
+      final doc = await _db.collection('users').doc(uid).get();
+      if (!doc.exists) return null;
+      return UserModel.fromMap2(doc.data()!);
     } catch (e) {
       log("유저 정보 불러오기 실패: $e");
       return null;
