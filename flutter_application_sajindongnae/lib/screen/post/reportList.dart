@@ -1,20 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class ReportListScreen extends StatelessWidget {
+class ReportListScreen extends StatefulWidget {
   final String postId;
 
-  const ReportListScreen({
-    required this.postId,
-    super.key,
-  });
+  const ReportListScreen({required this.postId, super.key});
 
+  @override
+  State<ReportListScreen> createState() => _ReportListScreenState();
+}
+
+class _ReportListScreenState extends State<ReportListScreen> {
+  Map<String, String> _uidToNickname = {}; // UID → 닉네임 매핑
+
+  // 신고 컬렉션 스트림
   Stream<QuerySnapshot<Map<String, dynamic>>> _reportStream() {
     return FirebaseFirestore.instance
-        .collection('reports')                // 전체 신고 컬렉션
-        .where('postId', isEqualTo: postId)   // 해당 게시글 신고만 필터링
+        .collection('reports')
+        .where('postId', isEqualTo: widget.postId)
         .orderBy('timestamp', descending: true)
         .snapshots();
+  }
+
+  // UID 목록으로 닉네임 미리 불러오기
+  Future<void> _preloadNicknames(List<String> uids) async {
+    final unknownUids = uids.where((uid) => !_uidToNickname.containsKey(uid)).toList();
+    if (unknownUids.isEmpty) return;
+
+    final snapshots = await FirebaseFirestore.instance
+        .collection('users')
+        .where(FieldPath.documentId, whereIn: unknownUids)
+        .get();
+
+    for (var doc in snapshots.docs) {
+      _uidToNickname[doc.id] = doc.data()['nickname'] ?? '익명';
+    }
+
+    // 없는 UID는 '익명' 처리
+    for (var uid in unknownUids) {
+      _uidToNickname[uid] ??= '익명';
+    }
+    setState(() {}); // 닉네임 매핑 갱신
   }
 
   @override
@@ -23,7 +49,7 @@ class ReportListScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           '신고 내역',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
@@ -44,45 +70,35 @@ class ReportListScreen extends StatelessWidget {
           }
 
           final reports = snapshot.data!.docs;
+          final reporterUids = reports.map((r) => r.data()['reporterId'] as String).toList();
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
+          // 닉네임 미리 불러오기
+          _preloadNicknames(reporterUids);
+
+          return ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: reports.length,
+            separatorBuilder: (context, index) => const Divider(
+              height: 1,
+              color: Colors.grey,
+            ),
             itemBuilder: (context, index) {
               final data = reports[index].data();
               final reason = data['reason'] ?? '사유 없음';
-              final reporter = data['reporterId'] ?? '익명';
-              // final timestamp = data['timestamp']?.toDate();
+              final reporterUid = data['reporterId'] ?? '';
+              final reporterName = _uidToNickname[reporterUid] ?? '로딩 중...';
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      blurRadius: 4,
-                      color: Colors.black.withOpacity(0.05),
-                    )
-                  ],
-                ),
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "신고 사유: $reason",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      "신고 사유 : $reason",
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 6),
-                    Text("신고자: $reporter"),
-                    // if (timestamp != null)
-                    //   Text(
-                    //     "신고일: $timestamp",
-                    //     style: TextStyle(color: Colors.grey[600]),
-                    //   ),
+                    const SizedBox(height: 4),
+                    Text("신고자 : $reporterName"),
                   ],
                 ),
               );
